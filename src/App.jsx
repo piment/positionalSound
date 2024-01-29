@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
@@ -13,6 +13,15 @@ import './App.css';
 // Reactive state model, using Valtio ...
 const modes = ['translate', 'rotate', 'scale'];
 const state = proxy({ current: null, mode: 0 });
+
+
+
+
+
+
+
+
+
 
 function Model({ name, url, distance, ...props }) {
   const trackRef = useRef();
@@ -68,6 +77,7 @@ function Model({ name, url, distance, ...props }) {
 function Controls() {
   const snap = useSnapshot(state);
   const scene = useThree((state) => state.scene);
+  // console.log(scene.children[1].children.children)
   return (
     <>
       {snap.current && (
@@ -86,6 +96,12 @@ function Controls() {
 }
 
 export default function App() {
+  const [playSound, setPlaySound] = useState(false);
+
+useEffect(() => {
+  
+},[playSound])
+
   return (
     <>
           <div
