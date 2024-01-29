@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
@@ -14,15 +14,6 @@ import './App.css';
 const modes = ['translate', 'rotate', 'scale'];
 const state = proxy({ current: null, mode: 0 });
 
-
-
-
-
-
-
-
-
-
 function Model({ name, url, distance, ...props }) {
   const trackRef = useRef();
   const snap = useSnapshot(state);
@@ -30,15 +21,21 @@ function Model({ name, url, distance, ...props }) {
   const { nodes } = useGLTF('/compressed.glb');
   const [hovered, setHovered] = useState(false);
   useCursor(hovered);
+
+  console.log(trackRef.current)
   const toggleTrack = () => {
     if (trackRef.current.getVolume() !== 0) {
       trackRef.current.setVolume(0);
+   
       // click(true)
     } else if (trackRef.current.getVolume() === 0) {
       trackRef.current.setVolume(1);
+
       // click(false)
     }
   };
+
+
   return (
     <mesh
       // Click sets the mesh as the new target
@@ -77,7 +74,6 @@ function Model({ name, url, distance, ...props }) {
 function Controls() {
   const snap = useSnapshot(state);
   const scene = useThree((state) => state.scene);
-  // console.log(scene.children[1].children.children)
   return (
     <>
       {snap.current && (
@@ -96,22 +92,8 @@ function Controls() {
 }
 
 export default function App() {
-  const [playSound, setPlaySound] = useState(false);
-
-useEffect(() => {
-  
-},[playSound])
-
   return (
     <>
-          <div
-        onClick={() => {
-          setPlaySound(!playSound);
-        }}
-        style={{ width: '10vw', height: '10vh', backgroundColor: '#ff00ff' }}
-      >
-        OLEEEEEE
-      </div>
     <Canvas camera={{ position: [0, -10, 80], fov: 50 }} dpr={[1, 2]}>
       <pointLight position={[100, 100, 100]} intensity={0.8} />
       <hemisphereLight
@@ -142,8 +124,7 @@ useEffect(() => {
             rotation={[1, 0, -1]}
             url={'/06_ElecGtr1.mp3'}
             distance={2}
-            // playSound={playSound}
-            // ready={ready}
+          
           />
           <Model
             name='Notebook'

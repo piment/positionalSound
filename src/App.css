@@ -56,3 +56,19 @@ a:hover {
   text-decoration: underline;
   color: inherit;
 }
+.main{  width: 100vw;
+  height: 100vh;
+  top: 0;
+position: absolute;
+}
+.div-float{
+  position: absolute;
+}
+
+.canvas-main{
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  border: red solid 2px;
+}
