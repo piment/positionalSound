@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import './App.css';
 import { useAudioContext } from './AudioContextProvider';
 import Sound from './Sound';
+import PosAudio from './PosAudio';
 // Reactive state model, using Valtio ...
 const modes = ['translate', 'rotate', 'scale'];
 const state = proxy({ current: null, mode: 0 });
@@ -22,7 +23,7 @@ const state = proxy({ current: null, mode: 0 });
 function Controls() {
   const snap = useSnapshot(state);
   const scene = useThree((state) => state.scene);
-  console.log(scene)
+
   return (
     <>
       {snap.current && (
@@ -48,13 +49,15 @@ const [paused, setPaused]= useState(false)
       <sphereGeometry args={[2,12,2]}/>
       <meshBasicMaterial color={"#ff00ff"}/>
            <Sound  on={props.on} paused={paused}  delayTime={props.delay} url={props.url}/>
+         
+
     </mesh>
   )
 }
 
 
 export default function App() {
-
+const audioCont = new THREE.AudioContext()
   const [on, setOn] = useState(false)
   const [dTime, setDTime] = useState(0)
   return (
@@ -67,7 +70,7 @@ export default function App() {
       </div>
       <div>
 delayRange : 
-      <input type="range" min="0" max="1" value={dTime} step="0.001"  onChange={(e) => setDTime(e.target.value)}/>
+      <input type="range"  min="0" max="1" value={dTime} step="0.001"  onChange={(e) => setDTime(e.target.value)}/>
       </div>
     <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]}>
       <pointLight position={[100, 100, 100]} intensity={0.8} />
@@ -79,10 +82,10 @@ delayRange :
       />
       <Suspense fallback={null}>
         <group position={[0, 0, 0]}>
-   <ObjSound name="gtr" url={'/07_ElecGtr2.mp3'}  on={on} delay={dTime}/>
-   <ObjSound name="kick" url={'/01_Kick.mp3'}  on={on} delay={dTime}/>
-   <ObjSound name="bass" url={'/05_Bass.mp3'}  on={on} delay={dTime}/>
-   <ObjSound name="vox" url={'/09_LeadVox.mp3'}  on={on} delay={dTime}/>
+   <ObjSound name="gtr" url={'/07_ElecGtr2.mp3'} context={audioCont}  on={on} delay={dTime}/>
+   <ObjSound name="kick" url={'/01_Kick.mp3'} context={audioCont} on={on} delay={dTime}/>
+   <ObjSound name="bass" url={'/05_Bass.mp3'} context={audioCont} on={on} delay={dTime}/>
+   <ObjSound name="vox" url={'/09_LeadVox.mp3'} context={audioCont} on={on} delay={dTime}/>
           <ContactShadows
             rotation-x={Math.PI / 2}
             position={[0, -35, 0]}
