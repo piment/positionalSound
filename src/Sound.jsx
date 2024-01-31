@@ -10,7 +10,8 @@ function Sound({ url, on, paused, ...props }) {
   const audioCtx = THREE.AudioContext.getContext();
   const [listener] = useState(() => new THREE.AudioListener());
 
-  const dede = audioCtx.createDelay();
+  
+  const dede = listener.context.createDelay(.5);
 
   useEffect(() => {
     if (on) {
@@ -28,33 +29,35 @@ function Sound({ url, on, paused, ...props }) {
     }
   }, [on, paused]);
 
-
-  useEffect(() => {},[props.delayTime])
+  const biquadFilter = listener.context.createBiquadFilter();
+  const deGain = listener.context.createGain()
+  useEffect(() => {
+    biquadFilter.type = 'lowshelf';
+    biquadFilter.frequency.setValueAtTime(1000, listener.context.currentTime);
+    biquadFilter.gain.setValueAtTime(props.delayTime * -5, listener.context.currentTime);  
+     dede.delayTime.setValueAtTime(
+      props.delayTime,
+      listener.context.currentTime
+    );
+    deGain.gain.setValueAtTime(props.delayTime , listener.context.currentTime);  
+    dede.connect(deGain)
+    sound.current.setFilter(dede)
+    // sound.current.setFilter(biquadFilter);
+  }, [props.delayTime]);
   // console.log()
 
   useEffect(() => {
     sound.current.setBuffer(buffer);
     sound.current.setRefDistance(3);
     sound.current.setLoop(true);
-    
+ 
+
     camera.add(listener);
     return () => camera.remove(listener);
-
   }, []);
 
 
-  useEffect(() => {
-    const soundOut = sound.current.getOutput();
-    soundOut.connect(dede);
-    soundOut.connect(audioCtx.destination);
-    //  console.log();
-    dede.delayTime.setValueAtTime(props.delayTime, audioCtx.currentTime);
-    dede.connect(audioCtx.destination);},[
-    props.delayTime
-  ])
-
-
-  return <positionalAudio ref={sound} args={[listener]} context={audioCtx} />;
+  return <positionalAudio ref={sound} args={[listener]} />;
 }
 
 export default Sound;
