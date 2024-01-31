@@ -4,17 +4,15 @@ import {
   OrbitControls,
   TransformControls,
   ContactShadows,
-  useGLTF,
-  useCursor,
-  PositionalAudio,
+
 } from '@react-three/drei';
 import { proxy, useSnapshot } from 'valtio';
 import * as THREE from 'three'
 import './App.css';
-import { useAudioContext } from './AudioContextProvider';
+
 import Sound from './Sound';
-import PosAudio from './PosAudio';
-// Reactive state model, using Valtio ...
+
+
 const modes = ['translate', 'rotate', 'scale'];
 const state = proxy({ current: null, mode: 0 });
 
@@ -66,7 +64,7 @@ const audioCont = new THREE.AudioContext()
     onDoubleClick={() => setOn(!on)}
         style={{ width: '10vw', height: '10vh', backgroundColor: '#ff00ff' }}
       >
-        OLEEEEEE
+       Play / Pause (dbl click)
       </div>
       <div>
 delayRange : 
