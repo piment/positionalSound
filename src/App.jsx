@@ -4,6 +4,8 @@ import {
   OrbitControls,
   TransformControls,
   ContactShadows,
+  Text,
+  Html,
 
 } from '@react-three/drei';
 import { proxy, useSnapshot } from 'valtio';
@@ -42,12 +44,22 @@ function Controls() {
 function ObjSound(props){
 const [paused, setPaused]= useState(false)
   const snap = useSnapshot(state)
+   const [mainVol, setMainVol] = useState(0.5)
   return(
-    <mesh name={props.name} onDoubleClick={() => setPaused(!paused)}  onClick={(e) => (e.stopPropagation(), (state.current = props.name))}>
+    <mesh position={props.defPos} name={props.name} onDoubleClick={() => setPaused(!paused)}  onClick={(e) => (e.stopPropagation(), (state.current = props.name))}>
+     <mesh>
+    
       <sphereGeometry args={[2,12,2]}/>
       <meshBasicMaterial color={"#ff00ff"}/>
-           <Sound  on={props.on} paused={paused}  delayTime={props.delay} url={props.url}/>
-         
+           <Sound  on={props.on} paused={paused} dist={props.dist}  delayTime={props.delay} url={props.url} mainVol={props.mainVol}/>
+     </mesh>
+     <Html>
+ <div>
+ {props.name}
+      <input type="range"  min="0" max="1" value={mainVol} step="0.001"  onChange={(e) => setMainVol(e.target.value)}/>
+      </div>
+       {/* {props.name} */}
+     </Html>
 
     </mesh>
   )
@@ -58,6 +70,7 @@ export default function App() {
 const audioCont = new THREE.AudioContext()
   const [on, setOn] = useState(false)
   const [dTime, setDTime] = useState(0)
+ let mainVol = 0.5
   return (
     <>
       <div
@@ -70,6 +83,10 @@ const audioCont = new THREE.AudioContext()
 delayRange : 
       <input type="range"  min="0" max="1" value={dTime} step="0.001"  onChange={(e) => setDTime(e.target.value)}/>
       </div>
+      {/* <div>
+main : 
+      <input type="range"  min="0" max="1" value={mainVol} step="0.001"  onChange={(e) => setMainVol(e.target.value)}/>
+      </div> */}
     <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]}>
       <pointLight position={[100, 100, 100]} intensity={0.8} />
       <hemisphereLight
@@ -80,10 +97,14 @@ delayRange :
       />
       <Suspense fallback={null}>
         <group position={[0, 0, 0]}>
-   <ObjSound name="gtr" url={'/07_ElecGtr2.mp3'} context={audioCont}  on={on} delay={dTime}/>
-   <ObjSound name="kick" url={'/01_Kick.mp3'} context={audioCont} on={on} delay={dTime}/>
-   <ObjSound name="bass" url={'/05_Bass.mp3'} context={audioCont} on={on} delay={dTime}/>
-   <ObjSound name="vox" url={'/09_LeadVox.mp3'} context={audioCont} on={on} delay={dTime}/>
+   <ObjSound name="drums" url={'/motor/MOTOR DRUMS.mp3'} dist={15} defPos={[0,0,-5]} context={audioCont} on={on} delay={dTime} mainVol={mainVol}/>
+   <ObjSound name="bass" url={'/motor/MOTOR - BASS - Groupe.mp3'} dist={20}  context={audioCont} on={on} delay={dTime} mainVol={mainVol}/>
+   <ObjSound name="gtr1" url={'/motor/MOTOR - GTR X - Groupe.mp3'}dist={3}  context={audioCont}  on={on} delay={dTime} mainVol={mainVol}/>
+   <ObjSound name="gtr2" url={'/motor/MOTOR - GTR ERW - Groupe.mp3'} dist={3} context={audioCont}  on={on} delay={dTime} mainVol={mainVol}/>
+   <ObjSound name="keys" url={'/motor/MOTOR - KEYS - Groupe.mp3'} dist={3} context={audioCont}  on={on} delay={dTime} mainVol={mainVol}/>
+   <ObjSound name="vox" url={'/motor/MOTOR VOX.mp3'} context={audioCont} dist={10} on={on} delay={dTime} mainVol={mainVol}/>
+   <ObjSound name="RVB" url={'/motor/MOTOR-RVB.mp3'} context={audioCont} dist={100} on={on} delay={dTime} mainVol={mainVol}/>
+   
           <ContactShadows
             rotation-x={Math.PI / 2}
             position={[0, -35, 0]}
