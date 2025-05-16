@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { Drums } from './instruments/Drums';
 import { Bass } from './instruments/Bass';
 
-function Sound({ url, on, paused, volume, context,dist, ...props }) {
+function Sound({ url, on,file,  paused, volume, context,dist, ...props }) {
   const sound = useRef();
   const analyserRef = useRef()
   const audioRef = useRef()

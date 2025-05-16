@@ -18,9 +18,6 @@ import { Bloom, EffectComposer, N8AO } from '@react-three/postprocessing';
 import { Perf } from 'r3f-perf';
 import { Bass } from './instruments/Bass';
 import { Drums } from './instruments/Drums';
-import ImportMenu from './ImportMenu';
-import MultitrackDisplay from './MultitrackDisplay';
-
 
 const modes = ['translate', 'rotate', 'scale'];
 const state = proxy({ current: null, mode: 0 });
@@ -52,7 +49,7 @@ function ObjSound(props) {
   const snap = useSnapshot(state);
   const meshRef = useRef();
   const [mainVol, setMainVol] = useState(0.5);
-  // console.log(meshRef)
+  console.log(meshRef)
   return (
     <mesh
       position={props.defPos}
@@ -137,33 +134,9 @@ export default function App() {
   const audioCont = new THREE.AudioContext();
   const [on, setOn] = useState(false);
   const [dTime, setDTime] = useState(0);
-  const [tracks, setTracks] = useState([]);
-  const sourcesRef = useRef([]);
 
-  
-  function handleAddTrack(track) {
-    // auto-position tracks in a circle
-    const angle = (tracks.length / 5) * Math.PI * 2;
-    const distance = 10 + tracks.length * 5;
-    const defPos = [
-      Math.cos(angle) * distance,
-      0,
-      Math.sin(angle) * distance,
-    ];
-    setTracks([
-      ...tracks,
-      {
-        ...track,
-        dist: distance,
-        defPos,
-        delay: dTime,
-      },
-    ]);
-  }
   return (
     <>
-    <MultitrackDisplay tracks={tracks} width={500} height={80}/>
-          <ImportMenu onAdd={handleAddTrack} />
       <div
         onDoubleClick={() => setOn(!on)}
         style={{ width: '10vw', height: '10vh', backgroundColor: '#ff00ff' }}
@@ -180,21 +153,72 @@ export default function App() {
 
         <Suspense fallback={null}>
           <group position={[0, 0, 0]}>
-          {tracks.map((t) => (
-              <ObjSound
-                key={t.name + t.url}
-                name={t.name}
-                file={t.file}
-                url={t.url}
-                dist={t.dist}
-                defPos={t.defPos}
-                context={audioCont}
-                on={on}
-                delay={t.delay}
-                instrument={t.instrument}
-                stereo={t.isStereo}
-              />
-            ))}
+            <ObjSound
+              name='drums'
+              url={'/motor/MOTOR DRUMS.mp3'}
+              dist={15}
+              defPos={[0, 0, -5]}
+              context={audioCont}
+              on={on}
+              delay={dTime}
+            />
+            <ObjSound
+              name='bass'
+              url={'/motor/MOTOR - BASS - Groupe.mp3'}
+              dist={20}
+              context={audioCont}
+              on={on}
+              delay={dTime}
+            />
+            <ObjSound
+              name='gtr1'
+              url={'/motor/MOTOR - GTR X - Groupe.mp3'}
+              dist={10}
+              context={audioCont}
+              on={on}
+              delay={dTime}
+            />
+            <ObjSound
+              name='gtr2'
+              url={'/motor/MOTOR - GTR ERW - Groupe.mp3'}
+              dist={10}
+              context={audioCont}
+              on={on}
+              delay={dTime}
+            />
+            <ObjSound
+              name='keys'
+              url={'/motor/MOTOR - KEYS - Groupe.mp3'}
+              dist={10}
+              context={audioCont}
+              on={on}
+              delay={dTime}
+            />
+            <ObjSound
+              name='vox'
+              url={'/motor/MOTOR VOX.mp3'}
+              context={audioCont}
+              dist={100}
+              on={on}
+              delay={dTime}
+            />
+            <ObjSound
+              name='RVB'
+              url={'/motor/MOTOR-RVB.mp3'}
+              context={audioCont}
+              dist={100}
+              on={on}
+              delay={dTime}
+            />
+            {/* <ContactShadows
+            rotation-x={Math.PI / 2}
+            position={[0, -35, 0]}
+            opacity={0.25}
+            width={200}
+            height={200}
+            blur={1}
+            far={50}
+            /> */}
           </group>
         </Suspense>
         {/* <EffectComposer disableNormalPass >
