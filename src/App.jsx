@@ -17,6 +17,9 @@ import './App.css';
 import Sound from './Sound';
 import EnvComp from './EnvComp';
 import { Bloom, EffectComposer, N8AO } from '@react-three/postprocessing';
+import { Perf } from 'r3f-perf';
+import { Bass } from './instruments/Bass';
+import { Drums } from './instruments/Drums';
 
 
 const modes = ['translate', 'rotate', 'scale'];
@@ -47,23 +50,40 @@ function Controls() {
 
 function ObjSound(props){
 const [paused, setPaused]= useState(false)
-  const snap = useSnapshot(state)
+const snap = useSnapshot(state)
    const [mainVol, setMainVol] = useState(0.5)
   return(
-    <mesh position={props.defPos} name={props.name} onDoubleClick={() => setPaused(!paused)}  onClick={(e) => (e.stopPropagation(), (state.current = props.name))}>
-     <mesh>
-    
-      {/* <sphereGeometry args={[2,12,2]}/> */}
-      {/* <meshBasicMaterial color={"#ff00ff"}/> */}
-           <Sound  on={props.on} paused={paused} dist={props.dist}  delayTime={props.delay} url={props.url} mainVol={mainVol}/>
-     </mesh>
-     <Html>
+    <mesh position={props.defPos} name={props.name} onDoubleClick={() => setPaused(!paused)}  onClick={(e) => (e.stopPropagation(), (state.current = props.name))}    onContextMenu={(e) => (e.stopPropagation(), snap.current === props.name && ((state.mode = (snap.mode + 1) % modes.length)))}
+    >
+     {/* <mesh> */}
+     {(props.name === "drums") ? (
+  <group  >
+
+  <Drums  />
+  </group>
+):
+
+(props.name === "bass") ? ( <group  >
+
+  <Bass />
+  </group>)
+  :
+(''
+  // <mesh ref={audioRef} position={[0, 0, 0]} visible={true} castShadow receiveShadow>
+  //   <boxGeometry  args={[1, 1, 1]}   />
+  //   <meshStandardMaterial color={"#ff00ff"} emissive={"#000000"} roughness={0.5}  metalness={.51} />
+  //   </mesh>
+ 
+ ) }  
+           <Sound name={props.name}  on={props.on} paused={paused} dist={props.dist}  delayTime={props.delay} url={props.url} mainVol={mainVol}/>
+     {/* </mesh> */}
+     {/* <Html>
  <div>
  {props.name}
-      <input type="range"  min="0" max="1" value={mainVol} step="0.001"  onChange={(e) => setMainVol(e.target.value)}/>
+      <input type="range"  min="0" max="1" value={mainVol} step="0.001"  onChange={(e) =>( e.stopPropagation(), setMainVol(e.target.value))} onMouseDown={(e) => e.stopPropagation()}/>
       </div>
-       {/* {props.name} */}
-     </Html>
+   
+     </Html> */}
 
     </mesh>
   )
@@ -74,7 +94,7 @@ export default function App() {
 const audioCont = new THREE.AudioContext()
   const [on, setOn] = useState(false)
   const [dTime, setDTime] = useState(0)
- let mainVol = 0.5
+
   return (
     <>
       <div
@@ -100,9 +120,7 @@ const audioCont = new THREE.AudioContext()
    <ObjSound name="keys" url={'/motor/MOTOR - KEYS - Groupe.mp3'} dist={10} context={audioCont}  on={on} delay={dTime} />
    <ObjSound name="vox" url={'/motor/MOTOR VOX.mp3'} context={audioCont} dist={100} on={on} delay={dTime} />
    <ObjSound name="RVB" url={'/motor/MOTOR-RVB.mp3'} context={audioCont} dist={100} on={on} delay={dTime} />
-   {/* <Visualizer3D audioDataArray={audioDataArrayRef} audioRef={audioRef} isPlaying={isPlaying} /> */}
-    
-          <ContactShadows
+   {/* <ContactShadows
             rotation-x={Math.PI / 2}
             position={[0, -35, 0]}
             opacity={0.25}
@@ -110,10 +128,10 @@ const audioCont = new THREE.AudioContext()
             height={200}
             blur={1}
             far={50}
-            />
+            /> */}
         </group>
       </Suspense>
-      <EffectComposer disableNormalPass >
+      {/* <EffectComposer disableNormalPass >
             <N8AO
               halfRes
               color='black'
@@ -123,11 +141,11 @@ const audioCont = new THREE.AudioContext()
               denoiseSamples={4}
             />
      <Bloom luminanceThreshold={0} luminanceSmoothing={0.9} height={300} intensity={2}/>
-          </EffectComposer>
+          </EffectComposer> */}
             
             {/* </Stage> */}
       <Controls />
-
+<Perf deepAnalyze/>
     </Canvas></>
   );
 }

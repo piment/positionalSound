@@ -1,7 +1,9 @@
-import { Box } from '@react-three/drei';
+
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { Drums } from './instruments/Drums';
+import { Bass } from './instruments/Bass';
 
 function Sound({ url, on, paused, context,dist, ...props }) {
   const sound = useRef();
@@ -68,14 +70,11 @@ loadImpulseResponse();
 
   analyserRef.current = new AnalyserNode(listener.context)
 
-  const bufferLength = analyserRef.current.frequencyBinCount;
-  analyserRef.current.fftSize = 32
-  const dataArray = new Uint8Array(bufferLength);
-  analyserRef.current.getByteTimeDomainData(dataArray);
+
 
   analyserRef.current.smoothingTimeConstant = 1;
-  analyserRef.current.maxDecibels = -20
-analyserRef.current.minDecibels = -25
+  analyserRef.current.maxDecibels = -10
+analyserRef.current.minDecibels = -55
 
 
   const mainVolume = audioCtx.createGain()
@@ -94,6 +93,18 @@ useEffect(()=>{
 ///// Delay updating
  sound.current?.gain.connect(analyserRef.current)
 
+
+  // const drawVisualization = () => {
+  //   const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+  //   analyserRef.current.getByteTimeDomainData(dataArray);
+  //   audioDataArrayRef.current = dataArray;
+
+  //   // console.log(dataArray[0])
+  //   if (audioRef.current && on) {
+  //     requestAnimationFrame(drawVisualization);
+  //   }
+  // };
+// drawVisualization()
   useEffect(() => {
 
     sound.current.setBuffer(buffer);
@@ -105,20 +116,8 @@ useEffect(()=>{
     return () => camera.remove(listener);
   }, []);
 
-  const drawVisualization = () => {
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteTimeDomainData(dataArray);
-    audioDataArrayRef.current = dataArray;
-
-    
-    if (audioRef.current && on) {
-      requestAnimationFrame(drawVisualization);
-    }
-  };
-drawVisualization()
-
   return (<><positionalAudio ref={sound} args={[listener]} setDirectionalCone={[10,10,10]} castShadow/>
-         <Visualizer3D audioDataArray={audioDataArrayRef} audioRef={audioRef} isPlaying={on} />
+         <Visualizer3D audioDataArray={audioDataArrayRef} audioRef={audioRef} isPlaying={on} name={props.name}/>
     
   </>);
 }
@@ -126,45 +125,59 @@ drawVisualization()
 
 
 
-const Visualizer3D = ({ audioDataArray, audioRef, isPlaying }) => {
+const Visualizer3D = ({ audioDataArray, audioRef, isPlaying, ...props }) => {
   // console.log(audioDataArray, isPlaying)
   let averageVolume = 0;
 
 // Update the average volume using the data obtained from the audio analyzer
 
   // Calculate the sum of all frequency values
- 
-  useFrame((state) => {
-    const dataArray = audioDataArray.current;
-     const sum = dataArray.reduce((acc, val) => acc + val, 0);
-  // Calculate the average volume
-  averageVolume = sum / dataArray.length;
+ let flickerIntensity
+//   useFrame((state) => {
+//     const dataArray = audioDataArray.current;
+//      const sum = dataArray.reduce((acc, val) => acc + val, 0);
+//   // Calculate the average volume
+//   averageVolume = sum / dataArray.length;
 
 
  
-  const flickerIntensity = averageVolume / 255; // Normalize the volume to a range between 0 and 1
+//  flickerIntensity = averageVolume / 255; // Normalize the volume to a range between 0 and 1
 
-    // console.log(dataArray.length)
-// console.log(dataArray[2] -128)
-    if (audioRef.current && isPlaying) {
-      // audioRef.current.scale.x = (2 * flickerIntensity )/2
-      // audioRef.current.scale.y = (2 * flickerIntensity)/2
-      // audioRef.current.scale.z = (2 * flickerIntensity)/2
-      // audioRef.current.position.y = -1 + dataArray[0] / 256;
-      // audioRef.current.material.emissiveIntensity = 1*( dataArray[0]-128)/50
-      // audioRef.current.material.emissiveIntensity = -.5 + (flickerIntensity*1.5 )
+//     // console.log(dataArray.length)
+// // console.log(dataArray[2] -128)
+//     if (audioRef.current && isPlaying) {
+//       // audioRef.current.scale.x = 1+( flickerIntensity/2 )
+//       // audioRef.current.scale.y = 1+( flickerIntensity/2)
+//       // audioRef.current.scale.z = 1+( flickerIntensity/2)
+//       // audioRef.current.position.y = -1 + dataArray[0] / 256;
+//       // audioRef.current.material.emissiveIntensity = 1*( dataArray[0]-128)/50
+//       // audioRef.current.material.emissiveIntensity = -.5 + (flickerIntensity*1.5 )
 
-    }
-  });
+//     }
+//   });
   return (
 <>
     {/* <ambientLight /> */}
-    <pointLight position={[10, 10, 10]} castShadow/>
-    <mesh ref={audioRef} position={[0, 0, 0]} visible={true} castShadow receiveShadow>
+    {/* <pointLight position={[10, 10, 10]} castShadow/> */}
+{/* {(props.name === "drums") ? (
+  <group ref={audioRef} >
 
-    <boxGeometry  args={[1, 1, 1]}   />
-    <meshStandardMaterial color={"#ff00ff"} emissive={"#000000"} roughness={0.5}  metalness={.51} />
-    </mesh>
+  <Drums  isPlaying={isPlaying} audioDataArray={audioDataArray}/>
+  </group>
+):
+
+(props.name === "bass") ? ( <group ref={audioRef} >
+
+  <Bass  isPlaying={isPlaying} audioDataArray={audioDataArray}/>
+  </group>)
+  :
+(''
+  // <mesh ref={audioRef} position={[0, 0, 0]} visible={true} castShadow receiveShadow>
+  //   <boxGeometry  args={[1, 1, 1]}   />
+  //   <meshStandardMaterial color={"#ff00ff"} emissive={"#000000"} roughness={0.5}  metalness={.51} />
+  //   </mesh>
+ 
+ ) }   */}
   
 </>
     )
