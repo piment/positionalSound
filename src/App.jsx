@@ -128,6 +128,8 @@ function ObjSound(props) {
         delayTime={props.delay}
         url={props.url}
         mainVol={mainVol}
+        playTrigger={props.playTrigger}
+        globalPlay={props.globalPlay}
       />
     </mesh>
   );
@@ -139,6 +141,8 @@ export default function App() {
   const [dTime, setDTime] = useState(0);
   const [tracks, setTracks] = useState([]);
   const sourcesRef = useRef([]);
+  const [playTrigger, setPlayTrigger] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   
   function handleAddTrack(track) {
@@ -160,9 +164,29 @@ export default function App() {
       },
     ]);
   }
+
+  const handlePlayAll = () => {
+    setIsPlaying(true);
+    // bump the trigger so every Sound useEffect will re-run
+    setPlayTrigger(n => n + 1);
+  };
+
+  // Fire when user clicks “Stop All”
+  const handleStopAll = () => {
+    setIsPlaying(false);
+    // bump trigger so we can also reset on stop
+    setPlayTrigger(n => n + 1);
+  };
   return (
     <>
     <MultitrackDisplay tracks={tracks} width={500} height={80}/>
+    <div style={{ marginBottom: '1em' }}>
+        <button onClick={handlePlayAll} style={{ marginRight: '0.5em' }}>
+          ▶️ Play All
+        </button>
+        <button onClick={handleStopAll}>⏹ Stop All</button>
+      </div>
+        
           <ImportMenu onAdd={handleAddTrack} />
       <div
         onDoubleClick={() => setOn(!on)}
@@ -193,6 +217,8 @@ export default function App() {
                 delay={t.delay}
                 instrument={t.instrument}
                 stereo={t.isStereo}
+                playTrigger={playTrigger}
+                globalPlay={isPlaying}
               />
             ))}
           </group>

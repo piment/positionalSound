@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from 'react';
  * Renders a waveform preview for a given audio File
  * @param {{ file: File, width?: number, height?: number }} props
  */
-export default function Waveform({ file, width = 600, height = 10 }) {
+export default function Waveform({ file, width = 600, height = 30 }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {

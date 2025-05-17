@@ -19,8 +19,8 @@ export default function MultitrackDisplay({ tracks, width = 400, height = 10 }) 
         maxHeight: '200px',
         overflowY: 'auto',
         border: '1px solid #ccc',
-        padding: '0.5em',
-        marginBottom: '1em',
+        padding: '0.05em',
+        marginBottom: '.1em',
       }}
     >
       {tracks.map((track, idx) => (
@@ -30,7 +30,9 @@ export default function MultitrackDisplay({ tracks, width = 400, height = 10 }) 
           style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: '0.5em',
+            marginBottom: '0.05em',
+            height: '30px',
+            // border: 'red solid 2px'
           }}
         >
           <div
