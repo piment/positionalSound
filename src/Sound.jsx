@@ -6,7 +6,7 @@ import { Drums } from './instruments/Drums';
 import { Bass } from './instruments/Bass';
 
 function Sound({ url, on,file, playTrigger,
-  globalPlay,  paused, volume, context,dist, ...props }) {
+  globalPlay,  paused, volume, context,dist, masterGain, ...props }) {
   const sound = useRef();
   const analyserRef = useRef()
   const audioRef = useRef()
@@ -21,7 +21,7 @@ const gainRef = useRef();
 
 
   const audioCtx = listener.context;
-  const delayFx = audioCtx.createDelay();
+  // const delayFx = audioCtx.createDelay();
 const revFx = audioCtx.createConvolver()
 const revGain = audioCtx.createGain()
 const gainNode = audioCtx.createGain();
@@ -52,12 +52,14 @@ function loadImpulseResponse() {
   });
 }
 loadImpulseResponse();
+
   useEffect(() => {
 ///Play pause condition
 
     if (on) {
       sound.current.play();
       sound.current.connect(analyserRef.current)
+      sound.current.connect(masterGain);
     } else if (!on) {
       sound.current.pause();
     } 

@@ -1,34 +1,37 @@
 // AudioContextProvider.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export const AudioContext = createContext();
+// Don’t name this the same as window.AudioContext
+const AudioCtxContext = createContext(null);
 
-export const AudioContextProvider = ({ children }) => {
+export function AudioContextProvider({ children }) {
   const [audioContext, setAudioContext] = useState(null);
 
   useEffect(() => {
-    // Create a single AudioContext instance when the component mounts
-    const context = new (window.AudioContext || window.webkitAudioContext)();
-    setAudioContext(context);
+    // Create it once
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    setAudioContext(ctx);
 
-    // Clean up the AudioContext when the component unmounts
     return () => {
-      context.close();
+      // Clean up on unmount
+      ctx.close();
     };
   }, []);
 
-  if (!audioContext) {
-    // If AudioContext is not yet available, you can return a loading state
-    return <div>Loading...</div>;
-  }
+  // While it’s initializing you could show nothing or a spinner
+  if (!audioContext) return null;
 
   return (
-    <AudioContext.Provider value={audioContext}>
+    <AudioCtxContext.Provider value={audioContext}>
       {children}
-    </AudioContext.Provider>
+    </AudioCtxContext.Provider>
   );
-};
+}
 
-export const useAudioContext = () => {
-  return useContext(AudioContext);
-};
+export function useAudioContext() {
+  const ctx = useContext(AudioCtxContext);
+  if (!ctx) {
+    throw new Error('useAudioContext must be used within an AudioContextProvider');
+  }
+  return ctx;
+}
