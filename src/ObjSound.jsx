@@ -10,13 +10,24 @@ import Sound from './Sound';
 // const state = proxy({ current: null, mode: 0 });
 const modes = ['translate', 'rotate', 'scale'];
 
-export default function ObjSound(props) {
+export default function ObjSound({  meshRef,
+  file,
+  dist,
+  // paused,
+  url,
+  // volume,
+  globalPlay,
+  playTrigger,
+  masterGain,
+  reverbNode,
+  reverbSend = 0,...props}) {
   const [paused, setPaused] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const snap = useSnapshot(state);
-  const meshRef = useRef();
+  // const meshRef = useRef();
   const [mainVol, setMainVol] = useState(0.5);
   // console.log(meshRef)
+// console.log('WAAAAAAA',props)
   return (
     <mesh
       ref={meshRef}
@@ -84,21 +95,25 @@ export default function ObjSound(props) {
         </div>
       </Html>
 
+    {props.masterGain != null && (
+      
       <Sound
-        meshRef={meshRef}
-        name={props.name}
-        on={props.on}
-        paused={paused}
-        volume={volume}
-        dist={props.dist}
-        delayTime={props.delay}
-        url={props.url}
-        mainVol={mainVol}
-        playTrigger={props.playTrigger}
-        globalPlay={props.globalPlay}
-        masterGain={props.masterGain}
-        reverbNode={props.reverbNode}
+      meshRef={meshRef}
+      name={props.name}
+      on={props.on}
+      paused={paused}
+      volume={volume}
+      file={file}
+      dist={dist}
+      delayTime={props.delay}
+      url={url}
+      mainVol={mainVol}
+      playTrigger={playTrigger}
+      globalPlay={globalPlay}
+      masterGain={masterGain}
+      reverbNode={reverbNode}
       />
+    )}
     </mesh>
   );
 }

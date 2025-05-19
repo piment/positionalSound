@@ -38,7 +38,7 @@ export default function MasterControls({ masterGain, analyser }) {
     const now = typeof audioCtx.currentTime === 'number'
       ? audioCtx.currentTime
       : 0;
-
+console.log(masterGain)
     masterGain.gain.setValueAtTime(v, now);
   };
 
@@ -61,7 +61,7 @@ export default function MasterControls({ masterGain, analyser }) {
       <input
         type="range"
         min="0" max="1" step="0.01"
-        defaultValue="1"
+        // defaultValue="1"
         value={gainValue}
         onChange={onFaderChange}
       />

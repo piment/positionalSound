@@ -13,7 +13,7 @@ const modes = ['translate', 'rotate', 'scale'];
 function Controls() {
   const snap = useSnapshot(state);
   const scene = useThree((state) => state.scene);
-console.log(snap.current, scene.getObjectByName())
+
 
 
 
