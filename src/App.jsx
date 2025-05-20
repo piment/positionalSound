@@ -3,121 +3,54 @@ import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls } from '@react-three/drei';
 import { Perf } from 'r3f-perf';
-import { Html } from '@react-three/drei';
-import { proxy, useSnapshot } from 'valtio';
+
 
 import './App.css';
 import ImportMenu from './ImportMenu';
 import MultitrackDisplay from './MultitrackDisplay';
-import Sound from './Sound';
+import { Controls, ObjSound } from './ObjControls';
 
-// global scene state for transform controls
-const modes = ['translate', 'rotate', 'scale'];
-const sceneState = proxy({ current: null, mode: 0 });
 
-function Controls() {
-  const snap = useSnapshot(sceneState);
-  const scene = useThree((state) => state.scene);
 
-  return (
-    <>
-      {snap.current && (
-        <TransformControls
-          object={scene.getObjectByName(snap.current)}
-          mode={modes[snap.mode]}
-        />
-      )}
-      <OrbitControls
-        makeDefault
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 1.75}
-      />
-    </>
-  );
-}
-
-function ObjSound({ name, defPos, url, dist, audioCtx, on }) {
-  const meshRef = useRef();
-  const [paused, setPaused] = useState(false);
-  const [volume, setVolume] = useState(0.5);
-  const [width,  setWidth]  = useState(1);
-  const snap = useSnapshot(sceneState);
-
-  return (
-    <mesh
-      ref={meshRef}
-      position={defPos}
-      name={name}
-      onDoubleClick={() => setPaused((p) => !p)}
-      onClick={(e) => {
-        e.stopPropagation();
-        sceneState.current = name;
-      }}
-      onContextMenu={(e) => {
-        e.stopPropagation();
-        if (snap.current === name) {
-          sceneState.mode = (snap.mode + 1) % modes.length;
-        }
-      }}
-    >
-      {/* Visual indicator: cube scaled by volume */}
-      <mesh position={[0, volume * 5, 0]} scale={volume * 10} castShadow receiveShadow>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#ff00ff" />
-      </mesh>
-
-      {/* HTML slider for volume control */}
-      <Html center position={[0, 1, 0]}>  
-          <div onPointerDown={e => e.stopPropagation()} 
-             style={{ background: 'rgba(0,0,0,0.6)', padding:'4px', borderRadius:'4px' }}>
-          <label style={{ color:'white', fontSize:'0.7em' }}>width</label>
-          <input
-            type="range"
-            min={0} max={1} step={0.01}
-            value={width}
-            onChange={e => setWidth(parseFloat(e.target.value))}
-          />
-        </div>
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          style={{ background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px' }}
-        >
-          <label style={{ color: 'white', fontSize: '0.7em' }}>{name}</label>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={volume}
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
-          />
-        </div>
-      </Html>
-
-      {/* Positional audio component */}
-      <Sound
-        meshRef={meshRef}
-        url={url}
-        dist={dist}
-        volume={volume}
-        on={on}
-        width={width}
-        paused={paused}
-        audioCtx={audioCtx}
-      />
-    </mesh>
-  );
-}
 
 export default function App() {
   // create or get a single AudioContext
-  const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-  const audioCtx = useMemo(() => new AudioCtxClass(), []);
-
+  // const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+  // const audioCtx = useMemo(() => new AudioCtxClass(), []);
+  const listener = useMemo(() => new THREE.AudioListener(), []);
+  const audioCtx = listener.context
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
   const sourcesRef = useRef([]);
 
+
+ const convolver = useMemo(() => audioCtx.createConvolver(), [audioCtx]);
+  const reverbGain = useMemo(() => {
+    const g = audioCtx.createGain();
+    g.gain.value = 0; // default wet level
+    return g;
+  }, [audioCtx]);
+
+  // Load impulse response once and wire bus
+  useEffect(() => {
+    fetch('/SteinmanHall.wav')
+      .then((res) => res.arrayBuffer())
+      .then((buf) => audioCtx.decodeAudioData(buf))
+      .then((decoded) => {
+        convolver.buffer = decoded;
+        // connect convolver -> reverbGain -> listener input
+        convolver.connect(reverbGain);
+        reverbGain.connect(listener.getInput());
+      })
+      .catch((err) => console.error('IR load error:', err));
+  }, [audioCtx, convolver, reverbGain, listener]);
+
+  // 4) UI state for global reverb bus level
+  const [busLevel, setBusLevel] = useState(0.2);
+  useEffect(() => {
+    reverbGain.gain.setValueAtTime(busLevel, audioCtx.currentTime);
+  }, [busLevel, reverbGain, audioCtx]);
+  
   // Add new track with default position and distance
   function handleAddTrack(track) {
     const angle = (tracks.length / 5) * Math.PI * 2;
@@ -131,21 +64,7 @@ export default function App() {
     file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
 
   async function playAll() {
-    // if (!tracks.length) return;
-    // // stop existing sources
-    // sourcesRef.current.forEach((src) => src.stop());
-    // sourcesRef.current = [];
 
-    // // decode and schedule all
-    // const buffers = await Promise.all(tracks.map((t) => decodeBuffer(t.file)));
-    // buffers.forEach((buffer) => {
-    //   const src = audioCtx.createBufferSource();
-    //   src.buffer = buffer;
-    //   src.connect(audioCtx.destination);
-    //   sourcesRef.current.push(src);
-    // });
-    // const startTime = audioCtx.currentTime + 0.05;
-    // sourcesRef.current.forEach((src) => src.start(startTime));
     setPlaying(true);
   }
 
@@ -163,6 +82,17 @@ export default function App() {
           ▶️ Play All
         </button>
         <button onClick={stopAll}>⏹ Stop All</button>
+      </div>
+        <div style={{ margin: '1em 0' }}>
+        <label>Reverb Bus Level:</label>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={busLevel}
+          onChange={(e) => setBusLevel(parseFloat(e.target.value))}
+        />
       </div>
 
       <MultitrackDisplay tracks={tracks} width={500} height={80} />
@@ -184,6 +114,8 @@ export default function App() {
                 dist={t.dist}
                 on={playing}
                 audioCtx={audioCtx}
+                listener={listener}
+                  convolver={convolver}
               />
             ))}
           </group>
