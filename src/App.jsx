@@ -22,7 +22,12 @@ export default function App() {
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
   const sourcesRef = useRef([]);
-
+  const [leftDelayTime, setLeftDelayTime] = useState(0.00834);
+  const [rightDelayTime,setRightDelayTime]= useState(0.00961);
+  const splitter      = useMemo(() => audioCtx.createChannelSplitter(2), [audioCtx]);
+  const leftDelayNode = useMemo(() => audioCtx.createDelay(1.0), [audioCtx]);
+  const rightDelayNode= useMemo(() => audioCtx.createDelay(1.0), [audioCtx]);
+  const merger        = useMemo(() => audioCtx.createChannelMerger(2), [audioCtx]);
 
  const convolver = useMemo(() => audioCtx.createConvolver(), [audioCtx]);
   const reverbGain = useMemo(() => {
@@ -39,11 +44,43 @@ export default function App() {
       .then((decoded) => {
         convolver.buffer = decoded;
         // connect convolver -> reverbGain -> listener input
-        convolver.connect(reverbGain);
-        reverbGain.connect(listener.getInput());
+        // convolver.connect(reverbGain);
+        // reverbGain.connect(listener.context.destination);
+
+//         const splitter   = audioCtx.createChannelSplitter(2);
+// const leftDelay  = audioCtx.createDelay(0.1);   // maxDelayTime at least 0.1s
+// const rightDelay = audioCtx.createDelay(0.1);
+// const merger     = audioCtx.createChannelMerger(2);
+
+// 2) set your desired delays
+// leftDelay.delayTime.value  = 0.00051;  // 1 ms on left
+// rightDelay.delayTime.value = 0.00051;  // 0 ms on right (or e.g. 0.002 for 2 ms)
+
+// 3) wire: convolver → splitter
+convolver.connect(splitter);
+
+// 4) wire each channel through its own delay into the merger
+splitter.connect(leftDelayNode,  0);
+        splitter.connect(rightDelayNode, 1);
+        // delays -> merger channels
+        leftDelayNode.connect(merger,  0, 0);
+        rightDelayNode.connect(merger, 0, 1);
+        // merger -> reverbGain -> destination
+        
+// 5) merger → your reverbGain → listener
+merger.connect(reverbGain);
+reverbGain.connect(listener.getInput());
       })
       .catch((err) => console.error('IR load error:', err));
   }, [audioCtx, convolver, reverbGain, listener]);
+
+
+  useEffect(() => {
+    leftDelayNode.delayTime.setValueAtTime(leftDelayTime, audioCtx.currentTime);
+  }, [leftDelayTime, leftDelayNode, audioCtx]);
+  useEffect(() => {
+    rightDelayNode.delayTime.setValueAtTime(rightDelayTime, audioCtx.currentTime);
+  }, [rightDelayTime, rightDelayNode, audioCtx]);
 
   // 4) UI state for global reverb bus level
   const [busLevel, setBusLevel] = useState(0.2);
@@ -97,7 +134,28 @@ export default function App() {
 
       <MultitrackDisplay tracks={tracks} width={500} height={80} />
       <ImportMenu onAdd={handleAddTrack} />
-
+      <div style={{ margin: '1em 0' }}>
+        <label>Left Delay (ms): {(leftDelayTime )}</label>
+        <input
+          type="range"
+          min={0}
+          max={0.02}
+          step={0.00001}
+          value={leftDelayTime}
+          onChange={(e) => setLeftDelayTime(parseFloat(e.target.value))}
+        />
+      </div>
+      <div style={{ margin: '1em 0' }}>
+        <label>Right Delay (ms): {(rightDelayTime )}</label>
+        <input
+          type="range"
+          min={0}
+          max={0.02}
+          step={0.00001}
+          value={rightDelayTime}
+          onChange={(e) => setRightDelayTime(parseFloat(e.target.value))}
+        />
+      </div>
       <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
         <pointLight position={[5, 10, 5]} intensity={1} castShadow />
         <ambientLight intensity={0.3} />

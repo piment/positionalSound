@@ -1,55 +1,97 @@
 // Sound.jsx
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLoader, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export default function Sound({ url, on, paused, volume = 1, dist = 1, listener,  convolver, sendLevel = 0 }) {
-  const sound = useRef();
-  const buffer = useLoader(THREE.AudioLoader, url);
+export default function Sound({
+  url,
+  on,
+  paused,
+  volume = 1,
+  dist = 1,
+  listener,
+  convolver,
+  sendLevel = 0,
+}) {
+  const soundRef = useRef();
+  const buffer   = useLoader(THREE.AudioLoader, url);
   const { camera } = useThree();
 
-  // Create one real listener
-  // const listener = useMemo(() => new THREE.AudioListener(), []);
+  // these refs hold our wet‐send nodes
+  const sendSrcRef  = useRef(null);
+  const sendGainRef = useRef(null);
+
+  // attach the shared listener once
   useEffect(() => {
     camera.add(listener);
     return () => void camera.remove(listener);
   }, [camera, listener]);
 
-  // Whenever the buffer or play/volume props change:
+  // ─── DRY (positional) PATH ───────────────────────
   useEffect(() => {
-    if (!sound.current || !buffer) return;
-    console.log(sound.current);
-    const p = sound.current.panner;
+    const sound = soundRef.current;
+    if (!sound || !buffer) return;
 
+    // configure the PannerNode
+    const p = sound.panner;
     p.panningModel = 'equalpower';
+    p.rolloffFactor = 0;
 
-    sound.current.setBuffer(buffer);
+    // set up the buffer and volume
+    sound.setBuffer(buffer);
+    sound.setRefDistance(dist);
+    sound.setLoop(true);
+    sound.setVolume(volume);
 
-    sound.current.setRefDistance(dist);
-    sound.current.setLoop(true);
-    sound.current.setVolume(volume);
+    // play or stop the dry path
+    if (on && !paused) sound.play();
+    else              sound.stop();
+  }, [buffer, dist, volume, on, paused]);
 
+  // ─── WET (reverb send) PATH ─────────────────────
+  useEffect(() => {
+    if (!buffer) return;
+    const ctx = listener.context;
+
+    // start the wet send only when playback starts
     if (on && !paused) {
-      if (!sound.current.isPlaying) sound.current.play();
-    } else {
-      sound.current.stop();
+      const src  = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.loop   = true;
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(sendLevel, ctx.currentTime);
+
+      src.connect(gain).connect(convolver);
+      src.start(ctx.currentTime);
+
+      sendSrcRef.current  = src;
+      sendGainRef.current = gain;
     }
-  const ctx = listener.context;
-    const sendGain = ctx.createGain();
-    sendGain.gain.setValueAtTime(sendLevel, ctx.currentTime);
 
-    // get the internal output node of the PositionalAudio
-    const outputNode = sound.current.getOutput();
-    outputNode.connect(sendGain);
-    sendGain.connect(convolver);
-
-    // cleanup when effect re-runs or unmounts
+    // cleanup when stopping or unmounting
     return () => {
-      outputNode.disconnect(sendGain);
-      sendGain.disconnect(convolver);
+      const src  = sendSrcRef.current;
+      const gain = sendGainRef.current;
+      if (src) {
+        try { src.stop(); } catch {}
+        src.disconnect();
+        sendSrcRef.current = null;
+      }
+      if (gain) {
+        gain.disconnect();
+        sendGainRef.current = null;
+      }
     };
-  }, [buffer, dist, volume, on, paused, sendLevel, listener, convolver]);
+  }, [buffer, on, paused, convolver, listener]);
 
+  // ─── JUST UPDATE SEND GAIN (no restart) ─────────
+  useEffect(() => {
+    const gain = sendGainRef.current;
+    if (gain) {
+      gain.gain.setValueAtTime(sendLevel, listener.context.currentTime);
+    }
+  }, [sendLevel, listener]);
 
-  return <positionalAudio ref={sound} args={[listener]} />;
+  return <positionalAudio ref={soundRef} args={[listener]} />;
 }
