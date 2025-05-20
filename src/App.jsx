@@ -1,24 +1,22 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import './App.css';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, TransformControls } from '@react-three/drei';
+import { Perf } from 'r3f-perf';
+import { Html } from '@react-three/drei';
+import { proxy, useSnapshot } from 'valtio';
 
+import './App.css';
 import ImportMenu from './ImportMenu';
 import MultitrackDisplay from './MultitrackDisplay';
-import { useAudioContext } from './AudioContextProvider';
-import { Canvas, useThree } from '@react-three/fiber';
-import { Perf } from 'r3f-perf';
-import { OrbitControls, TransformControls } from '@react-three/drei';
-import EnvComp from './EnvComp';
-import { Html, Effects } from '@react-three/drei';
-import { proxy, useSnapshot } from 'valtio';
 import Sound from './Sound';
 
+// global scene state for transform controls
 const modes = ['translate', 'rotate', 'scale'];
-const state = proxy({ current: null, mode: 0 });
+const sceneState = proxy({ current: null, mode: 0 });
 
 function Controls() {
-  const snap = useSnapshot(state);
+  const snap = useSnapshot(sceneState);
   const scene = useThree((state) => state.scene);
 
   return (
@@ -38,56 +36,55 @@ function Controls() {
   );
 }
 
-function ObjSound(props) {
+function ObjSound({ name, defPos, url, dist, audioCtx, on }) {
+  const meshRef = useRef();
   const [paused, setPaused] = useState(false);
   const [volume, setVolume] = useState(0.5);
-  const snap = useSnapshot(state);
-  const meshRef = useRef();
-  const [mainVol, setMainVol] = useState(0.5);
-  // console.log(meshRef)
+  const [width,  setWidth]  = useState(1);
+  const snap = useSnapshot(sceneState);
+
   return (
     <mesh
-      position={props.defPos}
-      name={props.name}
-      onDoubleClick={() => setPaused(!paused)}
-      onClick={(e) => (e.stopPropagation(), (state.current = props.name))}
-      onContextMenu={(e) => (
-        e.stopPropagation(),
-        snap.current === props.name &&
-          (state.mode = (snap.mode + 1) % modes.length)
-      )}
+      ref={meshRef}
+      position={defPos}
+      name={name}
+      onDoubleClick={() => setPaused((p) => !p)}
+      onClick={(e) => {
+        e.stopPropagation();
+        sceneState.current = name;
+      }}
+      onContextMenu={(e) => {
+        e.stopPropagation();
+        if (snap.current === name) {
+          sceneState.mode = (snap.mode + 1) % modes.length;
+        }
+      }}
     >
-
-      <mesh
-        ref={meshRef}
-        position={[0, volume *5, 0]}
-        visible={true}
-        castShadow
-        receiveShadow
-        scale={volume*10}
-      >
+      {/* Visual indicator: cube scaled by volume */}
+      <mesh position={[0, volume * 5, 0]} scale={volume * 10} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial
-          color={'#ff00ff'}
-          emissive={'#000000'}
-          roughness={0.5}
-          metalness={0.51}
-        />
+        <meshStandardMaterial color="#ff00ff" />
       </mesh>
-      <Html center position={[0,1,0]}>
+
+      {/* HTML slider for volume control */}
+      <Html center position={[0, 1, 0]}>  
+          <div onPointerDown={e => e.stopPropagation()} 
+             style={{ background: 'rgba(0,0,0,0.6)', padding:'4px', borderRadius:'4px' }}>
+          <label style={{ color:'white', fontSize:'0.7em' }}>width</label>
+          <input
+            type="range"
+            min={0} max={1} step={0.01}
+            value={width}
+            onChange={e => setWidth(parseFloat(e.target.value))}
+          />
+        </div>
         <div
           onPointerDown={(e) => e.stopPropagation()}
-          style={{
-            background: 'rgba(0,0,0,0.6)',
-            padding: '4px',
-            borderRadius: '4px',
-          }}
+          style={{ background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px' }}
         >
-          <label style={{ color: 'white', fontSize: '0.7em' }}>
-            {props.name}
-          </label>
+          <label style={{ color: 'white', fontSize: '0.7em' }}>{name}</label>
           <input
-            type='range'
+            type="range"
             min={0}
             max={1}
             step={0.01}
@@ -97,95 +94,101 @@ function ObjSound(props) {
         </div>
       </Html>
 
+      {/* Positional audio component */}
       <Sound
         meshRef={meshRef}
-        name={props.name}
-        on={props.on}
-        paused={paused}
+        url={url}
+        dist={dist}
         volume={volume}
-        dist={props.dist}
-        delayTime={props.delay}
-        url={props.url}
-        mainVol={mainVol}
+        on={on}
+        width={width}
+        paused={paused}
+        audioCtx={audioCtx}
       />
     </mesh>
   );
 }
 
 export default function App() {
-  const audioCont = new THREE.AudioContext();
-  const audioCtx = useAudioContext();
-  const [on, setOn] = useState(false);
-  const [dTime, setDTime] = useState(0);
+  // create or get a single AudioContext
+  const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+  const audioCtx = useMemo(() => new AudioCtxClass(), []);
+
   const [tracks, setTracks] = useState([]);
+  const [playing, setPlaying] = useState(false);
   const sourcesRef = useRef([]);
 
-  
+  // Add new track with default position and distance
   function handleAddTrack(track) {
-    // auto-position tracks in a circle
     const angle = (tracks.length / 5) * Math.PI * 2;
     const distance = 10 + tracks.length * 5;
     const defPos = [Math.cos(angle) * distance, 0, Math.sin(angle) * distance];
-    setTracks([
-      ...tracks,
-      {
-        ...track,
-        dist: distance,
-        defPos,
-        delay: dTime,
-      },
-    ]);
+    setTracks((prev) => [...prev, { ...track, defPos, dist: distance }]);
   }
+
+  // decode ArrayBuffer via native AudioContext
+  const decodeBuffer = (file) =>
+    file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
+
+  async function playAll() {
+    // if (!tracks.length) return;
+    // // stop existing sources
+    // sourcesRef.current.forEach((src) => src.stop());
+    // sourcesRef.current = [];
+
+    // // decode and schedule all
+    // const buffers = await Promise.all(tracks.map((t) => decodeBuffer(t.file)));
+    // buffers.forEach((buffer) => {
+    //   const src = audioCtx.createBufferSource();
+    //   src.buffer = buffer;
+    //   src.connect(audioCtx.destination);
+    //   sourcesRef.current.push(src);
+    // });
+    // const startTime = audioCtx.currentTime + 0.05;
+    // sourcesRef.current.forEach((src) => src.start(startTime));
+    setPlaying(true);
+  }
+
+  function stopAll() {
+    sourcesRef.current.forEach((src) => src.stop());
+    sourcesRef.current = [];
+    
+    setPlaying(false);
+  }
+
   return (
     <>
-    <MultitrackDisplay tracks={tracks} width={500} height={80}/>
-          <ImportMenu onAdd={handleAddTrack} />
-      <div
-        onDoubleClick={() => setOn(!on)}
-        style={{ width: '10vw', height: '10vh', backgroundColor: '#ff00ff' }}
-      >
-        Play / Pause (dbl click)
+      <div style={{ margin: '1em 0' }}>
+        <button onClick={playAll} style={{ marginRight: '0.5em' }}>
+          ▶️ Play All
+        </button>
+        <button onClick={stopAll}>⏹ Stop All</button>
       </div>
 
+      <MultitrackDisplay tracks={tracks} width={500} height={80} />
+      <ImportMenu onAdd={handleAddTrack} />
+
       <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
-        <pointLight position={[5, 10, 5]} intensity={50.8} castShadow />
-
-        {/* <Stage> */}
-
-        <EnvComp />
+        <pointLight position={[5, 10, 5]} intensity={1} castShadow />
+        <ambientLight intensity={0.3} />
 
         <Suspense fallback={null}>
-          <group position={[0, 0, 0]}>
-          {tracks.map((t) => (
+          <group>
+            {tracks.map((t) => (
               <ObjSound
                 key={t.name + t.url}
                 name={t.name}
-                file={t.file}
                 url={t.url}
-                dist={t.dist}
+                file={t.file}
                 defPos={t.defPos}
-                context={audioCont}
-                on={on}
-                delay={t.delay}
-                instrument={t.instrument}
-                stereo={t.isStereo}
+                dist={t.dist}
+                on={playing}
+                audioCtx={audioCtx}
               />
             ))}
           </group>
         </Suspense>
-        {/* <EffectComposer disableNormalPass >
-            <N8AO
-              halfRes
-              color='black'
-              aoRadius={2}
-              intensity={1}
-              aoSamples={6}
-              denoiseSamples={4}
-            />
-     <Bloom luminanceThreshold={0} luminanceSmoothing={0.9} height={300} intensity={2}/>
-          </EffectComposer> */}
 
-        {/* </Stage> */}
         <Controls />
         <Perf deepAnalyze />
       </Canvas>

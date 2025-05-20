@@ -1,123 +1,42 @@
-
-import { useFrame, useLoader, useThree } from '@react-three/fiber';
-import { useEffect, useRef, useState } from 'react';
+// Sound.jsx
+import { useEffect, useRef, useMemo } from 'react';
+import { useLoader, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Drums } from './instruments/Drums';
-import { Bass } from './instruments/Bass';
 
-function Sound({ url, on,file,  paused, volume, context,dist, ...props }) {
+export default function Sound({
+  url,
+  on,
+  paused,
+  volume = 1,
+  dist = 1,
+  audioCtx,
+}) {
   const sound = useRef();
-  const analyserRef = useRef()
-  const audioRef = useRef()
-const audioDataArrayRef = useRef()
-const souRef = useRef()
-const gainRef = useRef();
+  const buffer = useLoader(THREE.AudioLoader, url);
   const { camera } = useThree();
 
-  const buffer = useLoader(THREE.AudioLoader, url);
-
-  const [listener] = useState(() => new THREE.AudioListener());
-
-
-  const audioCtx = listener.context;
-  const delayFx = audioCtx.createDelay();
-const revFx = audioCtx.createConvolver()
-const revGain = audioCtx.createGain()
-const gainNode = audioCtx.createGain();
-
-// audioCtx.connect(gainNode);
-// gainNode.connect(analyser);
-revFx.connect(revGain)
-function loadBuffer(url, callback) {
-  var request = new XMLHttpRequest();
-  request.open("GET", url, true);
-  request.responseType = "arraybuffer";
-
-  request.onload = function () {
-    audioCtx.decodeAudioData(request.response, function (buffer) {
-      callback(buffer);
-    });
-  };
-
-  request.send();
-}
-
-var impulseResponseBuffer = null;
-const reverbNode = audioCtx.createConvolver();
-function loadImpulseResponse() {
-  loadBuffer("/reverb0_55-4-15000-1000.wav", function (buffer) {
-    revFx.buffer = buffer;
+  // Create one real listener
+  const listener = useMemo(() => new THREE.AudioListener(), []);
+  useEffect(() => {
+    camera.add(listener);
+    return () => void camera.remove(listener);
+  }, [camera, listener]);
   
-  });
-}
-loadImpulseResponse();
+
+  // Whenever the buffer or play/volume props change:
   useEffect(() => {
-///Play pause condition
-
-    if (on) {
-      sound.current.play();
-      sound.current.connect(analyserRef.current)
-    } else if (!on) {
-      sound.current.pause();
-    } 
-
-
-/////  Toggle and mute each mesh separately
-    if (paused) {
-      sound.current.setVolume(0);
-    } else if (!paused) {
-      sound.current.setVolume(1);
-    }
-  }, [on, paused]);
-
-
-  analyserRef.current = new AnalyserNode(listener.context)
-
-
-
-  analyserRef.current.smoothingTimeConstant = 1;
-  analyserRef.current.maxDecibels = -10
-analyserRef.current.minDecibels = -55
-
-
-  const mainVolume = audioCtx.createGain()
-// useEffect(() =>{
-revGain.connect(mainVolume)
-  mainVolume.gain.setValueAtTime(props.mainVol, audioCtx.currentTime)
-  revGain.gain.setValueAtTime(props.delayTime, audioCtx.currentTime);
-  // gainNode.gain.setTargetAtTime(paused ? 0 : volume, now, 0.01);
-
-// },[props.mainVol])
-sound.current?.setVolume(volume)
-
-// sound.current?.setFilter(mainVolume)
-useEffect(()=>{
-
-  // sound.current?.setVolume(props.mainVol*2)
-},[props.mainVol])
-///// Delay updating
- sound.current?.gain.connect(analyserRef.current)
-
-
-  useEffect(() => {
-
+    if (!sound.current || !buffer) return;
     sound.current.setBuffer(buffer);
-
     sound.current.setRefDistance(dist);
     sound.current.setLoop(true);
+    sound.current.setVolume(volume);
 
-    camera.add(listener);
-    return () => camera.remove(listener);
-  }, []);
+    if (on && !paused) {
+      if (!sound.current.isPlaying) sound.current.play();
+    } else {
+      sound.current.stop();
+    }
+  }, [buffer, dist, volume, on, paused]);
 
-  return (<><positionalAudio ref={sound} args={[listener]} setDirectionalCone={[10,10,10]} castShadow/>
-
-    
-  </>);
+  return <positionalAudio ref={sound} args={[listener]} />;
 }
-
-
-
-
-
-export default Sound;
