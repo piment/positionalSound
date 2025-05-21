@@ -32,7 +32,8 @@ export function Controls() {
   );
 }
 
-export function ObjSound({ name, defPos, url, dist, audioCtx, on, listener, convolver }) {
+export function ObjSound({ name, defPos,   group,
+  url, dist, audioCtx, on, listener, convolver }) {
   const meshRef = useRef();
   const [paused, setPaused] = useState(false);
   const [volume, setVolume] = useState(0.5);
@@ -57,15 +58,16 @@ export function ObjSound({ name, defPos, url, dist, audioCtx, on, listener, conv
         }
       }}
     >
+         
       {/* Visual indicator: cube scaled by volume */}
       <mesh
         position={[0, volume * 5, 0]}
         scale={volume * 10}
         castShadow
         receiveShadow
-      >
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color='#ff00ff' />
+      >   {group && <primitive object={group.clone()} />}
+        {/* <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color='#ff00ff' /> */}
       </mesh>
 
       {/* HTML slider for volume control */}

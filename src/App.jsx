@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, TransformControls } from '@react-three/drei';
+import { OrbitControls, TransformControls, useGLTF } from '@react-three/drei';
 import { Perf } from 'r3f-perf';
 
 
@@ -9,11 +9,25 @@ import './App.css';
 import ImportMenu from './ImportMenu';
 import MultitrackDisplay from './MultitrackDisplay';
 import { Controls, ObjSound } from './ObjControls';
+import { Drumkit } from './instruments/Drumkit';
+import EnvComp from './EnvComp';
 
 
 
 
 export default function App() {
+
+  const { scene: drumScene } = useGLTF('/drumkitOPT.glb');
+  
+  // grab only the Group children
+  const allGroups = useMemo(
+    () => drumScene.children.filter((c) => c.type === 'Group'),
+    [drumScene]
+  );
+
+
+
+
   // create or get a single AudioContext
   // const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
   // const audioCtx = useMemo(() => new AudioCtxClass(), []);
@@ -98,11 +112,15 @@ reverbGain.connect(listener.getInput());
   }, [busLevel, reverbGain, audioCtx]);
   
   // Add new track with default position and distance
-  function handleAddTrack(track) {
-    const angle = (tracks.length / 5) * Math.PI * 2;
+  function handleAddTrack({ name, file, url, groupName }) {
+    const groupObj = allGroups.find((g) => g.name === groupName);
+    const angle    = (tracks.length / 5) * Math.PI * 2;
     const distance = 10 + tracks.length * 5;
-    const defPos = [Math.cos(angle) * distance, 0, Math.sin(angle) * distance];
-    setTracks((prev) => [...prev, { ...track, defPos, dist: distance }]);
+    const defPos   = [Math.cos(angle)*distance, 0, Math.sin(angle)*distance];
+    setTracks((t) => [
+      ...t,
+      { name, file, url, group: groupObj, defPos, dist: distance }
+    ]);
   }
 
   // decode ArrayBuffer via native AudioContext
@@ -187,7 +205,7 @@ reverbGain.connect(listener.getInput());
       </div>
       </div>
       <MultitrackDisplay tracks={tracks} width={500} height={80} />
-      <ImportMenu onAdd={handleAddTrack} />
+      <ImportMenu onAdd={handleAddTrack}     groupNames={allGroups.map((g) => g.name)} />
   
       <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
         <pointLight position={[5, 10, 5]} intensity={1} castShadow />
@@ -207,11 +225,14 @@ reverbGain.connect(listener.getInput());
                 audioCtx={audioCtx}
                 listener={listener}
                   convolver={convolver}
+                  group={t.group}
               />
             ))}
           </group>
         </Suspense>
-
+{/* <Drumkit/> */}
+{/* <ambientLight intensity={10}/> */}
+<EnvComp/>
         <Controls />
         <Perf deepAnalyze />
       </Canvas>
