@@ -73,3 +73,14 @@ position: absolute;
   top: 0;
   border: red solid 2px;
 }
+
+.rev-params{
+  display: flex;
+}
+
+.param {
+  display: flex;
+  width: 15vw;
+  flex-direction: column;
+  background: transparent;
+}
