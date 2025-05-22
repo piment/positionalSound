@@ -11,7 +11,7 @@ import Waveform from './Waveform';
  */
 export default function MultitrackDisplay({ tracks, width = 400, height = 10 }) {
   if (!tracks || tracks.length === 0) return null;
-
+console.log(tracks)
   return (
     <div
       className="multitrack-display"
@@ -28,6 +28,7 @@ export default function MultitrackDisplay({ tracks, width = 400, height = 10 }) 
           key={track.id || `${track.name}-${idx}`}
           className="track-row"
           style={{
+            height: '30px',
             display: 'flex',
             alignItems: 'center',
             marginBottom: '0.5em',
@@ -46,7 +47,7 @@ export default function MultitrackDisplay({ tracks, width = 400, height = 10 }) 
           >
             {track.name}
           </div>
-          <Waveform file={track.file} width={width} height={height} />
+          <Waveform file={track.file} width={width} height={50} />
         </div>
       ))}
     </div>

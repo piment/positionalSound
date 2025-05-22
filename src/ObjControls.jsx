@@ -32,8 +32,8 @@ export function Controls() {
   );
 }
 
-export function ObjSound({ name, defPos,   group,
-  url, dist, audioCtx, on, listener, convolver }) {
+export function ObjSound({ name,  group, defPos, dist,  subs = [],
+  on, listener, convolver, onSubsChange }) {
   const meshRef = useRef();
   const [paused, setPaused] = useState(false);
   const [volume, setVolume] = useState(0.5);
@@ -42,22 +42,22 @@ export function ObjSound({ name, defPos,   group,
   const snap = useSnapshot(sceneState);
   const clonedGroup = useMemo(() => {
     if (!group) return null;
-    const gClone = group.clone(true);
-    gClone.updateMatrixWorld(true);
-    gClone.traverse((node) => {
-      if (node.isMesh && node.material) {
-        node.material = Array.isArray(node.material)
-          ? node.material.map((m) => m.clone())
-          : node.material.clone();
+    const c = group.clone(true);
+    c.updateMatrixWorld();
+    c.traverse((n) => {
+      if (n.isMesh && n.material) {
+        n.material = Array.isArray(n.material)
+          ? n.material.map((m) => m.clone())
+          : n.material.clone();
       }
     });
-    return gClone;
-  }, [group]);
-// console.log(group)
+    return c;
+  }, [group]);;
+console.log(clonedGroup)
   return (
-    <mesh
+   <group
       ref={meshRef}
-      // position={defPos}
+      // position={defPos}          // <<–– actually place it in the world
       name={name}
       onDoubleClick={() => setPaused((p) => !p)}
       onClick={(e) => {
@@ -71,41 +71,51 @@ export function ObjSound({ name, defPos,   group,
         }
       }}
     >
-         
-      {/* Visual indicator: cube scaled by volume */}
-      <mesh
-      
-        // position={[group.position.x,group.position.y + volume * 5, group.position.z]}
-        scale={volume * 10}
-        castShadow
-        receiveShadow
-      >  
-            {clonedGroup && <primitive object={clonedGroup} /> }
-       {/* {group && <primitive object={group.clone()}   scale={volume * 10} />} */}
-        {/* <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color='#ff00ff' /> */}
-      </mesh>
+      {/** Render your drum-kit sub-group **/}
+      {clonedGroup && <primitive object={clonedGroup} />}
 
-      {/* HTML slider for volume control */}
-      <Html center position={[0, 1, 0]}>
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          style={{
-            background: 'rgba(0,0,0,0.6)',
-            padding: '4px',
-            borderRadius: '4px',
+      {/** Then hook up all your subs’ Sound nodes **/}
+      {subs.map((sub, idx) => (
+        <>
+       
+        <Sound
+          key={sub.name}
+          meshRef={meshRef}
+          url={sub.url}
+          dist={dist}
+          volume={sub.volume * volume}
+          on={on}
+          paused={paused}
+          listener={listener}
+          convolver={convolver}
+          sendLevel={sub.sendLevel}
+          onSendLevelChange={(val) => {
+            const next = subs.map((s, j) =>
+              j === idx ? { ...s, sendLevel: val } : s
+            );
+            onSubsChange(next);
           }}
-        >
-          <label style={{ color: 'white', fontSize: '0.7em' }}>Send</label>
-          <input
-            type='range'
-            min={0}
-            max={1}
-            step={0.01}
-            value={sendLevel}
-            onChange={(e) => setSendLevel(parseFloat(e.target.value))}
-          />
-        </div>
+        />
+     
+
+
+  
+      <Html center position={[0, 1, 0]}>
+        <div onPointerDown={e => e.stopPropagation()} >
+        <label >{sub.name} Send</label>
+        <input
+          type="range"
+          min={0} max={1} step={0.01}
+          value={sub.sendLevel}
+          onChange={e => {
+            const val = parseFloat(e.target.value);
+            const next = subs.map((s,j) =>
+              j === idx ? { ...s, sendLevel: val } : s
+            );
+            onSubsChange(next);
+          }}
+        />
+      </div>
         <div
           onPointerDown={(e) => e.stopPropagation()}
           style={{
@@ -124,22 +134,9 @@ export function ObjSound({ name, defPos,   group,
             onChange={(e) => setVolume(parseFloat(e.target.value))}
           />
         </div>
-      </Html>
-
-      {/* Positional audio component */}
-      <Sound
-        meshRef={meshRef}
-        url={url}
-        dist={dist}
-        volume={volume}
-        on={on}
-        width={width}
-        paused={paused}
-        audioCtx={audioCtx}
-        listener={listener}
-        convolver={convolver}
-        sendLevel={sendLevel}
-      />
-    </mesh>
+      </Html> </>
+ ))}
+    
+    </group>
   );
 }

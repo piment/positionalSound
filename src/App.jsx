@@ -112,18 +112,35 @@ export default function App() {
   }, [busLevel, reverbGain, audioCtx]);
 
   // Add new track with default position and distance
-  function handleAddTrack({ name, file, url, groupName }) {
+  function handleAddTrack({ name, url, file, groupName }) {
     const groupObj = allGroups.find((g) => g.name === groupName);
-    const angle = (tracks.length / 5) * Math.PI * 2;
-    const distance = 10 + tracks.length * 5;
-  // const defPos = groupObj.position
-    const defPos = [Math.cos(angle) * distance, 0, Math.sin(angle) * distance];
-    setTracks((t) => [
-      ...t,
-      { name, file, url, group: groupObj, defPos, dist: distance },
-    ]);
+    if (!groupObj) return;
+    setTracks((prev) => {
+      const idx = prev.findIndex((t) => t.group === groupObj);
+      if (idx >= 0) {
+        // append a new mic to existing mesh
+        const next = [...prev];
+        next[idx].subs.push({ name, url,file, sendLevel: 0, volume: 1 });
+        return next;
+      } else {
+        // brand new mesh + first mic
+        const angle    = (prev.length / 5) * Math.PI * 2;
+        const dist     = 10 + prev.length * 5;
+        const defPos   = [Math.cos(angle)*dist, 0, Math.sin(angle)*dist];
+        return [
+          ...prev,
+          { group: groupObj, defPos, dist, subs: [{ name, url,file, sendLevel: 0, volume: 1 }] }
+        ];
+      }
+    });
   }
-
+const flatTracks = tracks.flatMap((t) =>
+  t.subs.map((s) => ({
+    name: s.name,
+    file: s.file,
+    url:  s.url,
+  }))
+);
   // decode ArrayBuffer via native AudioContext
   const decodeBuffer = (file) =>
     file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
@@ -206,7 +223,7 @@ export default function App() {
           />
         </div>
       </div>
-      <MultitrackDisplay tracks={tracks} width={500} height={80} />
+      <MultitrackDisplay tracks={flatTracks} width={500} height={80} />
       <ImportMenu
         onAdd={handleAddTrack}
         groupNames={allGroups.map((g) => g.name)}
@@ -217,7 +234,7 @@ export default function App() {
 
         <Suspense fallback={null}>
           <group>
-            {tracks.map((t) => (
+            {tracks.map((t, i) => (
               <ObjSound
                 key={t.name + t.url}
                 name={t.name}
@@ -226,10 +243,18 @@ export default function App() {
                 defPos={t.defPos}
                 dist={t.dist}
                 on={playing}
+                group={t.group}
                 audioCtx={audioCtx}
                 listener={listener}
                 convolver={convolver}
-                group={t.group}
+                   subs={t.subs}
+                 onSubsChange={(newSubs) => {
+      setTracks((prev) => {
+        const copy = [...prev];
+        copy[i].subs = newSubs;
+        return copy;
+      });
+    }}
               />
             ))}
           </group>
