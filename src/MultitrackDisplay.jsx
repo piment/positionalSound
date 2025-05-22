@@ -1,4 +1,3 @@
-// MultitrackDisplay.jsx
 import React from 'react';
 import Waveform from './Waveform';
 
@@ -8,10 +7,20 @@ import Waveform from './Waveform';
  * @param {Array<{ id?: string, name: string, file: File }>} props.tracks
  * @param {number} [props.width=400]
  * @param {number} [props.height=60]
+ * @param {(trackIndex: number) => void} props.onDelete called when deleting a track
+ * @param {(trackIndex: number, newGroup: string) => void} props.onReassign called when reassigning a track
+ * @param {string[]} props.groupNames list of available groups for reassignment
  */
-export default function MultitrackDisplay({ tracks, width = 400, height = 10 }) {
+export default function MultitrackDisplay({
+  tracks,
+  width = 400,
+  height = 10,
+  onDelete,
+  onReassign,
+  groupNames = [],
+}) {
   if (!tracks || tracks.length === 0) return null;
-console.log(tracks)
+
   return (
     <div
       className="multitrack-display"
@@ -28,16 +37,17 @@ console.log(tracks)
           key={track.id || `${track.name}-${idx}`}
           className="track-row"
           style={{
-            height: '30px',
+            // height: '40px',
             display: 'flex',
-            alignItems: 'center',
-            marginBottom: '0.5em',
+            // alignItems: 'center',
+            // marginBottom: '0.5em',
           }}
         >
+          {/* Track label */}
           <div
             className="track-label"
             style={{
-              width: '100px',
+              width: '120px',
               fontSize: '0.9em',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
@@ -47,7 +57,36 @@ console.log(tracks)
           >
             {track.name}
           </div>
-          <Waveform file={track.file} width={width} height={50} />
+
+          {/* Reassign dropdown */}
+          {onReassign && (
+            <select
+              value={track.name}
+              onChange={(e) => onReassign(idx, e.target.value)}
+              style={{ marginRight: '0.5em' }}
+            >
+              {groupNames.map((gName) => (
+                <option key={gName} value={gName}>
+                  {gName}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Delete button */}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(idx)}
+              style={{ marginRight: '0.5em' }}
+            >
+              ✖
+            </button>
+          )}
+
+          {/* Waveform preview */}
+          <div style={{ flexGrow: 1 , display: 'flex', alignItems:'center'}}>
+            <Waveform file={track.file} width={width} height={height} />
+          </div>
         </div>
       ))}
     </div>

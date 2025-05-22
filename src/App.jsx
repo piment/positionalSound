@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useGLTF } from '@react-three/drei';
 import { Perf } from 'r3f-perf';
-
+import { nanoid } from 'nanoid';
 import './App.css';
 import ImportMenu from './ImportMenu';
 import MultitrackDisplay from './MultitrackDisplay';
@@ -115,32 +115,43 @@ export default function App() {
   function handleAddTrack({ name, url, file, groupName }) {
     const groupObj = allGroups.find((g) => g.name === groupName);
     if (!groupObj) return;
+
+
+     const newSub = {
+    id:    nanoid(),     // ← unique
+    name,
+    file,
+    url,
+    sendLevel: 0,
+    volume:    1,
+  };
+
+  console.log(newSub)
     setTracks((prev) => {
       const idx = prev.findIndex((t) => t.group === groupObj);
       if (idx >= 0) {
         // append a new mic to existing mesh
         const next = [...prev];
-        next[idx].subs.push({ name, url,file, sendLevel: 0, volume: 1 });
+        next[idx].subs.push(newSub);
         return next;
       } else {
         // brand new mesh + first mic
-        const angle    = (prev.length / 5) * Math.PI * 2;
-        const dist     = 10 + prev.length * 5;
-        const defPos   = [Math.cos(angle)*dist, 0, Math.sin(angle)*dist];
+        const angle = (prev.length / 5) * Math.PI * 2;
+        const dist = 10 + prev.length * 5;
+        const defPos = [Math.cos(angle) * dist, 0, Math.sin(angle) * dist];
         return [
           ...prev,
-          { group: groupObj, defPos, dist, subs: [{ name, url,file, sendLevel: 0, volume: 1 }] }
+          {
+            group: groupObj,
+            defPos,
+            dist,
+            subs: [newSub],
+          },
         ];
       }
     });
   }
-const flatTracks = tracks.flatMap((t) =>
-  t.subs.map((s) => ({
-    name: s.name,
-    file: s.file,
-    url:  s.url,
-  }))
-);
+
   // decode ArrayBuffer via native AudioContext
   const decodeBuffer = (file) =>
     file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
@@ -155,6 +166,78 @@ const flatTracks = tracks.flatMap((t) =>
 
     setPlaying(false);
   }
+
+const flatIndexMap = useMemo(() => {
+  let acc = [];
+  tracks.forEach((trackBucket, meshIdx) => {
+    trackBucket.subs.forEach((sub, subIdx) => {
+   
+     acc.push({ meshIdx, subIdx,  id: sub.id ?? `${meshIdx}-${subIdx}`, });
+    });
+  });
+  return acc;
+}, [tracks]);
+
+
+  const flatTracks = flatIndexMap.map(({ meshIdx, subIdx, id }) => {
+  const s = tracks[meshIdx].subs[subIdx];
+  // console.log(id)
+  return { id, name: s.name, file: s.file, url: s.url };
+});
+// 3) handle delete
+function handleDelete(flatIdx) {
+  const { meshIdx, subIdx } = flatIndexMap[flatIdx];
+
+  // 1) remove from your state
+  setTracks((prev) => {
+    const clone = [...prev];
+    clone[meshIdx].subs = clone[meshIdx].subs.filter((_, i) => i !== subIdx);
+    if (clone[meshIdx].subs.length === 0) clone.splice(meshIdx, 1);
+    return clone;
+  });
+
+  // 2) force all <Sound> to stop, then restart the survivors
+  setPlaying(false);
+  // next tick, turn it back on
+  setTimeout(() => setPlaying(true), 0);
+}
+
+
+
+// 4) handle reassignment
+function handleReassign(flatIdx, newGroupName) {
+  const { meshIdx, subIdx } = flatIndexMap[flatIdx];
+  const newGroup = allGroups.find((g) => g.name === newGroupName);
+  if (!newGroup) return;
+  setTracks((prev) => {
+    const clone = [...prev];
+    // remove sub from old bucket
+    const [subObj] = clone[meshIdx].subs.splice(subIdx, 1);
+    // if old bucket empty, drop it
+    if (clone[meshIdx].subs.length === 0) {
+      clone.splice(meshIdx, 1);
+    }
+    // find or create new bucket for newGroup
+    let targetIdx = clone.findIndex((t) => t.group === newGroup);
+    if (targetIdx < 0) {
+      const angle    = (clone.length / 5) * Math.PI * 2;
+      const distance = 10 + clone.length * 5;
+      const defPos   = [
+        Math.cos(angle) * distance,
+        0,
+        Math.sin(angle) * distance,
+      ];
+      clone.push({ group: newGroup, defPos, dist: distance, subs: [] });
+      targetIdx = clone.length - 1;
+    }
+    // add sub into its new bucket
+    clone[targetIdx].subs.push(subObj);
+    return clone;
+  });
+}
+
+// 5) render
+
 
   return (
     <>
@@ -223,7 +306,9 @@ const flatTracks = tracks.flatMap((t) =>
           />
         </div>
       </div>
-      <MultitrackDisplay tracks={flatTracks} width={500} height={80} />
+      <MultitrackDisplay tracks={flatTracks} width={500} height={30}      groupNames={allGroups.map((g) => g.name)}
+      onDelete={handleDelete}
+      onReassign={handleReassign}/>
       <ImportMenu
         onAdd={handleAddTrack}
         groupNames={allGroups.map((g) => g.name)}
@@ -247,14 +332,14 @@ const flatTracks = tracks.flatMap((t) =>
                 audioCtx={audioCtx}
                 listener={listener}
                 convolver={convolver}
-                   subs={t.subs}
-                 onSubsChange={(newSubs) => {
-      setTracks((prev) => {
-        const copy = [...prev];
-        copy[i].subs = newSubs;
-        return copy;
-      });
-    }}
+                subs={t.subs}
+                onSubsChange={(newSubs) => {
+                  setTracks((prev) => {
+                    const copy = [...prev];
+                    copy[i].subs = newSubs;
+                    return copy;
+                  });
+                }}
               />
             ))}
           </group>
