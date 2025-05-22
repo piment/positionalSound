@@ -100,7 +100,7 @@ console.log(clonedGroup)
 
 
   
-      <Html center position={[0, 1, 0]}>
+      <Html center position={[idx/5, 1, 0]}>
         <div onPointerDown={e => e.stopPropagation()} >
         <label >{sub.name} Send</label>
         <input
@@ -130,8 +130,12 @@ console.log(clonedGroup)
             min={0}
             max={1}
             step={0.01}
-            value={volume}
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
+         value={sub.volume}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  const next = subs.map((s, j) => (j === idx ? { ...s, volume: val } : s));
+                  onSubsChange(next);
+                }}
           />
         </div>
       </Html> </>
