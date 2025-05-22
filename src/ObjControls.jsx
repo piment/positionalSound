@@ -40,11 +40,24 @@ export function ObjSound({ name, defPos,   group,
   const [width, setWidth] = useState(1);
   const [sendLevel, setSendLevel] = useState(0);
   const snap = useSnapshot(sceneState);
-
+  const clonedGroup = useMemo(() => {
+    if (!group) return null;
+    const gClone = group.clone(true);
+    gClone.updateMatrixWorld(true);
+    gClone.traverse((node) => {
+      if (node.isMesh && node.material) {
+        node.material = Array.isArray(node.material)
+          ? node.material.map((m) => m.clone())
+          : node.material.clone();
+      }
+    });
+    return gClone;
+  }, [group]);
+// console.log(group)
   return (
     <mesh
       ref={meshRef}
-      position={defPos}
+      // position={defPos}
       name={name}
       onDoubleClick={() => setPaused((p) => !p)}
       onClick={(e) => {
@@ -61,11 +74,14 @@ export function ObjSound({ name, defPos,   group,
          
       {/* Visual indicator: cube scaled by volume */}
       <mesh
-        position={[0, volume * 5, 0]}
+      
+        // position={[group.position.x,group.position.y + volume * 5, group.position.z]}
         scale={volume * 10}
         castShadow
         receiveShadow
-      >   {group && <primitive object={group.clone()} />}
+      >  
+            {clonedGroup && <primitive object={clonedGroup} /> }
+       {/* {group && <primitive object={group.clone()}   scale={volume * 10} />} */}
         {/* <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color='#ff00ff' /> */}
       </mesh>
