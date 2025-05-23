@@ -1,20 +1,15 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, TransformControls } from '@react-three/drei';
-
-import { Html } from '@react-three/drei';
-import { proxy, useSnapshot } from 'valtio';
+import React, { useRef, useState } from 'react';
+import { useSnapshot, proxy } from 'valtio';
+import { Html, OrbitControls, TransformControls } from '@react-three/drei';
 import Sound from './Sound';
+import { useThree } from '@react-three/fiber';
 
-// global scene state for transform controls
 const modes = ['translate', 'rotate', 'scale'];
 const sceneState = proxy({ current: null, mode: 0 });
 
 export function Controls() {
   const snap = useSnapshot(sceneState);
   const scene = useThree((state) => state.scene);
-
   return (
     <>
       {snap.current && (
@@ -23,43 +18,31 @@ export function Controls() {
           mode={modes[snap.mode]}
         />
       )}
-      <OrbitControls
-        makeDefault
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 1.75}
-      />
+      <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.75} />
     </>
   );
 }
 
-export function ObjSound({ name,  group, defPos, dist,  subs = [],
-  on, listener, convolver, onSubsChange }) {
-  const meshRef = useRef();
+export function ObjSound({
+  name,
+  defPos = [0, 0, 0],
+  dist = 1,
+  subs = [],
+  on,
+  listener,
+  convolver,
+  onSubsChange,
+  children,
+}) {
+  const groupRef = useRef();
   const [paused, setPaused] = useState(false);
-  const [volume, setVolume] = useState(0.5);
-  const [width, setWidth] = useState(1);
-  const [sendLevel, setSendLevel] = useState(0);
   const snap = useSnapshot(sceneState);
-  const clonedGroup = useMemo(() => {
-    if (!group) return null;
-    const c = group.clone(true);
-    c.updateMatrixWorld();
-    c.traverse((n) => {
-      if (n.isMesh && n.material) {
-        n.material = Array.isArray(n.material)
-          ? n.material.map((m) => m.clone())
-          : n.material.clone();
-      }
-    });
-    return c;
-  }, [group]);;
-// console.log(subs)
+
   return (
-   <group
-      ref={meshRef}
-      // position={defPos}          // <<–– actually place it in the world
+    <group
+      ref={groupRef}
+      position={defPos}
       name={name}
-      // onDoubleClick={() => setPaused((p) => !p)}
       onClick={(e) => {
         e.stopPropagation();
         sceneState.current = name;
@@ -71,71 +54,64 @@ export function ObjSound({ name,  group, defPos, dist,  subs = [],
         }
       }}
     >
-      {/** Render your drum-kit sub-group **/}
-      {clonedGroup && <primitive object={clonedGroup} />}
+      {/* render the visual */}
+      {children}
 
-      {/** Then hook up all your subs’ Sound nodes **/}
+      {/* audio nodes */}
       {subs.map((sub, idx) => (
-        <>
-       
         <Sound
-          key={sub.name}
-          meshRef={meshRef}
+          key={sub.id}
+          meshRef={groupRef}
           url={sub.url}
           dist={dist}
-          volume={sub.volume * volume}
+          volume={sub.volume}
           on={on}
           paused={paused}
           listener={listener}
           convolver={convolver}
           sendLevel={sub.sendLevel}
           onSendLevelChange={(val) => {
-            const next = subs.map((s, j) =>
-              j === idx ? { ...s, sendLevel: val } : s
-            );
+            const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: val } : s));
             onSubsChange(next);
           }}
         />
-     
+      ))}
 
-
-   {snap.current === name && (
-            <Html center position={[0+idx * 0.6, 1  , 0]}>
-              <div onPointerDown={(e) => e.stopPropagation()} style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4, marginBottom: 4 }}>
-                <label style={{ color: 'white', fontSize: '0.7em' }}>{sub.name} Volume</label>
+      {/* only show sliders when selected */}
+      {snap.current === name && (
+        <Html center position={[0, 1.5, 0]}>
+          {subs.map((sub, idx) => (
+            <div key={sub.id} style={{ marginBottom: 8 }}>
+              <div style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4 }}>
+                <label style={{ color: '#fff', fontSize: '0.7em' }}>{sub.name} Vol</label>
                 <input
                   type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
+                  min={0} max={1} step={0.01}
                   value={sub.volume}
                   onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    const next = subs.map((s, j) => (j === idx ? { ...s, volume: val } : s));
+                    const v = parseFloat(e.target.value);
+                    const next = subs.map((s, j) => (j === idx ? { ...s, volume: v } : s));
                     onSubsChange(next);
                   }}
                 />
               </div>
-              <div onPointerDown={(e) => e.stopPropagation()} style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4 }}>
-                <label style={{ color: 'white', fontSize: '0.7em' }}>{sub.name} Send</label>
+              <div style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4, marginTop: 4 }}>
+                <label style={{ color: '#fff', fontSize: '0.7em' }}>{sub.name} Send</label>
                 <input
                   type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
+                  min={0} max={1} step={0.01}
                   value={sub.sendLevel}
                   onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: val } : s));
+                    const v = parseFloat(e.target.value);
+                    const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: v } : s));
                     onSubsChange(next);
                   }}
                 />
               </div>
-            </Html>
-          )}
-           </>
- ))}
-    
+            </div>
+          ))}
+        </Html>
+      )}
     </group>
   );
 }

@@ -1,31 +1,30 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, TransformControls, useGLTF } from '@react-three/drei';
 import { Perf } from 'r3f-perf';
 import { nanoid } from 'nanoid';
 import './App.css';
 import ImportMenu from './ImportMenu';
 import MultitrackDisplay from './MultitrackDisplay';
 import { Controls, ObjSound } from './ObjControls';
-import { Drumkit } from './instruments/Drumkit';
 import EnvComp from './EnvComp';
 import Sound from './Sound';
+import {Kick} from './instruments/drumkit/Kick'
+import {Snare} from './instruments/drumkit/Snare'
+import { Hihat } from './instruments/drumkit/Hihat';
+
+
+
+const COMPONENTS = { snare: Snare, kick: Kick, hihat : Hihat };
 
 export default function App() {
-  // const { scene: drumScene } = useGLTF('/drumkitpartedOPT.glb');
 
-  // // grab only the Group children
-  // const allGroups = useMemo(
-  //   () => drumScene.children.filter((c) => c.type === 'Group'),
-  //   [drumScene]
+  // const { scene } = useGLTF('/drumkitpartedOPT.glb');
+
+  //   const allParts = useMemo(
+  //   () => scene.children.filter((c) => c.type === 'Group').map((g) => g.name),
+  //   [scene]
   // );
-  const { scene } = useGLTF('/drumkitpartedOPT.glb');
-
-    const allParts = useMemo(
-    () => scene.children.filter((c) => c.type === 'Group').map((g) => g.name),
-    [scene]
-  );
 
   // create or get a single AudioContext
   // const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
@@ -361,13 +360,14 @@ function toggleAssign(trackObj, targetMesh) {
       /> */}
       {/* Left: Parts palette */}
       <div style={{ width:200, borderRight:'1px solid #333' }} className='panel-left'>
-        {allParts.map((p) => (
+      {Object.keys(COMPONENTS).map((part) => (
           <button
-            key={p}
-            onClick={() => addMesh(p)}
-            disabled={meshes.includes(p)}
+            key={part}
+            // disabled={meshes.includes(part)}
+            onClick={() => addMesh(part)}
+            style={{ display:'block', margin:'4px 0' }}
           >
-            {meshes.includes(p) ? 'Added' : 'Add'} {p}
+            {meshes.includes(part) ? 'Spawned' : 'Spawn'} {part}
           </button>
         ))}
       </div>
@@ -378,41 +378,32 @@ function toggleAssign(trackObj, targetMesh) {
           <ambientLight intensity={10.3}/>
           <pointLight position={[5,10,5]} intensity={1}/>
 
-          {meshes.map((part, i) => {
-            const group = scene.getObjectByName(part);
-            const pos = new THREE.Vector3();
-            group.getWorldPosition(pos);
-            
-            // look up all tracks assigned here
-    const subs = assignments[part] || [];
-console.log('SUUUUUUUUUUB', subs)
-            return (
-              <ObjSound
-                key={part}
-                name={part}
-                group={group}
-                defPos={[pos.x,pos.y,pos.z]}
-                subs={subs}
-                on={playing}
-                url={subs.url}
-                // group={t.group}
-                audioCtx={audioCtx}
-                listener={listener}
-                convolver={convolver}
-                // subs={t.subs}
-                // onSubsChange={(newSubs) => {
-                //   setTracks((prev) => {
-                //     const copy = [...prev];
-                //     copy[i].subs = newSubs;
-                //     return copy;
-                //   });
-                // }}
-       onSubsChange={(newSubs) =>
-setAssignments(a => ({ ...a, [part]: newSubs }))
-}
-              />
-            );
-          })}
+          {meshes.map((part, idx) => {
+              const Part = COMPONENTS[part];
+              // auto-circle position
+              const angle = (idx / meshes.length) * Math.PI * 2;
+              const dist = 10 + idx * 5;
+              // const defPos = [Math.cos(angle) * dist, 0, Math.sin(angle) * dist];
+              const subs = assignments[part] || [];
+
+              return (
+                <ObjSound
+                  key={part}
+                  name={part}
+                  // defPos={defPos}
+                  dist={dist}
+                  subs={subs}
+                  on={playing}
+                  listener={listener}
+                  convolver={convolver}
+                  onSubsChange={(newSubs) =>
+                    setAssignments((a) => ({ ...a, [part]: newSubs }))
+                  }
+                >
+                  <Part />
+                </ObjSound>
+              );
+            })}
 
           {/* Play unassigned tracks as well (just at listener position) */}
           {(assignments.null||[]).map((sub) => {
