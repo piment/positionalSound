@@ -17,50 +17,57 @@ export default function Sound({
   const buffer   = useLoader(THREE.AudioLoader, url);
   const { camera } = useThree();
 
-  // these refs hold our wet‐send nodes
+  // wet send nodes
   const sendSrcRef  = useRef(null);
   const sendGainRef = useRef(null);
 
-  // attach the shared listener once
+  // attach listener once
   useEffect(() => {
     camera.add(listener);
-    return () => void camera.remove(listener);
+    return () => camera.remove(listener);
   }, [camera, listener]);
 
-  // ─── DRY (positional) PATH ───────────────────────
+  // ─── DRY PATH ─────────────────────────────────
   useEffect(() => {
     const sound = soundRef.current;
     if (!sound || !buffer) return;
 
-    // configure the PannerNode
+
     const p = sound.panner;
     p.panningModel = 'equalpower';
     p.rolloffFactor = 0;
 
-    // set up the buffer and volume
     sound.setBuffer(buffer);
     sound.setRefDistance(dist);
     sound.setLoop(true);
-    sound.setVolume(volume);
 
-    // play or stop the dry path
-    if (on && !paused) sound.play();
-    else              sound.stop();
+    // guard volume
+    const vol = Number.isFinite(volume) ? volume : 1;
+    sound.setVolume(vol);
+
+    // playback
+    if (on && !paused) {
+      if (!sound.isPlaying) sound.play();
+    } else {
+      try { sound.stop(); } catch {}
+    }
   }, [buffer, dist, volume, on, paused]);
 
-  // ─── WET (reverb send) PATH ─────────────────────
+  // ─── WET PATH (reverb send) ─────────────────────
   useEffect(() => {
     if (!buffer) return;
     const ctx = listener.context;
 
-    // start the wet send only when playback starts
+    // start or stop wet source
     if (on && !paused) {
       const src  = ctx.createBufferSource();
       src.buffer = buffer;
       src.loop   = true;
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(sendLevel, ctx.currentTime);
+      // guard sendLevel
+      const sl = Number.isFinite(sendLevel) ? sendLevel : 0;
+      gain.gain.setValueAtTime(sl, ctx.currentTime);
 
       src.connect(gain).connect(convolver);
       src.start(ctx.currentTime);
@@ -69,7 +76,6 @@ export default function Sound({
       sendGainRef.current = gain;
     }
 
-    // cleanup when stopping or unmounting
     return () => {
       const src  = sendSrcRef.current;
       const gain = sendGainRef.current;
@@ -85,11 +91,12 @@ export default function Sound({
     };
   }, [buffer, on, paused, convolver, listener]);
 
-  // ─── JUST UPDATE SEND GAIN (no restart) ─────────
+  // ─── UPDATE SEND LEVEL ─────────────────────────
   useEffect(() => {
     const gain = sendGainRef.current;
     if (gain) {
-      gain.gain.setValueAtTime(sendLevel, listener.context.currentTime);
+      const sl = Number.isFinite(sendLevel) ? sendLevel : 0;
+      gain.gain.setValueAtTime(sl, listener.context.currentTime);
     }
   }, [sendLevel, listener]);
 

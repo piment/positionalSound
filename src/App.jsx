@@ -10,14 +10,21 @@ import MultitrackDisplay from './MultitrackDisplay';
 import { Controls, ObjSound } from './ObjControls';
 import { Drumkit } from './instruments/Drumkit';
 import EnvComp from './EnvComp';
+import Sound from './Sound';
 
 export default function App() {
-  const { scene: drumScene } = useGLTF('/drumkitpartedOPT.glb');
+  // const { scene: drumScene } = useGLTF('/drumkitpartedOPT.glb');
 
-  // grab only the Group children
-  const allGroups = useMemo(
-    () => drumScene.children.filter((c) => c.type === 'Group'),
-    [drumScene]
+  // // grab only the Group children
+  // const allGroups = useMemo(
+  //   () => drumScene.children.filter((c) => c.type === 'Group'),
+  //   [drumScene]
+  // );
+  const { scene } = useGLTF('/drumkitpartedOPT.glb');
+
+    const allParts = useMemo(
+    () => scene.children.filter((c) => c.type === 'Group').map((g) => g.name),
+    [scene]
   );
 
   // create or get a single AudioContext
@@ -28,16 +35,24 @@ export default function App() {
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
   const sourcesRef = useRef([]);
+
+  const [meshes, setMeshes]           = useState([]);  // e.g. ['snare','kick']
+  const [trackList, setTrackList]     = useState([]);  // flat tracks: {id,name,file,url}
+  const [assignments, setAssignments] = useState({});  // { meshName: [trackId,…], null: [trackId,…] }
+
+
+
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
   const [rightDelayTime, setRightDelayTime] = useState(0.04181);
   const [hpfFreq, setHpfFreq] = useState(200);
   const [lpfFreq, setLpfFreq] = useState(6500);
 
+
+
   const splitter = useMemo(() => audioCtx.createChannelSplitter(2), [audioCtx]);
   const leftDelayNode = useMemo(() => audioCtx.createDelay(1.0), [audioCtx]);
   const rightDelayNode = useMemo(() => audioCtx.createDelay(1.0), [audioCtx]);
   const merger = useMemo(() => audioCtx.createChannelMerger(2), [audioCtx]);
-
   const convolver = useMemo(() => audioCtx.createConvolver(), [audioCtx]);
   const reverbGain = useMemo(() => {
     const g = audioCtx.createGain();
@@ -116,17 +131,15 @@ export default function App() {
     const groupObj = allGroups.find((g) => g.name === groupName);
     if (!groupObj) return;
 
+    const newSub = {
+      id: nanoid(), // ← unique
+      name,
+      file,
+      url,
+      sendLevel: 0,
+      volume: 1,
+    };
 
-     const newSub = {
-    id:    nanoid(),     // ← unique
-    name,
-    file,
-    url,
-    sendLevel: 0,
-    volume:    1,
-  };
-
-  console.log(newSub)
     setTracks((prev) => {
       const idx = prev.findIndex((t) => t.group === groupObj);
       if (idx >= 0) {
@@ -151,15 +164,54 @@ export default function App() {
       }
     });
   }
-
+  function addMesh(partName) {
+    if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
+  }
   // decode ArrayBuffer via native AudioContext
   const decodeBuffer = (file) =>
     file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
 
-  async function playAll() {
+
+function handleImport(items) {
+  // build full track objects
+  const newTracks = items.map((f) => ({
+    id:        nanoid(),
+    file:      f.file,
+    url:       f.url,
+    name:      f.name,
+    volume:    1,
+    sendLevel: 0,
+  }));
+
+  // optionally keep a flat list too
+  setTrackList((prev) => [...prev, ...newTracks]);
+
+  // **seed unassigned with the objects themselves**—
+  // not with newTracks.map(t => t.id)
+  setAssignments((a) => ({
+    ...a,
+    null: [...(a.null || []), ...newTracks],
+  }));
+}
+function toggleAssign(trackObj, targetMesh) {
+  setAssignments((prev) => {
+    // remove from every bucket
+    const cleaned = Object.fromEntries(
+      Object.entries(prev).map(([mesh, arr]) => [
+        mesh,
+        arr.filter((t) => t.id !== trackObj.id),
+      ])
+    );
+    // add to target mesh
+    return {
+      ...cleaned,
+      [targetMesh]: [...(cleaned[targetMesh] || []), trackObj],
+    };
+  });
+}
+    async function playAll() {
     setPlaying(true);
   }
-
   function stopAll() {
     sourcesRef.current.forEach((src) => src.stop());
     sourcesRef.current = [];
@@ -167,83 +219,77 @@ export default function App() {
     setPlaying(false);
   }
 
-const flatIndexMap = useMemo(() => {
-  let acc = [];
-  tracks.forEach((trackBucket, meshIdx) => {
-    trackBucket.subs.forEach((sub, subIdx) => {
-   
-     acc.push({ meshIdx, subIdx,  id: sub.id ?? `${meshIdx}-${subIdx}`, });
+  const flatIndexMap = useMemo(() => {
+    let acc = [];
+    tracks.forEach((trackBucket, meshIdx) => {
+      trackBucket.subs.forEach((sub, subIdx) => {
+        acc.push({ meshIdx, subIdx, id: sub.id ?? `${meshIdx}-${subIdx}` });
+      });
     });
-  });
-  return acc;
-}, [tracks]);
-
+    return acc;
+  }, [tracks]);
 
   const flatTracks = flatIndexMap.map(({ meshIdx, subIdx, id }) => {
-  const s = tracks[meshIdx].subs[subIdx];
-  // console.log(id)
-  return { id, name: s.name, file: s.file, url: s.url };
-});
-// 3) handle delete
-function handleDelete(flatIdx) {
-  const { meshIdx, subIdx } = flatIndexMap[flatIdx];
-
-  // 1) remove from your state
-  setTracks((prev) => {
-    const clone = [...prev];
-    clone[meshIdx].subs = clone[meshIdx].subs.filter((_, i) => i !== subIdx);
-    if (clone[meshIdx].subs.length === 0) clone.splice(meshIdx, 1);
-    return clone;
+    const s = tracks[meshIdx].subs[subIdx];
+    // console.log(id)
+    return { id, name: s.name, file: s.file, url: s.url };
   });
+  // 3) handle delete
+  function handleDelete(flatIdx) {
+    const { meshIdx, subIdx } = flatIndexMap[flatIdx];
 
-  // 2) force all <Sound> to stop, then restart the survivors
-  setPlaying(false);
-  // next tick, turn it back on
-  setTimeout(() => setPlaying(true), 0);
-}
+    // 1) remove from your state
+    setTracks((prev) => {
+      const clone = [...prev];
+      clone[meshIdx].subs = clone[meshIdx].subs.filter((_, i) => i !== subIdx);
+      if (clone[meshIdx].subs.length === 0) clone.splice(meshIdx, 1);
+      return clone;
+    });
 
+    // 2) force all <Sound> to stop, then restart the survivors
+    setPlaying(false);
+    // next tick, turn it back on
+    setTimeout(() => setPlaying(true), 0);
+  }
 
+  // 4) handle reassignment
+  function handleReassign(flatIdx, newGroupName) {
+    const { meshIdx, subIdx } = flatIndexMap[flatIdx];
+    const newGroup = allGroups.find((g) => g.name === newGroupName);
+    if (!newGroup) return;
+    setTracks((prev) => {
+      const clone = [...prev];
+      // remove sub from old bucket
+      const [subObj] = clone[meshIdx].subs.splice(subIdx, 1);
+      // if old bucket empty, drop it
+      if (clone[meshIdx].subs.length === 0) {
+        clone.splice(meshIdx, 1);
+      }
+      // find or create new bucket for newGroup
+      let targetIdx = clone.findIndex((t) => t.group === newGroup);
+      if (targetIdx < 0) {
+        const angle = (clone.length / 5) * Math.PI * 2;
+        const distance = 10 + clone.length * 5;
+        const defPos = [
+          Math.cos(angle) * distance,
+          0,
+          Math.sin(angle) * distance,
+        ];
+        clone.push({ group: newGroup, defPos, dist: distance, subs: [] });
+        targetIdx = clone.length - 1;
+      }
+      // add sub into its new bucket
+      clone[targetIdx].subs.push(subObj);
+      return clone;
+    });
+  }
 
-// 4) handle reassignment
-function handleReassign(flatIdx, newGroupName) {
-  const { meshIdx, subIdx } = flatIndexMap[flatIdx];
-  const newGroup = allGroups.find((g) => g.name === newGroupName);
-  if (!newGroup) return;
-  setTracks((prev) => {
-    const clone = [...prev];
-    // remove sub from old bucket
-    const [subObj] = clone[meshIdx].subs.splice(subIdx, 1);
-    // if old bucket empty, drop it
-    if (clone[meshIdx].subs.length === 0) {
-      clone.splice(meshIdx, 1);
-    }
-    // find or create new bucket for newGroup
-    let targetIdx = clone.findIndex((t) => t.group === newGroup);
-    if (targetIdx < 0) {
-      const angle    = (clone.length / 5) * Math.PI * 2;
-      const distance = 10 + clone.length * 5;
-      const defPos   = [
-        Math.cos(angle) * distance,
-        0,
-        Math.sin(angle) * distance,
-      ];
-      clone.push({ group: newGroup, defPos, dist: distance, subs: [] });
-      targetIdx = clone.length - 1;
-    }
-    // add sub into its new bucket
-    clone[targetIdx].subs.push(subObj);
-    return clone;
-  });
-}
-
-// 5) render
-
+  // 5) render
 
   return (
-    <>
-      {' '}
-      <div className='rev-params'>
-        <div style={{ margin: '1em 0' }}>
+    <div style={{  height:'100vh' }}>
+    <div className='rev-params'>
+        <div style={{ margin: '1em 0', zIndex: '20' }}>
           <button onClick={playAll} style={{ marginRight: '0.5em' }}>
             ▶️ Play All
           </button>
@@ -306,50 +352,123 @@ function handleReassign(flatIdx, newGroupName) {
           />
         </div>
       </div>
-      <MultitrackDisplay tracks={flatTracks} width={500} height={30}      groupNames={allGroups.map((g) => g.name)}
+      {/* <MultitrackDisplay tracks={flatTracks} width={500} height={30}      groupNames={allParts.map((g) => g.name)}
       onDelete={handleDelete}
-      onReassign={handleReassign}/>
-      <ImportMenu
+      onReassign={handleReassign}/> */}
+      {/* <ImportMenu
         onAdd={handleAddTrack}
         groupNames={allGroups.map((g) => g.name)}
-      />
-      <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
-        <pointLight position={[5, 10, 5]} intensity={1} castShadow />
-        <ambientLight intensity={0.3} />
+      /> */}
+      {/* Left: Parts palette */}
+      <div style={{ width:200, borderRight:'1px solid #333' }} className='panel-left'>
+        {allParts.map((p) => (
+          <button
+            key={p}
+            onClick={() => addMesh(p)}
+            disabled={meshes.includes(p)}
+          >
+            {meshes.includes(p) ? 'Added' : 'Add'} {p}
+          </button>
+        ))}
+      </div>
 
-        <Suspense fallback={null}>
-          <group>
-            {tracks.map((t, i) => (
+      {/* Center: 3D canvas */}
+      <div style={{ flex:1 }} className='canvas-main'>
+      <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
+          <ambientLight intensity={10.3}/>
+          <pointLight position={[5,10,5]} intensity={1}/>
+
+          {meshes.map((part, i) => {
+            const group = scene.getObjectByName(part);
+            const pos = new THREE.Vector3();
+            group.getWorldPosition(pos);
+            
+            // look up all tracks assigned here
+    const subs = assignments[part] || [];
+console.log('SUUUUUUUUUUB', subs)
+            return (
               <ObjSound
-                key={t.name + t.url}
-                name={t.group.name}
-                url={t.url}
-                file={t.file}
-                defPos={t.defPos}
-                dist={t.dist}
+                key={part}
+                name={part}
+                group={group}
+                defPos={[pos.x,pos.y,pos.z]}
+                subs={subs}
                 on={playing}
-                group={t.group}
+                url={subs.url}
+                // group={t.group}
                 audioCtx={audioCtx}
                 listener={listener}
                 convolver={convolver}
-                subs={t.subs}
-                onSubsChange={(newSubs) => {
-                  setTracks((prev) => {
-                    const copy = [...prev];
-                    copy[i].subs = newSubs;
-                    return copy;
-                  });
-                }}
+                // subs={t.subs}
+                // onSubsChange={(newSubs) => {
+                //   setTracks((prev) => {
+                //     const copy = [...prev];
+                //     copy[i].subs = newSubs;
+                //     return copy;
+                //   });
+                // }}
+       onSubsChange={(newSubs) =>
+setAssignments(a => ({ ...a, [part]: newSubs }))
+}
               />
-            ))}
-          </group>
-        </Suspense>
-        {/* <Drumkit scale={5}/> */}
-        {/* <ambientLight intensity={10}/> */}
-        <EnvComp />
+            );
+          })}
+
+          {/* Play unassigned tracks as well (just at listener position) */}
+          {(assignments.null||[]).map((sub) => {
+            // console.log('SUB', sub)
+            // const t = trackList.find((x) => x.id === id);
+            return (
+              <Sound
+                key={sub.id}
+    name={sub.name}
+    subs={[sub]}
+    on={playing}
+    url={sub.url}
+                paused={false}
+                listener={listener}
+                convolver={convolver}
+                    // selected={selectedMesh === null}
+    // onSelect={() => setSelectedMesh(null)}
+    onSubsChange={(newSubs) =>
+      setAssignments((a) => ({ ...a, null: newSubs }))
+    }
+                // no meshRef or panner → dry playback
+              />
+            );
+          })}
+
+          <EnvComp />
         <Controls />
         <Perf deepAnalyze />
-      </Canvas>
-    </>
+        </Canvas>
+      </div>
+
+      {/* Right: Track list & assignment UI */}
+      <div style={{ width:200, borderLeft:'1px solid #333' }} className='panel-right'>
+        <ImportMenu onAdd={handleImport} />
+
+        <h4>Tracks</h4>
+      {trackList.map((t) => (
+  <div key={t.id}>
+    {t.name}
+    <select
+      value={
+        // find which bucket it lives in, or 'null'
+        Object.entries(assignments)
+          .find(([, arr]) => arr.some((x) => x.id === t.id))?.[0] ||
+        'null'
+      }
+      onChange={(e) => toggleAssign(t, e.target.value)}
+    >
+      <option value="null">Unassigned</option>
+      {meshes.map((m) => (
+        <option key={m} value={m}>{m}</option>
+      ))}
+    </select>
+  </div>
+))}
+      </div>
+    </div>
   );
 }

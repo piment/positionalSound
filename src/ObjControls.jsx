@@ -53,7 +53,7 @@ export function ObjSound({ name,  group, defPos, dist,  subs = [],
     });
     return c;
   }, [group]);;
-console.log(name)
+// console.log(subs)
   return (
    <group
       ref={meshRef}

@@ -1,71 +1,50 @@
-// ImportMenu.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function ImportMenu({ groupNames, onAdd }) {
-  // now an array of File objects
+/**
+ * ImportMenu
+ * Props:
+ *  - onAdd: (items: Array<{ file: File, url: string, name: string }>) => void
+ *  - disabled: boolean (optional)
+ */
+export default function ImportMenu({ onAdd, disabled = false }) {
   const [files, setFiles] = useState([]);
-  const [instrument, setInstrument] = useState('');
-  const [isStereo, setIsStereo] = useState(false);
- const [sel, setSel] = useState(groupNames[0] || '');
-  // handle selecting 1..N files
-  const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
-  };
 
-  const handleAdd = () => {
-    if (!sel || files.length === 0) return;
+  // Reset file input after add
+  const fileInputRef = React.useRef();
 
-    files.forEach((file) => {
+  function handleFileChange(e) {
+    const selected = Array.from(e.target.files || []);
+    setFiles(selected);
+  }
+
+  function handleAdd() {
+    if (!files.length) return;
+    const items = files.map((file) => {
       const url = URL.createObjectURL(file);
-      // strip extension for a default track name
-      const defaultName = file.name.replace(/\.[^/.]+$/, '');
-      onAdd({
-        file,
-        url,
-        name: defaultName,
-        instrument,
-        isStereo,
-     groupName: sel
-      });
+      const name = file.name.replace(/\.[^/.]+$/, '');
+      return { file, url, name };
     });
-
-    // reset
+    onAdd(items);
     setFiles([]);
-    setSel('');
-    setIsStereo(false);
-  };
+    // clear input element
+    if (fileInputRef.current) {
+      fileInputRef.current.value = null;
+    }
+  }
 
   return (
-    <div className="import-menu" style={{ marginBottom: '1em' }}>
+    <div className="import-menu" style={{ margin: '1em 0' }}>
       <input
+        ref={fileInputRef}
         type="file"
         accept="audio/*"
-        multiple                      // ← allow multi-select
+        multiple
+        disabled={disabled}
         onChange={handleFileChange}
       />
-
-      <select
-        value={sel}
-        onChange={(e) => setSel(e.target.value)}
-        style={{ marginLeft: '0.5em' }}
-      >
- {groupNames.map((name) => (
-          <option key={name} value={name}>{name}</option>
-        ))}
-      </select>
-
-      <label style={{ marginLeft: '0.5em' }}>
-        <input
-          type="checkbox"
-          checked={isStereo}
-          onChange={(e) => setIsStereo(e.target.checked)}
-        />{' '}
-        Stereo
-      </label>
-
       <button
         onClick={handleAdd}
-        disabled={files.length === 0 || !sel}
+        disabled={disabled || files.length === 0}
         style={{ marginLeft: '0.5em' }}
       >
         Add {files.length} Track{files.length > 1 ? 's' : ''}
