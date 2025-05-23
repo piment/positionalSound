@@ -11,6 +11,7 @@ import { Controls, ObjSound } from './ObjControls';
 import { Drumkit } from './instruments/Drumkit';
 import EnvComp from './EnvComp';
 import Sound from './Sound';
+import DrumKitCanvas from './DrumKitCanvas';
 
 export default function App() {
   // const { scene: drumScene } = useGLTF('/drumkitpartedOPT.glb');
@@ -35,12 +36,14 @@ export default function App() {
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
   const sourcesRef = useRef([]);
+  const drumRef = useRef(null)
+
 
   const [meshes, setMeshes]           = useState([]);  // e.g. ['snare','kick']
   const [trackList, setTrackList]     = useState([]);  // flat tracks: {id,name,file,url}
   const [assignments, setAssignments] = useState({});  // { meshName: [trackId,…], null: [trackId,…] }
 
-
+const [selectedPart, setSelectedPart] = useState([])
 
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
   const [rightDelayTime, setRightDelayTime] = useState(0.04181);
@@ -164,9 +167,11 @@ export default function App() {
       }
     });
   }
-  function addMesh(partName) {
-    if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
-  }
+  // function addMesh(partName) {
+  //   if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
+  // }
+    const addMesh = (name) => setMeshes((m) => m.includes(name) ? m : [...m, name]);
+
   // decode ArrayBuffer via native AudioContext
   const decodeBuffer = (file) =>
     file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
@@ -253,36 +258,7 @@ function toggleAssign(trackObj, targetMesh) {
   }
 
   // 4) handle reassignment
-  function handleReassign(flatIdx, newGroupName) {
-    const { meshIdx, subIdx } = flatIndexMap[flatIdx];
-    const newGroup = allGroups.find((g) => g.name === newGroupName);
-    if (!newGroup) return;
-    setTracks((prev) => {
-      const clone = [...prev];
-      // remove sub from old bucket
-      const [subObj] = clone[meshIdx].subs.splice(subIdx, 1);
-      // if old bucket empty, drop it
-      if (clone[meshIdx].subs.length === 0) {
-        clone.splice(meshIdx, 1);
-      }
-      // find or create new bucket for newGroup
-      let targetIdx = clone.findIndex((t) => t.group === newGroup);
-      if (targetIdx < 0) {
-        const angle = (clone.length / 5) * Math.PI * 2;
-        const distance = 10 + clone.length * 5;
-        const defPos = [
-          Math.cos(angle) * distance,
-          0,
-          Math.sin(angle) * distance,
-        ];
-        clone.push({ group: newGroup, defPos, dist: distance, subs: [] });
-        targetIdx = clone.length - 1;
-      }
-      // add sub into its new bucket
-      clone[targetIdx].subs.push(subObj);
-      return clone;
-    });
-  }
+
 
   // 5) render
 
@@ -352,13 +328,7 @@ function toggleAssign(trackObj, targetMesh) {
           />
         </div>
       </div>
-      {/* <MultitrackDisplay tracks={flatTracks} width={500} height={30}      groupNames={allParts.map((g) => g.name)}
-      onDelete={handleDelete}
-      onReassign={handleReassign}/> */}
-      {/* <ImportMenu
-        onAdd={handleAddTrack}
-        groupNames={allGroups.map((g) => g.name)}
-      /> */}
+
       {/* Left: Parts palette */}
       <div style={{ width:200, borderRight:'1px solid #333' }} className='panel-left'>
         {allParts.map((p) => (
@@ -375,68 +345,75 @@ function toggleAssign(trackObj, targetMesh) {
       {/* Center: 3D canvas */}
       <div style={{ flex:1 }} className='canvas-main'>
       <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
-          <ambientLight intensity={10.3}/>
+          <ambientLight intensity={0.3}/>
           <pointLight position={[5,10,5]} intensity={1}/>
+<Drumkit
+    ref={drumRef}
+    scale={5}
+    hiddenParts={meshes}          // array of part-names you’ve already spawned
+    onSelect={(partName) => addMesh(partName)}
+  /> 
+{/*
+  <Suspense fallback={null}>
+    {meshes.map((part) => {
+      // grab the original group from the GLTF scene
+      const originalGroup = drumRef.current.getObjectByName(part)
+      const pos = new THREE.Vector3()
+      originalGroup.getWorldPosition(pos)
 
-          {meshes.map((part, i) => {
-            const group = scene.getObjectByName(part);
-            const pos = new THREE.Vector3();
-            group.getWorldPosition(pos);
-            
-            // look up all tracks assigned here
-    const subs = assignments[part] || [];
-console.log('SUUUUUUUUUUB', subs)
-            return (
-              <ObjSound
-                key={part}
-                name={part}
-                group={group}
-                defPos={[pos.x,pos.y,pos.z]}
-                subs={subs}
-                on={playing}
-                url={subs.url}
-                // group={t.group}
-                audioCtx={audioCtx}
-                listener={listener}
-                convolver={convolver}
-                // subs={t.subs}
-                // onSubsChange={(newSubs) => {
-                //   setTracks((prev) => {
-                //     const copy = [...prev];
-                //     copy[i].subs = newSubs;
-                //     return copy;
-                //   });
-                // }}
-       onSubsChange={(newSubs) =>
-setAssignments(a => ({ ...a, [part]: newSubs }))
-}
-              />
-            );
-          })}
+      // your full track-object array for that part
+      const subs = assignments[part] || []
 
-          {/* Play unassigned tracks as well (just at listener position) */}
-          {(assignments.null||[]).map((sub) => {
-            // console.log('SUB', sub)
-            // const t = trackList.find((x) => x.id === id);
-            return (
-              <Sound
-                key={sub.id}
-    name={sub.name}
-    subs={[sub]}
-    on={playing}
-    url={sub.url}
-                paused={false}
-                listener={listener}
-                convolver={convolver}
-                    // selected={selectedMesh === null}
-    // onSelect={() => setSelectedMesh(null)}
-    onSubsChange={(newSubs) =>
-      setAssignments((a) => ({ ...a, null: newSubs }))
-    }
-                // no meshRef or panner → dry playback
-              />
-            );
-          })}
+      return (
+        <ObjSound
+          key={part}
+          name={part}
+          group={originalGroup}
+          defPos={[pos.x, pos.y, pos.z]}
+          subs={subs}
+          on={playing}
+          listener={listener}
+          convolver={convolver}
+          selected={selectedPart === part}
+          onSelect={() => setSelectedPart(part)}
+          onSubsChange={(newSubs) =>
+            setAssignments((a) => ({ ...a, [part]: newSubs }))
+          }
+        />
+      )
+    })}
+*/}
+
+  {(assignments.null || []).map((sub) => (
+      <ObjSound
+        key={sub.id}
+        name={sub.name}
+        defPos={[0, 0, 0]}
+        subs={[sub]}
+        on={playing}
+        listener={listener}
+        convolver={convolver}
+        selected={selectedPart === null}
+        onSelect={() => setSelectedPart(null)}
+        onSubsChange={(newSubs) =>
+          setAssignments((a) => ({ ...a, null: newSubs }))
+        }
+      />
+    ))} 
+    {/* </Suspense> */}
+
+  <Suspense>
+    <DrumKitCanvas
+      meshes={meshes}
+            assignments={assignments}
+            playing={playing}
+            listener={listener}
+            convolver={convolver}
+            selectedPart={selectedPart}
+            setSelectedPart={setSelectedPart}
+            setAssignments={setAssignments}
+            />
+  </Suspense>
 
           <EnvComp />
         <Controls />

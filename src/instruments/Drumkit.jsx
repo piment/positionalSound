@@ -1,10 +1,9 @@
 import React, { useMemo, useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-export function Drumkit(props) {
-  const { scene, nodes, materials } = useGLTF('/drumkitpartedOPT.glb');
-
-  const allGroups = scene.children.filter((c) => c.type === 'Group');
+export function Drumkit({ onSelect, hiddenParts = [], ...props  }) {
+  const { scene, nodes } = useGLTF('/drumkitpartedOPT.glb');
+  const parts = scene.children.filter((c) => c.type === 'Group');
 
   function onGroupSelect(name) {
     const groupObj = allGroups.find((g) => g.name === name);
@@ -29,113 +28,49 @@ export function Drumkit(props) {
   );
 
   const redMat = new THREE.MeshBasicMaterial({ color: 'red' });
+
+  function wrapGroup(name, children, position) {
+    return (
+      <group
+        key={name}
+        name={name}
+        position={position}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          onSelect(name);
+        }}
+      >
+        {children}
+      </group>
+    );
+  }
+
   return (
     <group {...props} dispose={null}>
-      <group name='tom3' position={[-0.172, 0.741, -0.269]}>
-        <mesh
-          //tom3 wood
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle015.geometry}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle015_1.geometry}
-          material={metalMat}
-        />
-        <mesh
-          //tom 3 metal
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle015_2.geometry}
-          material={metalMat}
-        />
-        <mesh
-          //tom3 metal
-          castShadow
-          receiveShadow
-          material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle015_3.geometry}
-          material={metalMat}
-        />
+    {wrapGroup('tom3', [
+        <mesh key="wood"   castShadow receiveShadow geometry={nodes.Circle015.geometry} />,
+        <mesh key="met1"   castShadow receiveShadow geometry={nodes.Circle015_1.geometry} material={metalMat} />,
+        <mesh key="met2"   castShadow receiveShadow geometry={nodes.Circle015_2.geometry} material={metalMat} />,
+        <mesh key="met3"   castShadow receiveShadow                      material={metalMat} />,
+        <mesh key="met4"   castShadow receiveShadow geometry={nodes.Circle015_3.geometry} material={metalMat} />,
+        <mesh key="pad"    castShadow receiveShadow geometry={nodes.Circle015_5.geometry} />,
+      ], [-0.172, 0.741, -0.269])}
 
-        <mesh
-          //tom 3 pads
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle015_5.geometry}
-        />
-      </group>
+      {wrapGroup('tom2', [
+        <mesh key="wood"  castShadow receiveShadow geometry={nodes.Circle005.geometry} />,
+        <mesh key="met1"  castShadow receiveShadow geometry={nodes.Circle005_1.geometry} material={metalMat} />,
+        <mesh key="met2"  castShadow receiveShadow geometry={nodes.Circle005_2.geometry} material={metalMat} />,
+        <mesh key="met3"  castShadow receiveShadow geometry={nodes.Circle005_3.geometry} material={metalMat} />,
+        <mesh key="met4"  castShadow receiveShadow geometry={nodes.Circle005_4.geometry} material={metalMat} />,
+        <mesh key="pad"   castShadow receiveShadow geometry={nodes.Circle005_5.geometry} material={padMat} />,
+      ], [0.139, 0.831, -0.287])}
 
-      <group name='tom2' position={[0.139, 0.831, -0.287]}>
-        {' '}
-        <mesh
-          //tom2 wood
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle005.geometry}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle005_1.geometry}
-          material={metalMat}
-        />
-        <mesh
-          //tom 2 metal
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle005_2.geometry}
-          material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle005_3.geometry}
-          material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle005_4.geometry}
-          material={metalMat}
-        />
-        <mesh
-          //tom 2 pad
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle005_5.geometry}
-          material={padMat}
-        />
-      </group>
-
-      <group name='crash' position={[0.526, 0.478, -0.214]}>
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle044.geometry}
-          material={metalMat}
-        />
-        <mesh castShadow receiveShadow geometry={nodes.Circle044_1.geometry} />
-
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle044_2.geometry}
-          material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle044_3.geometry}
-          material={padMat}
-        />
-      </group>
+      {wrapGroup('crash', [
+        <mesh key="c1" castShadow receiveShadow geometry={nodes.Circle044.geometry} material={metalMat} />,
+        <mesh key="c2" castShadow receiveShadow geometry={nodes.Circle044_1.geometry} />,
+        <mesh key="c3" castShadow receiveShadow geometry={nodes.Circle044_2.geometry} material={metalMat} />,
+        <mesh key="c4" castShadow receiveShadow geometry={nodes.Circle044_3.geometry} material={padMat} />,
+      ], [0.526, 0.478, -0.214])}
 
       <group name='ride' position={[-0.627, 0.468, -0.242]}>
         <mesh
