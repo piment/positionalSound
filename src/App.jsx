@@ -322,7 +322,7 @@ function handleReassign(flatIdx, newGroupName) {
             {tracks.map((t, i) => (
               <ObjSound
                 key={t.name + t.url}
-                name={t.name}
+                name={t.group.name}
                 url={t.url}
                 file={t.file}
                 defPos={t.defPos}

@@ -53,13 +53,13 @@ export function ObjSound({ name,  group, defPos, dist,  subs = [],
     });
     return c;
   }, [group]);;
-console.log(clonedGroup)
+console.log(name)
   return (
    <group
       ref={meshRef}
       // position={defPos}          // <<–– actually place it in the world
       name={name}
-      onDoubleClick={() => setPaused((p) => !p)}
+      // onDoubleClick={() => setPaused((p) => !p)}
       onClick={(e) => {
         e.stopPropagation();
         sceneState.current = name;
@@ -99,46 +99,41 @@ console.log(clonedGroup)
      
 
 
-  
-      <Html center position={[idx/5, 1, 0]}>
-        <div onPointerDown={e => e.stopPropagation()} >
-        <label >{sub.name} Send</label>
-        <input
-          type="range"
-          min={0} max={1} step={0.01}
-          value={sub.sendLevel}
-          onChange={e => {
-            const val = parseFloat(e.target.value);
-            const next = subs.map((s,j) =>
-              j === idx ? { ...s, sendLevel: val } : s
-            );
-            onSubsChange(next);
-          }}
-        />
-      </div>
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          style={{
-            background: 'rgba(0,0,0,0.6)',
-            padding: '4px',
-            borderRadius: '4px',
-          }}
-        >
-          <label style={{ color: 'white', fontSize: '0.7em' }}>{name}</label>
-          <input
-            type='range'
-            min={0}
-            max={1}
-            step={0.01}
-         value={sub.volume}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  const next = subs.map((s, j) => (j === idx ? { ...s, volume: val } : s));
-                  onSubsChange(next);
-                }}
-          />
-        </div>
-      </Html> </>
+   {snap.current === name && (
+            <Html center position={[0+idx * 0.6, 1  , 0]}>
+              <div onPointerDown={(e) => e.stopPropagation()} style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4, marginBottom: 4 }}>
+                <label style={{ color: 'white', fontSize: '0.7em' }}>{sub.name} Volume</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={sub.volume}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const next = subs.map((s, j) => (j === idx ? { ...s, volume: val } : s));
+                    onSubsChange(next);
+                  }}
+                />
+              </div>
+              <div onPointerDown={(e) => e.stopPropagation()} style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4 }}>
+                <label style={{ color: 'white', fontSize: '0.7em' }}>{sub.name} Send</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={sub.sendLevel}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: val } : s));
+                    onSubsChange(next);
+                  }}
+                />
+              </div>
+            </Html>
+          )}
+           </>
  ))}
     
     </group>
