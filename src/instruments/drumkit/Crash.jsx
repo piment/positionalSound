@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { drumkit } from './drumkitMaterials'
 export function Crash(props) {
@@ -12,19 +12,19 @@ export function Crash(props) {
           castShadow
           receiveShadow
           geometry={nodes.Circle044.geometry}
-          material={nodes.Circle044.material}
+         material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle044_1.geometry}
-          material={nodes.Circle044_1.material}
+          material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle044_2.geometry}
-          material={nodes.Circle044_2.material}
+         material={metalMat}
         />
         <mesh
           castShadow

@@ -12,6 +12,8 @@ export default function Sound({
   listener,
   convolver,
   sendLevel = 0,
+    onVolumeChange,
+  onSendLevelChange
 }) {
   const soundRef = useRef();
   const buffer   = useLoader(THREE.AudioLoader, url);

@@ -49,8 +49,6 @@ export default function App() {
   const [meshes, setMeshes] = useState([]); // e.g. ['snare','kick']
   const [trackList, setTrackList] = useState([]); // flat tracks: {id,name,file,url}
   const [assignments, setAssignments] = useState({}); // { meshName: [trackId,…], null: [trackId,…] }
- 
-  const [selectedTrackId, setSelectedTrackId] = useState(null);
 
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
   const [rightDelayTime, setRightDelayTime] = useState(0.04181);
@@ -294,19 +292,7 @@ export default function App() {
   // 5) render
 
 
-
-  function updateUnassignedTrack(id, changes) {
-    setAssignments(a => ({
-      ...a,
-      null: a.null.map(t =>
-        t.id === id
-          ? { ...t, ...changes }
-          : t
-      )
-    }));
-  }
-
-
+  
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
@@ -453,7 +439,7 @@ export default function App() {
 
       {/* Right: Track list & assignment UI */}
       <div
-        style={{ width: 200, borderLeft: '1px solid #333' }}
+        style={{ width: 300, borderLeft: '1px solid #333' }}
         className='panel-right'
       >
         <ImportMenu onAdd={handleImport} />
