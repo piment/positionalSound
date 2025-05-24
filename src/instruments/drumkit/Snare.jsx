@@ -1,8 +1,11 @@
-import React, { useRef } from 'react'
+import React, { useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
-
+import { drumkit } from './drumkitMaterials';
 export function Snare(props) {
   const { nodes, materials } = useGLTF('/drumkit/Snare.glb')
+    const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
+  const padMat  = useMemo(() => drumkit.padMat.clone(), []);
+    const woodMat  = useMemo(() => drumkit.woodMat.clone(), []);
   return (
     <group {...props} dispose={null}>
       <group position={[0.433, 0.636, -0.519]}>
@@ -10,25 +13,25 @@ export function Snare(props) {
           castShadow
           receiveShadow
           geometry={nodes.Circle021.geometry}
-          material={nodes.Circle021.material}
+        material={woodMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle021_1.geometry}
-          material={nodes.Circle021_1.material}
+           material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle021_2.geometry}
-          material={nodes.Circle021_2.material}
+          material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle021_3.geometry}
-          material={nodes.Circle021_3.material}
+         material={metalMat}
         />
         <mesh
           castShadow
@@ -40,13 +43,13 @@ export function Snare(props) {
           castShadow
           receiveShadow
           geometry={nodes.Circle021_5.geometry}
-          material={nodes.Circle021_5.material}
+         material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle021_6.geometry}
-          material={nodes.Circle021_6.material}
+           material={padMat}
         />
       </group>
     </group>

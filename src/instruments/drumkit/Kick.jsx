@@ -1,8 +1,11 @@
-import React, { useRef } from 'react'
+import React, { useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
-
+import { drumkit } from './drumkitMaterials'
 export function Kick(props) {
   const { nodes, materials } = useGLTF('/drumkit/Kick.glb')
+      const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
+    const padMat  = useMemo(() => drumkit.padMat.clone(), []);
+      const woodMat  = useMemo(() => drumkit.woodMat.clone(), []);
   return (
     <group {...props} dispose={null}>
       <group position={[-0.002, 0.294, 0.013]}>
@@ -10,37 +13,37 @@ export function Kick(props) {
           castShadow
           receiveShadow
           geometry={nodes.Circle053.geometry}
-          material={nodes.Circle053.material}
+          material={padMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle053_1.geometry}
-          material={nodes.Circle053_1.material}
+        material={padMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle053_2.geometry}
-          material={nodes.Circle053_2.material}
+          //  material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle053_3.geometry}
-          material={nodes.Circle053_3.material}
+          material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle053_4.geometry}
-          material={nodes.Circle053_4.material}
+          material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Circle053_5.geometry}
-          material={nodes.Circle053_5.material}
+         material={metalMat}
         />
         <mesh
           castShadow
@@ -52,7 +55,7 @@ export function Kick(props) {
           castShadow
           receiveShadow
           geometry={nodes.Circle053_7.geometry}
-          material={nodes.Circle053_7.material}
+          material={woodMat}
         />
         <mesh
           castShadow
