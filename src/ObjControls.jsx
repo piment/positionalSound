@@ -60,7 +60,7 @@ export function ObjSound({
       {/* audio nodes */}
       {subs.map((sub, idx) => (
         <Sound
-          key={sub.id}
+           key={`dry:${sub.id}:${name}`}
           meshRef={groupRef}
           url={sub.url}
           dist={dist}
