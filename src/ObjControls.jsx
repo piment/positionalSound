@@ -47,7 +47,7 @@ export function ObjSound({
 
     useLayoutEffect(() => {
     const outer = outerRef.current
-    if (outer && outer.children.length) {
+    if (outer && outer.children[0].children.length) {
       // assume the *first* child is the <group position=[…]> from your Part
       innerRef.current = outer.children[0].children[0]
       setReady(true)

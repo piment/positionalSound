@@ -84,10 +84,10 @@ export default function SoundParticles({
     geom.attributes.position.needsUpdate = true;
     geom.setDrawRange(0, drawCount);
   });
-console.log(emitterRef)
+// console.log(emitterRef)
   // 3) Render a Points cloud at the emitter
   return (
-    <points ref={pointsRef} frustumCulled={false} position={emitterRef.current.position}>
+    <points ref={pointsRef} frustumCulled={false} position={emitterRef.current?.position}>
       <bufferGeometry>
         <bufferAttribute
           attach='attributes-position'

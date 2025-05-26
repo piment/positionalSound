@@ -1,8 +1,8 @@
 
-import React, { useMemo, useRef } from 'react'
+import React, { forwardRef, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { drumkit } from './drumkitMaterials'
-export function HiTom(props) {
+export const HiTom = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/drumkit/Tom2.glb')
         const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
       const padMat  = useMemo(() => drumkit.padMat.clone(), []);
@@ -49,7 +49,7 @@ export function HiTom(props) {
       </group>
     </group>
   )
-}
+})
 
 useGLTF.preload('/drumkit/Tom2.glb')
 
