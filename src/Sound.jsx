@@ -1,6 +1,6 @@
 // Sound.jsx
-import { useEffect, useRef } from 'react';
-import { useLoader, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export default function Sound({
@@ -12,14 +12,14 @@ export default function Sound({
   listener,
   convolver,
   sendLevel = 0,
-    onVolumeChange,
-  onSendLevelChange,
-  playStartTime = 0
+  playStartTime = 0,
+    onAnalysedLevel,
 }) {
   const soundRef = useRef();
   const buffer   = useLoader(THREE.AudioLoader, url);
   const { camera } = useThree();
-
+  const audioCtx = listener.context;
+  const analyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
   // wet send nodes
   const sendSrcRef  = useRef(null);
   const sendGainRef = useRef(null);
@@ -53,6 +53,8 @@ export default function Sound({
         if (!sound.isPlaying) {
         // three.js Audio.play( delay, offset )
         sound.play(0, playStartTime);
+            p.connect(analyser);
+    analyser.connect(listener.getInput());
       }
     } else {
       try { sound.stop(); } catch {}
@@ -105,6 +107,22 @@ export default function Sound({
       gain.gain.setValueAtTime(sl, listener.context.currentTime);
     }
   }, [sendLevel, listener]);
+
+
+const data = useMemo(
+    () => new Uint8Array(analyser.frequencyBinCount),
+    [analyser]
+  );
+
+  // each frame, sample and report level upstream
+  useFrame(() => {
+    analyser.getByteFrequencyData(data);
+    // e.g. average magnitude normalized 0→1
+    const sum = data.reduce((a, v) => a + v, 0);
+    const avg = sum / data.length / 255;
+    onAnalysedLevel?.(avg);
+    // console.log(avg*10)
+  });
 
   return <positionalAudio ref={soundRef} args={[listener]} />;
 }

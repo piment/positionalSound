@@ -1,7 +1,9 @@
-import React, { useMemo, useRef } from 'react'
+import React, { forwardRef, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { drumkit } from './drumkitMaterials';
-export function Snare(props) {
+
+
+export const Snare = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/drumkit/Snare.glb')
     const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
   const padMat  = useMemo(() => drumkit.padMat.clone(), []);
@@ -54,6 +56,6 @@ export function Snare(props) {
       </group>
     </group>
   )
-}
+})
 
 useGLTF.preload('/drumkit/Snare.glb')

@@ -1,9 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSnapshot, proxy } from 'valtio';
 import { Html, OrbitControls, TransformControls } from '@react-three/drei';
 import Sound from './Sound';
-import { useThree } from '@react-three/fiber';
-
+import { useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three'
+import SoundParticles from './SoundParticles';
 const modes = ['translate', 'rotate', 'scale'];
 const sceneState = proxy({ current: null, mode: 0 });
 
@@ -38,11 +39,91 @@ export function ObjSound({
   const groupRef = useRef();
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
+ const [levels, setLevels] = useState({}); 
+  const smoothRef = useRef(0);
+  const outerRef   = useRef()   // the <group> you already had
+  const innerRef   = useRef()   // we’ll point this at the positioned child
+  const [ready, setReady] = useState(false)
 
+    useLayoutEffect(() => {
+    const outer = outerRef.current
+    if (outer && outer.children.length) {
+      // assume the *first* child is the <group position=[…]> from your Part
+      innerRef.current = outer.children[0].children[0]
+      setReady(true)
+    }
+  }, [])
+  // callback we pass down to each Sound
+  function handleLevel(subId, level) {
+    setLevels((prev) => {
+      if (prev[subId] === level) return prev;
+      return { ...prev, [subId]: level };
+    });
+  }
+ const playLevel = useMemo(() => {
+    const vals = Object.values(levels);
+    if (vals.length === 0) return 0;
+    const sum = vals.reduce((a, v) => a + v, 0);
+    return sum / vals.length;   // average, still 0→1
+  }, [levels]);
+
+  // cache pad-material meshes once after mount
+  const [padMeshes, setPadMeshes] = useState([]);
+  useEffect(() => {
+    if (!outerRef.current) return;
+    const arr = [];
+    outerRef.current.traverse(obj => {
+      if (obj.isMesh && obj.material.name === 'padMat') {
+        arr.push(obj);
+      }
+    });
+    setPadMeshes(arr);
+  }, []);
+
+  // every frame, use playLevel (a number!) to drive emissive
+  useFrame((_, delta) => {
+    if (!padMeshes.length) return;
+
+    // Optionally boost low/mid levels
+    const boosted = Math.sqrt(playLevel);  // sqrt gives more punch on quieter sounds
+
+    // Use different lambdas for attack vs release:
+    const lambda = boosted > smoothRef.current
+      ? 20  // fast attack
+      : 30; // even faster release
+
+    // Smoothed value → smoothRef.current
+    smoothRef.current = THREE.MathUtils.damp(
+      smoothRef.current,
+      boosted,
+      lambda,
+      delta
+    );
+
+    // Map 0→1 into 0→maxIntensity
+    const intensity = THREE.MathUtils.lerp(0.2, 5, smoothRef.current);
+
+    padMeshes.forEach((m) => {
+      // set to zero when smoothRef is zero → totally dark
+      m.material.emissiveIntensity = intensity;
+      // keep color proportional to level (or leave it white)
+      m.material.emissive.setScalar(smoothRef.current);
+    });
+  });
+
+  // useLayoutEffect(() => {
+  //   if (!groupRef.current) return;
+  //   const worldPos = new THREE.Vector3();
+  //   groupRef.current.getWorldPosition(worldPos);
+  //   setOffset(worldPos.toArray());
+  // }, []);
+console.log('OUTER', outerRef)
   return (
     <group
-      ref={groupRef}
-      position={defPos}
+    ref={outerRef}
+      // position={defPos}
+      
+      scale={5}
       name={name}
       onClick={(e) => {
         e.stopPropagation();
@@ -54,15 +135,25 @@ export function ObjSound({
           sceneState.mode = (snap.mode + 1) % modes.length;
         }
       }}
+      
     >
-      {/* render the visual */}
-      {children}
+   
+      {children }
+      
 
+  <SoundParticles               
+       emitterRef={innerRef}
+        playLevel={playLevel}
+        maxParticles={300}
+        minLife={0.3}
+        maxLife={1}
+        baseSpeed={3} />
+        {/* </group> */}
       {/* audio nodes */}
       {subs.map((sub, idx) => (
         <Sound
            key={`dry:${sub.id}:${name}`}
-          meshRef={groupRef}
+          meshRef={outerRef}
           url={sub.url}
           dist={dist}
           volume={sub.volume}
@@ -76,6 +167,7 @@ export function ObjSound({
             onSubsChange(next);
           }}
             playStartTime={playStartTime}
+             onAnalysedLevel={(level) => handleLevel(sub.id, level)}
         />
       ))}
 

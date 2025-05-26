@@ -17,6 +17,9 @@ import { MidTom } from './instruments/drumkit/MidTom';
 import { FloorTom } from './instruments/drumkit/FloorTom';
 import { Crash } from './instruments/drumkit/Crash';
 import { Ride } from './instruments/drumkit/Ride';
+import { Bloom, DepthOfField, EffectComposer, LensFlare, Noise, Vignette } from '@react-three/postprocessing'
+import { Bvh } from '@react-three/drei';
+
 
 const COMPONENTS = {
   Snare: Snare,
@@ -39,16 +42,7 @@ const STORAGE_KEYS = {
 
 
 export default function App() {
-  // const { scene } = useGLTF('/drumkitpartedOPT.glb');
 
-  //   const allParts = useMemo(
-  //   () => scene.children.filter((c) => c.type === 'Group').map((g) => g.name),
-  //   [scene]
-  // );
-
-  // create or get a single AudioContext
-  // const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-  // const audioCtx = useMemo(() => new AudioCtxClass(), []);
   const listener = useMemo(() => new THREE.AudioListener(), []);
   const audioCtx = listener.context;
   const [tracks, setTracks] = useState([]);
@@ -58,16 +52,7 @@ export default function App() {
   const sourcesRef = useRef([]);
 const [trackList,   setTrackList]   = useState([]);
 const [assignments, setAssignments] = useState( [] );
-  // const [trackList, setTrackList] = useState(() => {
-  //   // const v = localStorage.getItem(STORAGE_KEYS.trackList)
-  //   // return v ? JSON.parse(v) :
-  //    []
-  // })
-  // const [assignments, setAssignments] = useState(() => {
-  //   // const v = localStorage.getItem(STORAGE_KEYS.assignments)
-  //   // return v ? JSON.parse(v) : { null: [] }
-  //   []
-  // })
+
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes)
     return v ? JSON.parse(v) : []
@@ -157,12 +142,6 @@ const [assignments, setAssignments] = useState( [] );
   }, [busLevel, reverbGain, audioCtx]);
 
 
-  useEffect(() => {
-    // localStorage.setItem(STORAGE_KEYS.trackList, JSON.stringify(trackList))
-  }, [trackList])
-  useEffect(() => {
-    // localStorage.setItem(STORAGE_KEYS.assignments, JSON.stringify(assignments))
-  }, [assignments])
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes))
   }, [meshes])
@@ -406,6 +385,8 @@ const [assignments, setAssignments] = useState( [] );
       {/* Center: 3D canvas */}
       <div style={{ flex: 1 }} className='canvas-main'>
         <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
+     
+            
           <ambientLight intensity={0.3} />
           <pointLight position={[5, 10, 5]} intensity={1} />
 
@@ -465,6 +446,14 @@ const [assignments, setAssignments] = useState( [] );
           <EnvComp />
           <Controls />
           <Perf deepAnalyze />
+<EffectComposer disableNormalPass>
+  {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
+        {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
+        {/* <Bloom luminanceThreshold={0.25} luminanceSmoothing={0.9} height={300} /> */}
+        {/* <Noise opacity={0.02} /> */}
+        {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
+      </EffectComposer>
+     
         </Canvas>
       </div>
 

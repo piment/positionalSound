@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-/**
- * ImportMenu
- * Props:
- *  - onAdd: (items: Array<{ file: File, url: string, name: string }>) => void
- *  - disabled: boolean (optional)
- */
 export default function ImportMenu({ onAdd, disabled = false }) {
   const [files, setFiles] = useState([]);
 
