@@ -102,6 +102,10 @@ position: absolute;
   z-index: 40;
 }
 
+.rev-sliders{
+  display: flex;
+}
+
 .param {
   display: flex;
   width: 15vw;

@@ -29,6 +29,15 @@ const COMPONENTS = {
   Ride: Ride,
 };
 
+
+const STORAGE_KEYS = {
+  trackList: 'myapp:trackList',
+  assignments: 'myapp:assignments',
+  meshes: 'myapp:meshes'
+}
+
+
+
 export default function App() {
   // const { scene } = useGLTF('/drumkitpartedOPT.glb');
 
@@ -47,10 +56,22 @@ export default function App() {
 
     const [playOffset, setPlayOffset] = useState(0);
   const sourcesRef = useRef([]);
-
-  const [meshes, setMeshes] = useState([]); // e.g. ['snare','kick']
-  const [trackList, setTrackList] = useState([]); // flat tracks: {id,name,file,url}
-  const [assignments, setAssignments] = useState({}); // { meshName: [trackId,…], null: [trackId,…] }
+const [trackList,   setTrackList]   = useState([]);
+const [assignments, setAssignments] = useState( [] );
+  // const [trackList, setTrackList] = useState(() => {
+  //   // const v = localStorage.getItem(STORAGE_KEYS.trackList)
+  //   // return v ? JSON.parse(v) :
+  //    []
+  // })
+  // const [assignments, setAssignments] = useState(() => {
+  //   // const v = localStorage.getItem(STORAGE_KEYS.assignments)
+  //   // return v ? JSON.parse(v) : { null: [] }
+  //   []
+  // })
+  const [meshes, setMeshes] = useState(() => {
+    const v = localStorage.getItem(STORAGE_KEYS.meshes)
+    return v ? JSON.parse(v) : []
+  })
   const [selectedTrackId, setSelectedTrackId] = useState(null);
 
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
@@ -134,6 +155,17 @@ export default function App() {
   useEffect(() => {
     reverbGain.gain.setValueAtTime(busLevel, audioCtx.currentTime);
   }, [busLevel, reverbGain, audioCtx]);
+
+
+  useEffect(() => {
+    // localStorage.setItem(STORAGE_KEYS.trackList, JSON.stringify(trackList))
+  }, [trackList])
+  useEffect(() => {
+    // localStorage.setItem(STORAGE_KEYS.assignments, JSON.stringify(assignments))
+  }, [assignments])
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes))
+  }, [meshes])
 
   // Add new track with default position and distance
   function handleAddTrack({ name, url, file, groupName }) {
@@ -262,39 +294,7 @@ export default function App() {
     setTimeout(() => setPlaying(true), 0);
   }
 
-  // 4) handle reassignment
-  // function handleReassign(flatIdx, newGroupName) {
-  //   const { meshIdx, subIdx } = flatIndexMap[flatIdx];
-  //   const newGroup = allGroups.find((g) => g.name === newGroupName);
-  //   if (!newGroup) return;
-  //   setTracks((prev) => {
-  //     const clone = [...prev];
-  //     // remove sub from old bucket
-  //     const [subObj] = clone[meshIdx].subs.splice(subIdx, 1);
-  //     // if old bucket empty, drop it
-  //     if (clone[meshIdx].subs.length === 0) {
-  //       clone.splice(meshIdx, 1);
-  //     }
-  //     // find or create new bucket for newGroup
-  //     let targetIdx = clone.findIndex((t) => t.group === newGroup);
-  //     if (targetIdx < 0) {
-  //       const angle = (clone.length / 5) * Math.PI * 2;
-  //       const distance = 10 + clone.length * 5;
-  //       const defPos = [
-  //         Math.cos(angle) * distance,
-  //         0,
-  //         Math.sin(angle) * distance,
-  //       ];
-  //       clone.push({ group: newGroup, defPos, dist: distance, subs: [] });
-  //       targetIdx = clone.length - 1;
-  //     }
-  //     // add sub into its new bucket
-  //     clone[targetIdx].subs.push(subObj);
-  //     return clone;
-  //   });
-  // }
 
-  // 5) render
 
   function updateUnassignedTrack(id, props) {
     setAssignments((a) => ({
@@ -302,6 +302,19 @@ export default function App() {
       null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
     }));
   }
+
+
+  function clearSession() {
+    // localStorage.removeItem(STORAGE_KEYS.trackList)
+    // localStorage.removeItem(STORAGE_KEYS.assignments)
+    localStorage.removeItem(STORAGE_KEYS.meshes)
+    setTrackList([])
+    // setAssignments({ null: [] })
+    setMeshes([])
+    stopAll()
+  }
+
+
 
   return (
     <div style={{ height: '100vh' }}>
@@ -311,7 +324,10 @@ export default function App() {
             ▶️ Play All
           </button>
           <button onClick={stopAll}>⏹ Stop All</button>
+
+                  <button onClick={clearSession}>Clear Session</button>
         </div>
+       
         <div style={{ margin: '1em 0' }}>
           <label>Reverb Bus Level:</label>
           <input
@@ -323,7 +339,7 @@ export default function App() {
             onChange={(e) => setBusLevel(parseFloat(e.target.value))}
           />
         </div>
-
+ {/* <div className='rev-sliders'>
         <div style={{ margin: '1em 0' }} className='param'>
           <label>Left Delay (ms): {leftDelayTime}</label>
           <input
@@ -368,6 +384,7 @@ export default function App() {
             onChange={(e) => setLpfFreq(parseFloat(e.target.value))}
           />
         </div>
+        </div> */}
       </div>
       {/* Left: Parts palette */}
       <div
