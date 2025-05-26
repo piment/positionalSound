@@ -33,6 +33,7 @@ export function ObjSound({
   convolver,
   onSubsChange,
   children,
+  playStartTime
 }) {
   const groupRef = useRef();
   const [paused, setPaused] = useState(false);
@@ -74,6 +75,7 @@ export function ObjSound({
             const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: val } : s));
             onSubsChange(next);
           }}
+            playStartTime={playStartTime}
         />
       ))}
 

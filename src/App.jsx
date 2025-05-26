@@ -44,6 +44,8 @@ export default function App() {
   const audioCtx = listener.context;
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
+
+    const [playOffset, setPlayOffset] = useState(0);
   const sourcesRef = useRef([]);
 
   const [meshes, setMeshes] = useState([]); // e.g. ['snare','kick']
@@ -216,6 +218,7 @@ export default function App() {
     });
   }
   async function playAll() {
+ setPlayOffset(audioCtx.currentTime);
     setPlaying(true);
   }
   function stopAll() {
@@ -223,6 +226,7 @@ export default function App() {
     sourcesRef.current = [];
 
     setPlaying(false);
+    // setPlayStartTime(null);
   }
 
   const flatIndexMap = useMemo(() => {
@@ -409,6 +413,7 @@ export default function App() {
                 onSubsChange={(newSubs) =>
                   setAssignments((a) => ({ ...a, [part]: newSubs }))
                 }
+                  playStartTime={playOffset}
               >
                 <Part />
               </ObjSound>
@@ -434,6 +439,7 @@ export default function App() {
                 }
                 sendLevel={sub.sendLevel}
                 volume={sub.volume}
+                  playStartTime={playOffset}
                 // no meshRef or panner → dry playback
               />
             );

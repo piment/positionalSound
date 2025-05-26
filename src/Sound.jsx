@@ -13,7 +13,8 @@ export default function Sound({
   convolver,
   sendLevel = 0,
     onVolumeChange,
-  onSendLevelChange
+  onSendLevelChange,
+  playStartTime = 0
 }) {
   const soundRef = useRef();
   const buffer   = useLoader(THREE.AudioLoader, url);
@@ -49,17 +50,20 @@ export default function Sound({
 
     // playback
     if (on && !paused) {
-      if (!sound.isPlaying) sound.play();
+        if (!sound.isPlaying) {
+        // three.js Audio.play( delay, offset )
+        sound.play(0, playStartTime);
+      }
     } else {
       try { sound.stop(); } catch {}
     }
-  }, [buffer, dist, volume, on, paused]);
+  }, [buffer, dist, volume, on, paused, playStartTime]);
 
   // ─── WET PATH (reverb send) ─────────────────────
   useEffect(() => {
     if (!buffer) return;
     const ctx = listener.context;
-
+    const offset = Number.isFinite(playStartTime) ? playStartTime : 0;
     // start or stop wet source
     if (on && !paused) {
       const src  = ctx.createBufferSource();
@@ -72,7 +76,7 @@ export default function Sound({
       gain.gain.setValueAtTime(sl, ctx.currentTime);
 
       src.connect(gain).connect(convolver);
-      src.start(ctx.currentTime);
+      src.start(ctx.currentTime, offset);
 
       sendSrcRef.current  = src;
       sendGainRef.current = gain;
@@ -91,7 +95,7 @@ export default function Sound({
         sendGainRef.current = null;
       }
     };
-  }, [buffer, on, paused, convolver, listener]);
+  }, [buffer, on, paused, convolver, listener,  playStartTime]);
 
   // ─── UPDATE SEND LEVEL ─────────────────────────
   useEffect(() => {
