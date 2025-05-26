@@ -119,8 +119,15 @@ const data = useMemo(
     analyser.getByteFrequencyData(data);
     // e.g. average magnitude normalized 0→1
     const sum = data.reduce((a, v) => a + v, 0);
-    const avg = sum / data.length / 255;
-    onAnalysedLevel?.(avg);
+  let level = sum / data.length / 255;
+
+  // bake in the volume slider
+  level *= Number.isFinite(volume) ? volume : 1;
+
+  // clamp 0→1
+  level = Math.min(1, Math.max(0, level));
+
+  onAnalysedLevel?.(level);
     // console.log(avg*10)
   });
 

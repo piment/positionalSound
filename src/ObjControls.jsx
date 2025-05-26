@@ -1,9 +1,15 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useSnapshot, proxy } from 'valtio';
 import { Html, OrbitControls, TransformControls } from '@react-three/drei';
 import Sound from './Sound';
 import { useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three'
+import * as THREE from 'three';
 import SoundParticles from './SoundParticles';
 const modes = ['translate', 'rotate', 'scale'];
 const sceneState = proxy({ current: null, mode: 0 });
@@ -19,7 +25,11 @@ export function Controls() {
           mode={modes[snap.mode]}
         />
       )}
-      <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.75} />
+      <OrbitControls
+        makeDefault
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI / 1.75}
+      />
     </>
   );
 }
@@ -34,25 +44,24 @@ export function ObjSound({
   convolver,
   onSubsChange,
   children,
-  playStartTime
+  playStartTime,
 }) {
-  const groupRef = useRef();
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
- const [levels, setLevels] = useState({}); 
+  const [levels, setLevels] = useState({});
   const smoothRef = useRef(0);
-  const outerRef   = useRef()   // the <group> you already had
-  const innerRef   = useRef()   // we’ll point this at the positioned child
-  const [ready, setReady] = useState(false)
+  const outerRef = useRef(); // the <group> you already had
+  const innerRef = useRef(); // we’ll point this at the positioned child
+  const [ready, setReady] = useState(false);
 
-    useLayoutEffect(() => {
-    const outer = outerRef.current
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
     if (outer && outer.children[0].children.length) {
       // assume the *first* child is the <group position=[…]> from your Part
-      innerRef.current = outer.children[0].children[0]
-      setReady(true)
+      innerRef.current = outer.children[0].children[0];
+      setReady(true);
     }
-  }, [])
+  }, []);
   // callback we pass down to each Sound
   function handleLevel(subId, level) {
     setLevels((prev) => {
@@ -60,11 +69,11 @@ export function ObjSound({
       return { ...prev, [subId]: level };
     });
   }
- const playLevel = useMemo(() => {
+  const playLevel = useMemo(() => {
     const vals = Object.values(levels);
     if (vals.length === 0) return 0;
     const sum = vals.reduce((a, v) => a + v, 0);
-    return sum / vals.length;   // average, still 0→1
+    return sum / vals.length; // average, still 0→1
   }, [levels]);
 
   // cache pad-material meshes once after mount
@@ -72,7 +81,7 @@ export function ObjSound({
   useEffect(() => {
     if (!outerRef.current) return;
     const arr = [];
-    outerRef.current.traverse(obj => {
+    outerRef.current.traverse((obj) => {
       if (obj.isMesh && obj.material.name === 'padMat') {
         arr.push(obj);
       }
@@ -85,12 +94,13 @@ export function ObjSound({
     if (!padMeshes.length) return;
 
     // Optionally boost low/mid levels
-    const boosted = Math.sqrt(playLevel);  // sqrt gives more punch on quieter sounds
+    const boosted = Math.sqrt(playLevel); // sqrt gives more punch on quieter sounds
 
     // Use different lambdas for attack vs release:
-    const lambda = boosted > smoothRef.current
-      ? 20  // fast attack
-      : 30; // even faster release
+    const lambda =
+      boosted > smoothRef.current
+        ? 20 // fast attack
+        : 30; // even faster release
 
     // Smoothed value → smoothRef.current
     smoothRef.current = THREE.MathUtils.damp(
@@ -111,18 +121,9 @@ export function ObjSound({
     });
   });
 
-  // useLayoutEffect(() => {
-  //   if (!groupRef.current) return;
-  //   const worldPos = new THREE.Vector3();
-  //   groupRef.current.getWorldPosition(worldPos);
-  //   setOffset(worldPos.toArray());
-  // }, []);
-console.log('OUTER', outerRef)
   return (
     <group
-    ref={outerRef}
-      // position={defPos}
-      
+      ref={outerRef}
       scale={5}
       name={name}
       onClick={(e) => {
@@ -135,24 +136,25 @@ console.log('OUTER', outerRef)
           sceneState.mode = (snap.mode + 1) % modes.length;
         }
       }}
-      
     >
-   
-      {children }
-      
+      {children}
 
-  <SoundParticles               
-       emitterRef={innerRef}
+      <SoundParticles
+        emitterRef={innerRef}
         playLevel={playLevel}
         maxParticles={300}
+        minSize={0.05}
+        maxSize={0.3}
         minLife={0.3}
-        maxLife={1}
-        baseSpeed={3} />
-        {/* </group> */}
+        maxLife={1.0}
+        baseSpeed={2}
+        color='#88ccff'
+      />
+      {/* </group> */}
       {/* audio nodes */}
       {subs.map((sub, idx) => (
         <Sound
-           key={`dry:${sub.id}:${name}`}
+          key={`dry:${sub.id}:${name}`}
           meshRef={outerRef}
           url={sub.url}
           dist={dist}
@@ -163,11 +165,13 @@ console.log('OUTER', outerRef)
           convolver={convolver}
           sendLevel={sub.sendLevel}
           onSendLevelChange={(val) => {
-            const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: val } : s));
+            const next = subs.map((s, j) =>
+              j === idx ? { ...s, sendLevel: val } : s
+            );
             onSubsChange(next);
           }}
-            playStartTime={playStartTime}
-             onAnalysedLevel={(level) => handleLevel(sub.id, level)}
+          playStartTime={playStartTime}
+          onAnalysedLevel={(level) => handleLevel(sub.id, level)}
         />
       ))}
 
@@ -176,28 +180,53 @@ console.log('OUTER', outerRef)
         <Html center position={[0, 1.5, 0]}>
           {subs.map((sub, idx) => (
             <div key={sub.id} style={{ marginBottom: 8 }}>
-              <div style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4 }}>
-                <label style={{ color: '#fff', fontSize: '0.7em' }}>{sub.name} Vol</label>
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  padding: 4,
+                  borderRadius: 4,
+                }}
+              >
+                <label style={{ color: '#fff', fontSize: '0.7em' }}>
+                  {sub.name} Vol
+                </label>
                 <input
-                  type="range"
-                  min={0} max={1} step={0.01}
+                  type='range'
+                  min={0}
+                  max={1}
+                  step={0.01}
                   value={sub.volume}
                   onChange={(e) => {
                     const v = parseFloat(e.target.value);
-                    const next = subs.map((s, j) => (j === idx ? { ...s, volume: v } : s));
+                    const next = subs.map((s, j) =>
+                      j === idx ? { ...s, volume: v } : s
+                    );
                     onSubsChange(next);
                   }}
                 />
               </div>
-              <div style={{ background: 'rgba(0,0,0,0.6)', padding: 4, borderRadius: 4, marginTop: 4 }}>
-                <label style={{ color: '#fff', fontSize: '0.7em' }}>{sub.name} Send</label>
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  padding: 4,
+                  borderRadius: 4,
+                  marginTop: 4,
+                }}
+              >
+                <label style={{ color: '#fff', fontSize: '0.7em' }}>
+                  {sub.name} Send
+                </label>
                 <input
-                  type="range"
-                  min={0} max={1} step={0.01}
+                  type='range'
+                  min={0}
+                  max={1}
+                  step={0.01}
                   value={sub.sendLevel}
                   onChange={(e) => {
                     const v = parseFloat(e.target.value);
-                    const next = subs.map((s, j) => (j === idx ? { ...s, sendLevel: v } : s));
+                    const next = subs.map((s, j) =>
+                      j === idx ? { ...s, sendLevel: v } : s
+                    );
                     onSubsChange(next);
                   }}
                 />
