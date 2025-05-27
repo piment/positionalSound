@@ -8,11 +8,11 @@ export default function FrequencyFloor({
   numParticles    = 65536,
   width           = 100,
   depth           = 100,
-  bounceThreshold = 0.1,
-  impulseStrength = 15,
+  bounceThreshold = 0.21,
+  impulseStrength = 5,
   gravity         = -9.8,
-  restitution     = 0.05,
-  pointSize       = 0.3,
+  restitution     = 0.95,
+  pointSize       = 0.03,
   minLife         = 0.13,
   maxLife         = 0.3,
 }) {
@@ -20,7 +20,7 @@ export default function FrequencyFloor({
   const total = numParticles
   const halfW = width/2
   const halfD = depth/2
-const NOTE_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B']
+
   // 1) Static buffers (only run on mount)
   const { positions, velocities, binIndex, ages, lifetimes } = useMemo(() => {
     const pos  = new Float32Array(total*3)
@@ -105,39 +105,21 @@ const sampleRate = analyser.context.sampleRate
         positions[3*i+0] = Math.random()*width  - halfW
         positions[3*i+2] = Math.random()*depth  - halfD
       }
-////////////////////////
-//////        FREQ
+
       // recolor
-    //   const b    = binIndex[i]
-    // const freq = b * (sampleRate / fftSize)
-    // // clamp + log→hue:
-    // const f    = Math.min(20000, Math.max(20, freq))
-    // const hue  = (Math.log10(f) - Math.log10(20))
-    //            / (Math.log10(15000) - Math.log10(20))
-    //            * 0.7
+      const b    = binIndex[i]
+    const freq = b * (sampleRate / fftSize)
+    // clamp + log→hue:
+    const f    = Math.min(20000, Math.max(20, freq))
+    const hue  = (Math.log10(f) - Math.log10(20))
+               / (Math.log10(15000) - Math.log10(20))
+               * 0.7
     
-    // const color = new THREE.Color().setHSL(hue, 1, amp)
-    // color.toArray(colorArray, 3 * i)
-    // }
+    const color = new THREE.Color().setHSL(hue, 1, amp)
+    color.toArray(colorArray, 3 * i)
+    }
 
-  
-/////////////////////////////////////////
-///////          MIDI
-    const b = binIndex[i]
- const freq = b * (analyser.context.sampleRate / analyser.fftSize)
-
- // 2) map to MIDI (float), then to nearest semitone
- const midi = 12 * Math.log2(freq / 440) + 69
- const midiInt = Math.max(0, Math.min(127, Math.round(midi)))
-
- // 3) pitch-class 0…11
- const pc = midiInt % 12
-
- // 4) HSL hue based on pitch-class
- const hue = pc / 12
- new THREE.Color().setHSL(hue, 1, amp).toArray(colorArray, 3 * i)
-    } 
-     // upload updates
+    // upload updates
     const g = ref.current.geometry
     g.attributes.position.needsUpdate = true
     g.attributes.color.needsUpdate    = true

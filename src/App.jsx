@@ -34,6 +34,7 @@ import {
 } from '@react-three/postprocessing';
 import { Bvh } from '@react-three/drei';
 import FrequencyFloor from './FrequencyFloor';
+import Tuner from './Tuner';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -470,7 +471,7 @@ useEffect(() => {
   impulseStrength={20}
   gravity={-9.8}
   restitution={0.6}
-  pointSize={0.2}
+  // pointSize={0.2}
 />
         
           <EnvComp />
@@ -484,6 +485,7 @@ useEffect(() => {
             {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
           </EffectComposer>
         </Canvas>
+<Tuner analyser={masterAnalyser}/>
       </div>
 
       {/* Right: Track list & assignment UI */}
