@@ -56,6 +56,13 @@ export default function App() {
   const listener = useMemo(() => new THREE.AudioListener(), []);
   const audioCtx = listener.context;
 
+const masterAnalyser = useMemo(() => {
+  const a = audioCtx.createAnalyser();
+  a.fftSize = 2048;
+  a.smoothingTimeConstant = 0.8;
+  return a;
+}, [audioCtx]);
+
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [sources, setSources] = useState([]);
@@ -281,6 +288,18 @@ const handleAnalyserReady = useCallback((id, analyser, initialVolume) => {
   const handleVolumeChange = useCallback((id, volume) => {
     setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, volume } : s)));
   }, []);
+
+
+useEffect(() => {
+  // disconnect the listener’s original output
+  const inNode = listener.getInput();
+  inNode.disconnect();
+
+  // route: listener → masterAnalyser → destination
+  inNode.connect(masterAnalyser);
+  masterAnalyser.connect(audioCtx.destination);
+}, [listener, masterAnalyser, audioCtx]);
+
 // console.log(sources)
   return (
     <div style={{ height: '100vh' }}>
@@ -439,18 +458,19 @@ const handleAnalyserReady = useCallback((id, analyser, initialVolume) => {
           })}
          
  <FrequencyFloor
-  sources={sources}
+ analyser={masterAnalyser}
+  // sources={sources}
   playing={playing}
   numParticles={131072}
-  width={30}
-  depth={30}
-  minLife={0.2}
-  maxLife={0.6}
-  bounceThreshold={0.01}
-  impulseStrength={15}
+  width={100}
+  depth={100}
+  // minLife={0.2}
+  // maxLife={0.6}
+  // bounceThreshold={0.02}
+  impulseStrength={20}
   gravity={-9.8}
   restitution={0.6}
-  pointSize={0.02}
+  pointSize={0.2}
 />
         
           <EnvComp />
