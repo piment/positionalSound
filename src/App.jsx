@@ -1,4 +1,11 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Perf } from 'r3f-perf';
@@ -17,9 +24,16 @@ import { MidTom } from './instruments/drumkit/MidTom';
 import { FloorTom } from './instruments/drumkit/FloorTom';
 import { Crash } from './instruments/drumkit/Crash';
 import { Ride } from './instruments/drumkit/Ride';
-import { Bloom, DepthOfField, EffectComposer, LensFlare, Noise, Vignette } from '@react-three/postprocessing'
+import {
+  Bloom,
+  DepthOfField,
+  EffectComposer,
+  LensFlare,
+  Noise,
+  Vignette,
+} from '@react-three/postprocessing';
 import { Bvh } from '@react-three/drei';
-
+import FrequencyFloor from './FrequencyFloor';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -32,31 +46,30 @@ const COMPONENTS = {
   Ride: Ride,
 };
 
-
 const STORAGE_KEYS = {
   trackList: 'myapp:trackList',
   assignments: 'myapp:assignments',
-  meshes: 'myapp:meshes'
-}
-
-
+  meshes: 'myapp:meshes',
+};
 
 export default function App() {
-
   const listener = useMemo(() => new THREE.AudioListener(), []);
   const audioCtx = listener.context;
+
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
+  const [sources, setSources] = useState([]);
 
-    const [playOffset, setPlayOffset] = useState(0);
+  const [playOffset, setPlayOffset] = useState(0);
   const sourcesRef = useRef([]);
-const [trackList,   setTrackList]   = useState([]);
-const [assignments, setAssignments] = useState( [] );
+  const [trackList, setTrackList] = useState([]);
+const [assignments, setAssignments] = useState({ null: [] });
+
 
   const [meshes, setMeshes] = useState(() => {
-    const v = localStorage.getItem(STORAGE_KEYS.meshes)
-    return v ? JSON.parse(v) : []
-  })
+    const v = localStorage.getItem(STORAGE_KEYS.meshes);
+    return v ? JSON.parse(v) : [];
+  });
   const [selectedTrackId, setSelectedTrackId] = useState(null);
 
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
@@ -141,10 +154,9 @@ const [assignments, setAssignments] = useState( [] );
     reverbGain.gain.setValueAtTime(busLevel, audioCtx.currentTime);
   }, [busLevel, reverbGain, audioCtx]);
 
-
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes))
-  }, [meshes])
+    localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes));
+  }, [meshes]);
 
   // Add new track with default position and distance
   function handleAddTrack({ name, url, file, groupName }) {
@@ -187,9 +199,6 @@ const [assignments, setAssignments] = useState( [] );
   function addMesh(partName) {
     if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
   }
-  // decode ArrayBuffer via native AudioContext
-  const decodeBuffer = (file) =>
-    file.arrayBuffer().then((buffer) => audioCtx.decodeAudioData(buffer));
 
   function handleImport(items) {
     // build full track objects
@@ -205,8 +214,6 @@ const [assignments, setAssignments] = useState( [] );
     // optionally keep a flat list too
     setTrackList((prev) => [...prev, ...newTracks]);
 
-    // **seed unassigned with the objects themselves**—
-    // not with newTracks.map(t => t.id)
     setAssignments((a) => ({
       ...a,
       null: [...(a.null || []), ...newTracks],
@@ -229,51 +236,16 @@ const [assignments, setAssignments] = useState( [] );
     });
   }
   async function playAll() {
- setPlayOffset(audioCtx.currentTime);
+    setPlayOffset(audioCtx.currentTime);
     setPlaying(true);
   }
   function stopAll() {
     sourcesRef.current.forEach((src) => src.stop());
     sourcesRef.current = [];
-
+// setSources([])
     setPlaying(false);
     // setPlayStartTime(null);
   }
-
-  const flatIndexMap = useMemo(() => {
-    let acc = [];
-    tracks.forEach((trackBucket, meshIdx) => {
-      trackBucket.subs.forEach((sub, subIdx) => {
-        acc.push({ meshIdx, subIdx, id: sub.id ?? `${meshIdx}-${subIdx}` });
-      });
-    });
-    return acc;
-  }, [tracks]);
-
-  const flatTracks = flatIndexMap.map(({ meshIdx, subIdx, id }) => {
-    const s = tracks[meshIdx].subs[subIdx];
-    // console.log(id)
-    return { id, name: s.name, file: s.file, url: s.url };
-  });
-  // 3) handle delete
-  function handleDelete(flatIdx) {
-    const { meshIdx, subIdx } = flatIndexMap[flatIdx];
-
-    // 1) remove from your state
-    setTracks((prev) => {
-      const clone = [...prev];
-      clone[meshIdx].subs = clone[meshIdx].subs.filter((_, i) => i !== subIdx);
-      if (clone[meshIdx].subs.length === 0) clone.splice(meshIdx, 1);
-      return clone;
-    });
-
-    // 2) force all <Sound> to stop, then restart the survivors
-    setPlaying(false);
-    // next tick, turn it back on
-    setTimeout(() => setPlaying(true), 0);
-  }
-
-
 
   function updateUnassignedTrack(id, props) {
     setAssignments((a) => ({
@@ -282,19 +254,34 @@ const [assignments, setAssignments] = useState( [] );
     }));
   }
 
-
   function clearSession() {
-    // localStorage.removeItem(STORAGE_KEYS.trackList)
-    // localStorage.removeItem(STORAGE_KEYS.assignments)
-    localStorage.removeItem(STORAGE_KEYS.meshes)
-    setTrackList([])
+    localStorage.removeItem(STORAGE_KEYS.meshes);
+    setTrackList([]);
     // setAssignments({ null: [] })
-    setMeshes([])
-    stopAll()
+    setMeshes([]);
+    stopAll();
   }
 
 
+const handleAnalyserReady = useCallback((id, analyser, initialVolume) => {
+  if (!playing) return                    // <-- ignore if not playing
+  setSources(srcs =>
+    srcs.some(s => s.id === id)
+      ? srcs
+      : [...srcs, { id, analyser, volume: initialVolume }]
+  )
+}, [playing])
 
+  // 2) When a Sound reports its current level (0→1), update it
+  const handleLevelChange = useCallback((id, level) => {
+    setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, level } : s)));
+  }, []);
+
+  // 3) When the user moves a volume slider, update that entry
+  const handleVolumeChange = useCallback((id, volume) => {
+    setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, volume } : s)));
+  }, []);
+// console.log(sources)
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
@@ -304,9 +291,9 @@ const [assignments, setAssignments] = useState( [] );
           </button>
           <button onClick={stopAll}>⏹ Stop All</button>
 
-                  <button onClick={clearSession}>Clear Session</button>
+          <button onClick={clearSession}>Clear Session</button>
         </div>
-       
+
         <div style={{ margin: '1em 0' }}>
           <label>Reverb Bus Level:</label>
           <input
@@ -318,7 +305,7 @@ const [assignments, setAssignments] = useState( [] );
             onChange={(e) => setBusLevel(parseFloat(e.target.value))}
           />
         </div>
- {/* <div className='rev-sliders'>
+        {/* <div className='rev-sliders'>
         <div style={{ margin: '1em 0' }} className='param'>
           <label>Left Delay (ms): {leftDelayTime}</label>
           <input
@@ -385,8 +372,6 @@ const [assignments, setAssignments] = useState( [] );
       {/* Center: 3D canvas */}
       <div style={{ flex: 1 }} className='canvas-main'>
         <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
-     
-            
           <ambientLight intensity={0.3} />
           <pointLight position={[5, 10, 5]} intensity={1} />
 
@@ -408,10 +393,15 @@ const [assignments, setAssignments] = useState( [] );
                 on={playing}
                 listener={listener}
                 convolver={convolver}
+                // analyser={analyser}
+                onAnalyserReady={handleAnalyserReady}
+           
+                onVolumeChange={handleVolumeChange}
+            
                 onSubsChange={(newSubs) =>
                   setAssignments((a) => ({ ...a, [part]: newSubs }))
                 }
-                  playStartTime={playOffset}
+                playStartTime={playOffset}
               >
                 <Part />
               </ObjSound>
@@ -430,30 +420,49 @@ const [assignments, setAssignments] = useState( [] );
                 paused={false}
                 listener={listener}
                 convolver={convolver}
-                // selected={selectedMesh === null}
-                // onSelect={() => setSelectedMesh(null)}
+                analyser={sources[0]?.analyser}
+      
                 onSubsChange={(newSubs) =>
                   setAssignments((a) => ({ ...a, null: newSubs }))
                 }
                 sendLevel={sub.sendLevel}
                 volume={sub.volume}
-                  playStartTime={playOffset}
+                playStartTime={playOffset}
+                onAnalyserReady={(analyser) =>
+                  handleAnalyserReady(sub.id, analyser, sub.volume)
+                }
+  
+                onVolumeChange={(vol) => handleVolumeChange(sub.id, vol)}
                 // no meshRef or panner → dry playback
               />
             );
           })}
-
+         
+ <FrequencyFloor
+  sources={sources}
+  playing={playing}
+  numParticles={131072}
+  width={30}
+  depth={30}
+  minLife={0.2}
+  maxLife={0.6}
+  bounceThreshold={0.01}
+  impulseStrength={15}
+  gravity={-9.8}
+  restitution={0.6}
+  pointSize={0.02}
+/>
+        
           <EnvComp />
           <Controls />
           <Perf deepAnalyze />
-<EffectComposer disableNormalPass>
-  {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
-        {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
-        {/* <Bloom luminanceThreshold={0.25} luminanceSmoothing={0.9} height={300} /> */}
-        {/* <Noise opacity={0.02} /> */}
-        {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
-      </EffectComposer>
-     
+          <EffectComposer disableNormalPass>
+            {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
+            {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
+            {/* <Bloom luminanceThreshold={0.25} luminanceSmoothing={0.9} height={300} /> */}
+            {/* <Noise opacity={0.02} /> */}
+            {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
+          </EffectComposer>
         </Canvas>
       </div>
 

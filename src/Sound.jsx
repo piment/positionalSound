@@ -13,7 +13,10 @@ export default function Sound({
   convolver,
   sendLevel = 0,
   playStartTime = 0,
-    onAnalysedLevel,
+    // onAnalysedLevel,
+      onAnalyserReady,
+  onVolumeChange,
+
 }) {
   const soundRef = useRef();
   const buffer   = useLoader(THREE.AudioLoader, url);
@@ -23,6 +26,19 @@ export default function Sound({
   // wet send nodes
   const sendSrcRef  = useRef(null);
   const sendGainRef = useRef(null);
+
+  // useEffect(() => {
+  //   if (typeof onVolumeChange === 'function') {
+  //     onVolumeChange(volume)
+  //   }
+  // }, [volume, onVolumeChange])
+
+
+//  useEffect(() => {
+//   if (typeof onAnalyserReady === 'function') {
+//     onAnalyserReady(analyser)
+//   }
+// }, [analyser, onAnalyserReady])
 
   // attach listener once
   useEffect(() => {
@@ -53,13 +69,19 @@ export default function Sound({
         if (!sound.isPlaying) {
         // three.js Audio.play( delay, offset )
         sound.play(0, playStartTime);
-            p.connect(analyser);
-    analyser.connect(listener.getInput());
+    //         // p.connect(analyser);
+    // analyser.connect(listener.getInput());
+    const gainNode = sound.getOutput()
+  gainNode.connect(analyser)
       }
     } else {
       try { sound.stop(); } catch {}
     }
-  }, [buffer, dist, volume, on, paused, playStartTime]);
+
+
+       onAnalyserReady?.(analyser)
+    onVolumeChange?.(volume)
+  }, [buffer, dist, volume, on, paused, playStartTime, onAnalyserReady, onVolumeChange]);
 
   // ─── WET PATH (reverb send) ─────────────────────
   useEffect(() => {
@@ -127,7 +149,7 @@ const data = useMemo(
   // clamp 0→1
   level = Math.min(1, Math.max(0, level));
 
-  onAnalysedLevel?.(level);
+  // onAnalysedLevel?.(level);
     // console.log(avg*10)
   });
 

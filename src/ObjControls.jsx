@@ -11,6 +11,7 @@ import Sound from './Sound';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import SoundParticles from './SoundParticles';
+import FrequencyFloor from './FrequencyFloor';
 const modes = ['translate', 'rotate', 'scale'];
 const sceneState = proxy({ current: null, mode: 0 });
 
@@ -45,6 +46,10 @@ export function ObjSound({
   onSubsChange,
   children,
   playStartTime,
+  onAnalyserReady,
+  onLevelChange,
+  onVolumeChange,
+  analyser,
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
@@ -53,6 +58,7 @@ export function ObjSound({
   const outerRef = useRef(); // the <group> you already had
   const innerRef = useRef(); // we’ll point this at the positioned child
   const [ready, setReady] = useState(false);
+  const analyserRef = useRef(null);
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
@@ -139,19 +145,6 @@ export function ObjSound({
     >
       {children}
 
-      <SoundParticles
-        emitterRef={innerRef}
-        playLevel={playLevel}
-        maxParticles={300}
-        minSize={0.05}
-        maxSize={0.3}
-        minLife={0.3}
-        maxLife={1.0}
-        baseSpeed={2}
-        color='#88ccff'
-      />
-      {/* </group> */}
-      {/* audio nodes */}
       {subs.map((sub, idx) => (
         <Sound
           key={`dry:${sub.id}:${name}`}
@@ -171,7 +164,15 @@ export function ObjSound({
             onSubsChange(next);
           }}
           playStartTime={playStartTime}
-          onAnalysedLevel={(level) => handleLevel(sub.id, level)}
+          onAnalyserReady={analyser =>
+            onAnalyserReady(sub.id, analyser, sub.volume)
+          }
+          // onAnalysedLevel={level =>
+          //   onLevelChange(sub.id, level)
+          // }
+          onVolumeChange={vol =>
+            onVolumeChange(sub.id, vol)
+          }
         />
       ))}
 
@@ -196,13 +197,17 @@ export function ObjSound({
                   max={1}
                   step={0.01}
                   value={sub.volume}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    const next = subs.map((s, j) =>
-                      j === idx ? { ...s, volume: v } : s
-                    );
-                    onSubsChange(next);
-                  }}
+              onChange={e => {
+          const newVol = parseFloat(e.target.value)
+          // 1) update local subs[] state
+          onSubsChange(
+            subs.map(s =>
+              s.id === sub.id ? { ...s, volume: newVol } : s
+            )
+          )
+          // 2) notify App of *volume* change
+          onVolumeChange(sub.id, newVol)
+        }}
                 />
               </div>
               <div
@@ -222,13 +227,18 @@ export function ObjSound({
                   max={1}
                   step={0.01}
                   value={sub.sendLevel}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    const next = subs.map((s, j) =>
-                      j === idx ? { ...s, sendLevel: v } : s
-                    );
-                    onSubsChange(next);
-                  }}
+                   onChange={e => {
+          const newSend = parseFloat(e.target.value)
+          // 1) update *sendLevel* in your subs[]
+          onSubsChange(
+            subs.map(s =>
+              s.id === sub.id ? { ...s, sendLevel: newSend } : s
+            )
+          )
+          // 2) **do not** call onVolumeChange here!
+          //    If you want to expose sendLevel to App you’d call:
+          // onSendLevelChange(sub.id, newSend)
+        }}
                 />
               </div>
             </div>
