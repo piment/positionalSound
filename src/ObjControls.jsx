@@ -50,6 +50,8 @@ export function ObjSound({
   onLevelChange,
   onVolumeChange,
   analyser,
+  masterTapGain,
+ visibleMap,
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
@@ -153,6 +155,7 @@ export function ObjSound({
           dist={dist}
           volume={sub.volume}
           on={on}
+          trackId={sub.id} 
           paused={paused}
           listener={listener}
           convolver={convolver}
@@ -164,15 +167,20 @@ export function ObjSound({
             onSubsChange(next);
           }}
           playStartTime={playStartTime}
-          onAnalyserReady={analyser =>
-            onAnalyserReady(sub.id, analyser, sub.volume)
-          }
-          // onAnalysedLevel={level =>
-          //   onLevelChange(sub.id, level)
+          // onAnalyserReady={analyser =>
+          //   onAnalyserReady(sub.id, analyser, sub.volume)
           // }
-          onVolumeChange={vol =>
-            onVolumeChange(sub.id, vol)
-          }
+          // // onAnalysedLevel={level =>
+          // //   onLevelChange(sub.id, level)
+          // // }
+          // onVolumeChange={vol =>
+          //   onVolumeChange(sub.id, vol)
+          // }
+          masterTapGain={masterTapGain}
+     visible={visibleMap[sub.id]?.visible ?? false}
+     onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}
+     onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}
+     onVolumeChange={(id, v) => onVolumeChange(id, v)}
         />
       ))}
 

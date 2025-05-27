@@ -12,7 +12,6 @@ import { Perf } from 'r3f-perf';
 import { nanoid } from 'nanoid';
 import './App.css';
 import ImportMenu from './ImportMenu';
-import MultitrackDisplay from './MultitrackDisplay';
 import { Controls, ObjSound } from './ObjControls';
 import EnvComp from './EnvComp';
 import Sound from './Sound';
@@ -28,13 +27,17 @@ import {
   Bloom,
   DepthOfField,
   EffectComposer,
-  LensFlare,
-  Noise,
-  Vignette,
 } from '@react-three/postprocessing';
 import { Bvh } from '@react-three/drei';
 import FrequencyFloor from './FrequencyFloor';
 import Tuner from './Tuner';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  addTrack,
+  removeTrack,
+  toggleVisibility,
+  setColor,
+} from './reducer/trackSettingsSlice';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -57,12 +60,25 @@ export default function App() {
   const listener = useMemo(() => new THREE.AudioListener(), []);
   const audioCtx = listener.context;
 
-const masterAnalyser = useMemo(() => {
-  const a = audioCtx.createAnalyser();
-  a.fftSize = 2048;
-  a.smoothingTimeConstant = 0.8;
-  return a;
-}, [audioCtx]);
+  // const masterAnalyser = useMemo(() => {
+  //   const a = audioCtx.createAnalyser();
+  //   a.fftSize = 2048;
+  //   a.smoothingTimeConstant = 0.8;
+  //   return a;
+  // }, [audioCtx]);
+
+ const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
+ const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
+ // wire them once—no destination hookup!
+ useMemo(() => {
+   masterTapGain.gain.value = 1
+   masterTapGain.connect(masterAnalyser)
+   // ──> (do *not* connect masterAnalyser to destination)
+ }, [masterTapGain, masterAnalyser])
+
+
+  const dispatch = useDispatch();
+  const settings = useSelector((state) => state.trackSettings);
 
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
@@ -71,8 +87,7 @@ const masterAnalyser = useMemo(() => {
   const [playOffset, setPlayOffset] = useState(0);
   const sourcesRef = useRef([]);
   const [trackList, setTrackList] = useState([]);
-const [assignments, setAssignments] = useState({ null: [] });
-
+  const [assignments, setAssignments] = useState({ null: [] });
 
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
@@ -226,6 +241,10 @@ const [assignments, setAssignments] = useState({ null: [] });
       ...a,
       null: [...(a.null || []), ...newTracks],
     }));
+
+    newTracks.forEach((t) => {
+      dispatch(addTrack(t.id));
+    });
   }
   function toggleAssign(trackObj, targetMesh) {
     setAssignments((prev) => {
@@ -250,7 +269,7 @@ const [assignments, setAssignments] = useState({ null: [] });
   function stopAll() {
     sourcesRef.current.forEach((src) => src.stop());
     sourcesRef.current = [];
-// setSources([])
+    // setSources([])
     setPlaying(false);
     // setPlayStartTime(null);
   }
@@ -270,15 +289,17 @@ const [assignments, setAssignments] = useState({ null: [] });
     stopAll();
   }
 
-
-const handleAnalyserReady = useCallback((id, analyser, initialVolume) => {
-  if (!playing) return                    // <-- ignore if not playing
-  setSources(srcs =>
-    srcs.some(s => s.id === id)
-      ? srcs
-      : [...srcs, { id, analyser, volume: initialVolume }]
-  )
-}, [playing])
+  const handleAnalyserReady = useCallback(
+    (id, analyser, initialVolume) => {
+      if (!playing) return; // <-- ignore if not playing
+      setSources((srcs) =>
+        srcs.some((s) => s.id === id)
+          ? srcs
+          : [...srcs, { id, analyser, volume: initialVolume }]
+      );
+    },
+    [playing]
+  );
 
   // 2) When a Sound reports its current level (0→1), update it
   const handleLevelChange = useCallback((id, level) => {
@@ -290,18 +311,17 @@ const handleAnalyserReady = useCallback((id, analyser, initialVolume) => {
     setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, volume } : s)));
   }, []);
 
+  // useEffect(() => {
+  //   // disconnect the listener’s original output
+  //   const inNode = listener.getInput();
+  //   inNode.disconnect();
 
-useEffect(() => {
-  // disconnect the listener’s original output
-  const inNode = listener.getInput();
-  inNode.disconnect();
+  //   // route: listener → masterAnalyser → destination
+  //   inNode.connect(masterAnalyser);
+  //   // masterAnalyser.connect(audioCtx.destination);
+  // }, [listener, masterAnalyser, audioCtx]);
 
-  // route: listener → masterAnalyser → destination
-  inNode.connect(masterAnalyser);
-  masterAnalyser.connect(audioCtx.destination);
-}, [listener, masterAnalyser, audioCtx]);
-
-// console.log(sources)
+  // console.log(sources)
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
@@ -397,10 +417,8 @@ useEffect(() => {
 
           {meshes.map((part, idx) => {
             const Part = COMPONENTS[part];
-            // auto-circle position
             const angle = (idx / meshes.length) * Math.PI * 2;
             const dist = 10 + idx * 5;
-            // const defPos = [Math.cos(angle) * dist, 0, Math.sin(angle) * dist];
             const subs = assignments[part] || [];
 
             return (
@@ -411,17 +429,18 @@ useEffect(() => {
                 dist={dist}
                 subs={subs}
                 on={playing}
+                
                 listener={listener}
                 convolver={convolver}
                 // analyser={analyser}
                 onAnalyserReady={handleAnalyserReady}
-           
                 onVolumeChange={handleVolumeChange}
-            
                 onSubsChange={(newSubs) =>
                   setAssignments((a) => ({ ...a, [part]: newSubs }))
                 }
                 playStartTime={playOffset}
+                masterTapGain={masterTapGain}
+                visibleMap={settings}
               >
                 <Part />
               </ObjSound>
@@ -436,12 +455,12 @@ useEffect(() => {
                 name={sub.name}
                 subs={[sub]}
                 on={playing}
+                trackId={sub.id} 
                 url={sub.url}
                 paused={false}
                 listener={listener}
                 convolver={convolver}
                 analyser={sources[0]?.analyser}
-      
                 onSubsChange={(newSubs) =>
                   setAssignments((a) => ({ ...a, null: newSubs }))
                 }
@@ -451,41 +470,36 @@ useEffect(() => {
                 onAnalyserReady={(analyser) =>
                   handleAnalyserReady(sub.id, analyser, sub.volume)
                 }
-  
                 onVolumeChange={(vol) => handleVolumeChange(sub.id, vol)}
+                 masterTapGain={masterTapGain}
+                visible={settings[sub.id]?.visible}
                 // no meshRef or panner → dry playback
               />
             );
           })}
-         
- <FrequencyFloor
- analyser={masterAnalyser}
-  // sources={sources}
-  playing={playing}
-  numParticles={131072}
-  width={100}
-  depth={100}
-  // minLife={0.2}
-  // maxLife={0.6}
-  // bounceThreshold={0.02}
-  impulseStrength={20}
-  gravity={-9.8}
-  restitution={0.6}
-  // pointSize={0.2}
-/>
-        
+
+          <FrequencyFloor
+            analyser={masterAnalyser}
+            // sources={sources}
+            playing={playing}
+            numParticles={131072}
+            width={100}
+            depth={100}
+            // minLife={0.2}
+            // maxLife={0.6}
+            // bounceThreshold={0.02}
+            impulseStrength={20}
+            gravity={-9.8}
+            restitution={0.6}
+            // pointSize={0.2}
+          />
+
           <EnvComp />
           <Controls />
           <Perf deepAnalyze />
-          <EffectComposer disableNormalPass>
-            {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
-            {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
-            {/* <Bloom luminanceThreshold={0.25} luminanceSmoothing={0.9} height={300} /> */}
-            {/* <Noise opacity={0.02} /> */}
-            {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
-          </EffectComposer>
+ 
         </Canvas>
-<Tuner analyser={masterAnalyser}/>
+        <Tuner analyser={masterAnalyser} />
       </div>
 
       {/* Right: Track list & assignment UI */}
@@ -524,6 +538,7 @@ useEffect(() => {
               Object.entries(assignments).find(([, arr]) =>
                 arr.some((x) => x.id === t.id)
               )?.[0] || 'null';
+            const cfg = settings[t.id] || { visible: false, color: '#88ccff' };
             return (
               <li key={t.id} style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -588,6 +603,26 @@ useEffect(() => {
                           updateUnassignedTrack(t.id, {
                             sendLevel: parseFloat(e.target.value),
                           })
+                        }
+                      />
+                    </div>
+                    <div
+                      key={t.id}
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      <input
+                        type='checkbox'
+                        checked={cfg.visible}
+                        onChange={() => dispatch(toggleVisibility(t.id))}
+                      />
+                      {/* <label style={{ marginRight: 8 }}>{t.name}</label> */}
+                      <input
+                        type='color'
+                        value={cfg.color}
+                        onChange={(e) =>
+                          dispatch(
+                            setColor({ trackId: t.id, color: e.target.value })
+                          )
                         }
                       />
                     </div>

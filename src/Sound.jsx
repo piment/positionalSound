@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useSelector } from 'react-redux';
 
 export default function Sound({
   url,
@@ -13,32 +14,41 @@ export default function Sound({
   convolver,
   sendLevel = 0,
   playStartTime = 0,
-    // onAnalysedLevel,
-      onAnalyserReady,
+  // onAnalysedLevel,
+  onAnalyserReady,
   onVolumeChange,
-
+  trackId,
+    masterTapGain,   
+  visible,
 }) {
   const soundRef = useRef();
-  const buffer   = useLoader(THREE.AudioLoader, url);
+  const buffer = useLoader(THREE.AudioLoader, url);
   const { camera } = useThree();
   const audioCtx = listener.context;
   const analyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
+  // const tapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
+  // start with tapGain muted
+  // tapGain.gain.value = 1;
+
   // wet send nodes
-  const sendSrcRef  = useRef(null);
+  const sendSrcRef = useRef(null);
   const sendGainRef = useRef(null);
+  const isConnected = useRef(false);
 
-  // useEffect(() => {
-  //   if (typeof onVolumeChange === 'function') {
-  //     onVolumeChange(volume)
+  // const visible = useSelector(
+  //   (state) => state.trackSettings[trackId]?.visible ?? true 
+  // );
+  useEffect(() => {
+    if (typeof onVolumeChange === 'function') {
+      onVolumeChange(volume)
+    }
+  }, [volume, onVolumeChange])
+
+  //  useEffect(() => {
+  //   if (typeof onAnalyserReady === 'function') {
+  //     onAnalyserReady(analyser)
   //   }
-  // }, [volume, onVolumeChange])
-
-
-//  useEffect(() => {
-//   if (typeof onAnalyserReady === 'function') {
-//     onAnalyserReady(analyser)
-//   }
-// }, [analyser, onAnalyserReady])
+  // }, [analyser, onAnalyserReady])
 
   // attach listener once
   useEffect(() => {
@@ -46,11 +56,12 @@ export default function Sound({
     return () => camera.remove(listener);
   }, [camera, listener]);
 
+  // console.log(visible);
   // ─── DRY PATH ─────────────────────────────────
+  // ─── Mount-only effect: wire the tap once ───────────────────────
   useEffect(() => {
     const sound = soundRef.current;
     if (!sound || !buffer) return;
-
 
     const p = sound.panner;
     p.panningModel = 'equalpower';
@@ -59,29 +70,50 @@ export default function Sound({
     sound.setBuffer(buffer);
     sound.setRefDistance(dist);
     sound.setLoop(true);
-
+sound.setVolume(volume);
     // guard volume
     const vol = Number.isFinite(volume) ? volume : 1;
     sound.setVolume(vol);
+    const gainNode = sound.getOutput();
 
-    // playback
-    if (on && !paused) {
-        if (!sound.isPlaying) {
-        // three.js Audio.play( delay, offset )
-        sound.play(0, playStartTime);
-    //         // p.connect(analyser);
-    // analyser.connect(listener.getInput());
-    const gainNode = sound.getOutput()
-  gainNode.connect(analyser)
-      }
-    } else {
-      try { sound.stop(); } catch {}
+    // wire once: gainNode → tapGain → analyser → listener.getInput()
+    // gainNode.connect(tapGain)
+    // tapGain.connect(analyser)
+     gainNode.connect(masterTapGain)       // tap branch for analysis
+
+ 
+    // analyser.connect(listener.getInput())
+console.log("VOOOOOOL", volume)
+    // let App know about your analyser
+    onAnalyserReady?.(trackId, analyser, volume)
+    onVolumeChange?.(trackId, volume)
+   return () => {
+      gainNode.disconnect(masterTapGain)
     }
 
+  }, [buffer, dist, volume, analyser, onAnalyserReady, onVolumeChange, listener, masterTapGain])
 
-       onAnalyserReady?.(analyser)
-    onVolumeChange?.(volume)
-  }, [buffer, dist, volume, on, paused, playStartTime, onAnalyserReady, onVolumeChange]);
+  // ─── Playback + gate effect: play/stop & mute/unmute tap ───────
+  useEffect(() => {
+    const sound = soundRef.current
+    if (!sound) return
+
+    //  playback control
+    if (on && !paused) {
+      if (!sound.isPlaying) sound.play(0, playStartTime)
+    } else {
+      try { sound.stop() } catch {}
+    }
+
+    // gate the analyser‐tap via gain
+   const target = on && !paused && visible
+  ? sound.gain.gain.value
+  : 0
+masterTapGain.gain.setValueAtTime(target, audioCtx.currentTime)
+    
+// console.log(sound.gain.gain.value)
+    // console.log(tapGain.gain)
+  }, [on, paused, playStartTime, visible, audioCtx, masterTapGain, volume])
 
   // ─── WET PATH (reverb send) ─────────────────────
   useEffect(() => {
@@ -90,9 +122,9 @@ export default function Sound({
     const offset = Number.isFinite(playStartTime) ? playStartTime : 0;
     // start or stop wet source
     if (on && !paused) {
-      const src  = ctx.createBufferSource();
+      const src = ctx.createBufferSource();
       src.buffer = buffer;
-      src.loop   = true;
+      src.loop = true;
 
       const gain = ctx.createGain();
       // guard sendLevel
@@ -102,15 +134,17 @@ export default function Sound({
       src.connect(gain).connect(convolver);
       src.start(ctx.currentTime, offset);
 
-      sendSrcRef.current  = src;
+      sendSrcRef.current = src;
       sendGainRef.current = gain;
     }
 
     return () => {
-      const src  = sendSrcRef.current;
+      const src = sendSrcRef.current;
       const gain = sendGainRef.current;
       if (src) {
-        try { src.stop(); } catch {}
+        try {
+          src.stop();
+        } catch {}
         src.disconnect();
         sendSrcRef.current = null;
       }
@@ -119,7 +153,7 @@ export default function Sound({
         sendGainRef.current = null;
       }
     };
-  }, [buffer, on, paused, convolver, listener,  playStartTime]);
+  }, [buffer, on, paused, convolver, listener, playStartTime]);
 
   // ─── UPDATE SEND LEVEL ─────────────────────────
   useEffect(() => {
@@ -130,8 +164,7 @@ export default function Sound({
     }
   }, [sendLevel, listener]);
 
-
-const data = useMemo(
+  const data = useMemo(
     () => new Uint8Array(analyser.frequencyBinCount),
     [analyser]
   );
@@ -141,15 +174,15 @@ const data = useMemo(
     analyser.getByteFrequencyData(data);
     // e.g. average magnitude normalized 0→1
     const sum = data.reduce((a, v) => a + v, 0);
-  let level = sum / data.length / 255;
+    let level = sum / data.length / 255;
 
-  // bake in the volume slider
-  level *= Number.isFinite(volume) ? volume : 1;
+    // bake in the volume slider
+    level *= Number.isFinite(volume) ? volume : 1;
 
-  // clamp 0→1
-  level = Math.min(1, Math.max(0, level));
+    // clamp 0→1
+    level = Math.min(1, Math.max(0, level));
 
-  // onAnalysedLevel?.(level);
+    // onAnalysedLevel?.(level);
     // console.log(avg*10)
   });
 
