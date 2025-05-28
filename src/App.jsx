@@ -115,7 +115,7 @@ useEffect(() => {
   const convolver = useMemo(() => audioCtx.createConvolver(), [audioCtx]);
   const reverbGain = useMemo(() => {
     const g = audioCtx.createGain();
-    g.gain.value = 0; // default wet level
+    g.gain.value = .2; // default wet level
     return g;
   }, [audioCtx]);
   const reverbHighPass = useMemo(() => {
