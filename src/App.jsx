@@ -67,6 +67,13 @@ export default function App() {
   //   a.smoothingTimeConstant = 0.8;
   //   return a;
   // }, [audioCtx]);
+useEffect(() => {
+  // listener.getInput() is a GainNode
+  const masterGain = listener.getInput();
+  // bump it up to 2.0 (200% volume)
+  masterGain.gain.value = 2
+  // masterGain.gain.setValueAtTime(2.0, audioCtx.currentTime);
+}, [listener, audioCtx]);
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
  const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
