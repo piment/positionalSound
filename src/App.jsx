@@ -37,6 +37,7 @@ import {
   removeTrack,
   toggleVisibility,
   setColor,
+  setVolume
 } from './reducer/trackSettingsSlice';
 
 const COMPONENTS = {
@@ -267,8 +268,7 @@ export default function App() {
     setPlaying(true);
   }
   function stopAll() {
-    sourcesRef.current.forEach((src) => src.stop());
-    sourcesRef.current = [];
+
     // setSources([])
     setPlaying(false);
     // setPlayStartTime(null);
@@ -289,38 +289,36 @@ export default function App() {
     stopAll();
   }
 
-  const handleAnalyserReady = useCallback(
-    (id, analyser, initialVolume) => {
-      if (!playing) return; // <-- ignore if not playing
-      setSources((srcs) =>
-        srcs.some((s) => s.id === id)
-          ? srcs
-          : [...srcs, { id, analyser, volume: initialVolume }]
-      );
-    },
-    [playing]
-  );
 
   // 2) When a Sound reports its current level (0→1), update it
   const handleLevelChange = useCallback((id, level) => {
     setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, level } : s)));
   }, []);
 
-  // 3) When the user moves a volume slider, update that entry
-  const handleVolumeChange = useCallback((id, volume) => {
-    setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, volume } : s)));
-  }, []);
+  // // 3) When the user moves a volume slider, update that entry
+  // const handleVolumeChange = useCallback((id, volume) => {
+  //   setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, volume } : s)));
+  // }, []);
+const handleVolumeChange = useCallback((trackId, newVol) => {
+  dispatch(setVolume({ trackId, volume: newVol }))
+}, [dispatch])
 
-  // useEffect(() => {
-  //   // disconnect the listener’s original output
-  //   const inNode = listener.getInput();
-  //   inNode.disconnect();
+  const analyserMapRef = useRef({})
 
-  //   // route: listener → masterAnalyser → destination
-  //   inNode.connect(masterAnalyser);
-  //   // masterAnalyser.connect(audioCtx.destination);
-  // }, [listener, masterAnalyser, audioCtx]);
+  // 4) When each Sound reports "here’s my analyser", stash it
+  const handleAnalyserReady = useCallback((trackId, analyser) => {
+    analyserMapRef.current[trackId] = analyser
+  }, [])
 
+const sourcesForFloor = useMemo(() => {
+  return Object.entries(analyserMapRef.current)
+    .filter(([id]) => settings[id]?.visible)
+    .map(([id, analyser]) => ({
+      analyser,
+      volume: settings[id].volume ,        // whatever you store
+      color: new THREE.Color(settings[id].color),
+    }))
+}, [settings])
   // console.log(sources)
   return (
     <div style={{ height: '100vh' }}>
@@ -467,10 +465,13 @@ export default function App() {
                 sendLevel={sub.sendLevel}
                 volume={sub.volume}
                 playStartTime={playOffset}
-                onAnalyserReady={(analyser) =>
-                  handleAnalyserReady(sub.id, analyser, sub.volume)
-                }
-                onVolumeChange={(vol) => handleVolumeChange(sub.id, vol)}
+                // onAnalyserReady={(analyser) =>
+                //   handleAnalyserReady(sub.id, analyser, sub.volume)
+                // }
+                 onAnalyserReady={handleAnalyserReady}
+
+                // onVolumeChange={(vol) => handleVolumeChange(sub.id, vol)}
+                onVolumeChange={handleVolumeChange}
                  masterTapGain={masterTapGain}
                 visible={settings[sub.id]?.visible}
                 // no meshRef or panner → dry playback
@@ -480,6 +481,7 @@ export default function App() {
 
           <FrequencyFloor
             analyser={masterAnalyser}
+              sources={sourcesForFloor}
             // sources={sources}
             playing={playing}
             numParticles={131072}
@@ -499,7 +501,7 @@ export default function App() {
           <Perf deepAnalyze />
  
         </Canvas>
-        <Tuner analyser={masterAnalyser} />
+        {/* <Tuner analyser={masterAnalyser} /> */}
       </div>
 
       {/* Right: Track list & assignment UI */}

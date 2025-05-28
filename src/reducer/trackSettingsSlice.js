@@ -9,7 +9,7 @@ const trackSettingsSlice = createSlice({
     addTrack(state, action) {
       const id = action.payload
       // when a new track is imported, default it visible + default color
-      state[id] = { visible: true, color: '#88ccff' }
+      state[id] = { visible: true, color: '#88ccff', volume: 1 }
     },
     removeTrack(state, action) {
       delete state[action.payload]
@@ -23,6 +23,19 @@ const trackSettingsSlice = createSlice({
       if (!state[trackId]) state[trackId] = { visible: true, color }
       else state[trackId].color = color
     },
+    setVolume(state, action) {
+      const { trackId, volume } = action.payload;
+       if (!state[trackId]) {
+    // first time we see this track, give it the default shape
+    state[trackId] = {
+      visible: true,
+      color:   "#88ccff",
+      volume:  volume
+    };
+  } else {
+    state[trackId].volume = volume;
+  }
+    },
   },
 })
 
@@ -31,5 +44,6 @@ export const {
   removeTrack,
   toggleVisibility,
   setColor,
+    setVolume,
 } = trackSettingsSlice.actions
 export default trackSettingsSlice.reducer

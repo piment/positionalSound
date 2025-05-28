@@ -25,11 +25,16 @@ export default function Sound({
   const buffer = useLoader(THREE.AudioLoader, url);
   const { camera } = useThree();
   const audioCtx = listener.context;
-  const analyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
-  // const tapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
+  // const analyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
+  const tapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
   // start with tapGain muted
   // tapGain.gain.value = 1;
-
+  const analyser = useMemo(() => {
+    const a = audioCtx.createAnalyser()
+    a.fftSize = 1024
+    a.smoothingTimeConstant = 0.8
+    return a
+  }, [audioCtx])
   // wet send nodes
   const sendSrcRef = useRef(null);
   const sendGainRef = useRef(null);
@@ -77,18 +82,18 @@ sound.setVolume(volume);
     const gainNode = sound.getOutput();
 
     // wire once: gainNode → tapGain → analyser → listener.getInput()
-    // gainNode.connect(tapGain)
-    // tapGain.connect(analyser)
-     gainNode.connect(masterTapGain)       // tap branch for analysis
+    gainNode.connect(tapGain)
+    tapGain.connect(analyser)
+     analyser.connect(masterTapGain)       // tap branch for analysis
 
  
     // analyser.connect(listener.getInput())
-console.log("VOOOOOOL", volume)
+// console.log("VOOOOOOL", volume)
     // let App know about your analyser
     onAnalyserReady?.(trackId, analyser, volume)
     onVolumeChange?.(trackId, volume)
    return () => {
-      gainNode.disconnect(masterTapGain)
+      // gainNode.disconnect(masterTapGain)
     }
 
   }, [buffer, dist, volume, analyser, onAnalyserReady, onVolumeChange, listener, masterTapGain])

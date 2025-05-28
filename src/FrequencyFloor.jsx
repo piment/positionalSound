@@ -1,60 +1,68 @@
+// FrequencyFloor.jsx
 import React, { useRef, useMemo } from 'react'
-import { useFrame }           from '@react-three/fiber'
-import * as THREE             from 'three'
+import { useFrame }        from '@react-three/fiber'
+import * as THREE          from 'three'
 
 export default function FrequencyFloor({
-  analyser,          // [{ analyser, volume }, …]
-  playing,               // boolean flag from App
-  numParticles    = 65536,
-  width           = 100,
+  sources = [],            // [ { analyser, volume, color: THREE.Color }, … ]
+  playing,                 // boolean play flag from App
+  numParticles    = 65536, // how many sparks
+  width           = 100,   // floor size
   depth           = 100,
-  bounceThreshold = 0.1,
-  impulseStrength = 15,
-  gravity         = -9.8,
-  restitution     = 0.05,
-  pointSize       = 0.3,
-  minLife         = 0.13,
-  maxLife         = 0.3,
+  bounceThreshold = 0.02,  // min amp to trigger a spark
+  impulseStrength = 15,    // how fast they shoot up
+  gravity         = -9.8,  // downward accel
+  minLife         = 0.1,   // seconds before "death"
+  maxLife         = 0.63,
+  pointSize       = 0.05,
 }) {
-  const ref = useRef()
-  const total = numParticles
-  const halfW = width/2
-  const halfD = depth/2
-const NOTE_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B']
-  // 1) Static buffers (only run on mount)
-  const { positions, velocities, binIndex, ages, lifetimes } = useMemo(() => {
-    const pos  = new Float32Array(total*3)
+  const pointsRef = useRef()
+  const total     = numParticles
+  const halfW     = width  / 2
+  const halfD     = depth  / 2
+
+  // ─── 1) STATIC BUFFERS (mount only) ─────────────────────────────
+  const { positions, velocities, ages, lifetimes, binIndex, srcIndex } = useMemo(() => {
+    const pos  = new Float32Array(total * 3)
     const vel  = new Float32Array(total)
-    const bin  = new Uint32Array(total)
     const age  = new Float32Array(total)
     const life = new Float32Array(total)
-    const binCount = analyser.frequencyBinCount ?? 128
+    const bin  = new Uint16Array(total)
+    const src  = new Uint16Array(total)
+
+    // assume all analysers share the same binCount
+    const binCount = sources[0]?.analyser.frequencyBinCount ?? 128
 
     for (let i = 0; i < total; i++) {
-      pos[3*i+0] = Math.random()*width  - halfW
-      pos[3*i+1] = 0
-      pos[3*i+2] = Math.random()*depth  - halfD
-      vel[i]     = 0
-      age[i]     = life[i] + 1    // start dead
-      bin[i]     = Math.floor(Math.random()*binCount)
+      // random floor XZ
+      pos[3*i + 0] = Math.random() * width  - halfW
+      pos[3*i + 1] = 0
+      pos[3*i + 2] = Math.random() * depth  - halfD
+
+      vel[i]      = 0
+      age[i]      = life[i] + 1   // start “dead”
+      bin[i]      = Math.floor(Math.random() * binCount)
+      src[i]      = Math.floor(Math.random() * sources.length)
     }
-    return { positions: pos, velocities: vel, binIndex: bin, ages: age, lifetimes: life }
-  }, [total, width, depth, analyser.frequencyBinCount])  // <- notice: NO `sources` here
 
-  // 2) Dynamic buffers
-  const fftSize    = analyser.fftSize 
-  const binCount   = analyser.frequencyBinCount ?? 128
-  const freqData   = useMemo(() => new Uint8Array(binCount), [binCount])
-  // const fftBuffers = useMemo(() => sources.map(()=>new Uint8Array(binCount)), [sources, binCount])
-  const colorArray = useMemo(() => new Float32Array(total*3), [total])
-const sampleRate = analyser.context.sampleRate
-  const palette = useMemo(() => {
-    return Array.from({length:binCount},(_,b)=>
-      new THREE.Color().setHSL((b/(binCount-1))*0.7,1,0.5)
-    )
-  }, [binCount])
+    return {
+      positions: pos,
+      velocities: vel,
+      ages: age,
+      lifetimes: life,
+      binIndex: bin,
+      srcIndex: src,
+    }
+  }, [total, width, depth, sources.length])
 
-  // 3) One-off geometry & material
+  // ─── 2) DYNAMIC BUFFERS ──────────────────────────────────────────
+  const colorArray = useMemo(() => new Float32Array(total * 3), [total])
+  const fftBuffers = useMemo(
+    () => sources.map(s => new Uint8Array(s.analyser.frequencyBinCount)),
+    [sources]
+  )
+
+  // ─── 3) BUILD GEOMETRY ONCE ──────────────────────────────────────
   const geom = useMemo(() => {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -62,91 +70,71 @@ const sampleRate = analyser.context.sampleRate
     return g
   }, [positions, colorArray])
 
-  const mat = useMemo(() =>
-    new THREE.PointsMaterial({
-      vertexColors: true,
-      size: pointSize,
-      sizeAttenuation: true,
+  // ─── 4) FRAME LOOP ────────────────────────────────────────────────
+  useFrame((_, delta) => {
+    if (!playing || sources.length === 0) return
+
+    // a) sample each source
+    sources.forEach((src, i) => {
+      src.analyser.getByteFrequencyData(fftBuffers[i])
     })
-  , [pointSize])
 
-  // 4) Frame loop: bail early if stopped
- useFrame((_, dt) => {
-    if (!playing) return
-
-    // a) read the FFT into our Uint8Array
-    analyser.getByteFrequencyData(freqData)
-
-    // b) update particles
+    // b) update every particle
     for (let i = 0; i < total; i++) {
-      const yi  = 3*i + 1
-      const amp = freqData[ binIndex[i] ] / 255
-      ages[i]   += dt
+      const base = 3 * i
+      const si   = srcIndex[i]
+      const b    = binIndex[i]
+      const buf  = fftBuffers[si]
+      const amp  = (buf[b] / 255) * (sources[si].volume ?? 1)
 
-      // alive → gravity & integrate
+      // age it
+      ages[i] += delta
+
+      // if “alive”, let it fall
       if (ages[i] <= lifetimes[i]) {
-        velocities[i] += gravity * dt
-        let y = positions[yi] + velocities[i] * dt
+        velocities[i] += gravity * delta
+        let y = positions[base + 1] + velocities[i] * delta
+
+        // when it hits the floor → kill it (no bounce)
         if (y < 0) {
           y = 0
-          ages[i] = lifetimes[i] + 1  // kill on floor
+          ages[i] = lifetimes[i] + 1
+          velocities[i] = 0
         }
-        positions[yi] = y
+        positions[base + 1] = y
       } else {
-        positions[yi] = 0
+        // dead particles sit at floor
+        positions[base + 1] = 0
       }
 
-      // spawn on threshold
+      // if dead & threshold crossed → spawn new spark
       if (ages[i] > lifetimes[i] && amp > bounceThreshold) {
-        ages[i]       = 0
-        lifetimes[i]  = THREE.MathUtils.lerp(minLife, maxLife, amp)
-        velocities[i] = amp * impulseStrength
-        // randomize XZ
-        positions[3*i+0] = Math.random()*width  - halfW
-        positions[3*i+2] = Math.random()*depth  - halfD
+        ages[i]      = 0
+        lifetimes[i] = THREE.MathUtils.lerp(minLife, maxLife, amp)
+        velocities[i]= amp * impulseStrength
+
+        // optional: re-randomize XZ
+        positions[base + 0] = Math.random() * width  - halfW
+        positions[base + 2] = Math.random() * depth  - halfD
       }
-////////////////////////
-//////        FREQ
-      // recolor
-    //   const b    = binIndex[i]
-    // const freq = b * (sampleRate / fftSize)
-    // // clamp + log→hue:
-    // const f    = Math.min(20000, Math.max(20, freq))
-    // const hue  = (Math.log10(f) - Math.log10(20))
-    //            / (Math.log10(15000) - Math.log10(20))
-    //            * 0.7
-    
-    // const color = new THREE.Color().setHSL(hue, 1, amp)
-    // color.toArray(colorArray, 3 * i)
-    // }
 
-  
-/////////////////////////////////////////
-///////          MIDI
-    const b = binIndex[i]
- const freq = b * (analyser.context.sampleRate / analyser.fftSize)
+      // recolor by its source’s chosen color
+      const c = sources[si].color
+      c.toArray(colorArray, base)
+    }
 
- // 2) map to MIDI (float), then to nearest semitone
- const midi = 12 * Math.log2(freq / 440) + 69
- const midiInt = Math.max(0, Math.min(127, Math.round(midi)))
-
- // 3) pitch-class 0…11
- const pc = midiInt % 12
-
- // 4) HSL hue based on pitch-class
- const hue = pc / 12
- new THREE.Color().setHSL(hue, 1, amp).toArray(colorArray, 3 * i)
-    } 
-     // upload updates
-    const g = ref.current.geometry
+    // c) upload back to GPU
+    const g = pointsRef.current.geometry
     g.attributes.position.needsUpdate = true
     g.attributes.color.needsUpdate    = true
   })
 
-  // 5) Always render once, never un-mount
+  // ─── 5) RENDER ────────────────────────────────────────────────────
   return (
-    <group position={[0,0.01,0]}>
-      <points ref={ref} geometry={geom} material={mat} />
+    <group position={[0, 0.01, 0]}>
+      <points ref={pointsRef} geometry={geom}>
+        <pointsMaterial vertexColors size={pointSize} sizeAttenuation />
+      </points>
     </group>
   )
 }
