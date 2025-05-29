@@ -31,7 +31,7 @@ export default function Sound({
   // tapGain.gain.value = 1;
   const analyser = useMemo(() => {
     const a = audioCtx.createAnalyser()
-    a.fftSize = 1024
+    a.fftSize = 4096
     a.smoothingTimeConstant = 0.8
     return a
   }, [audioCtx])

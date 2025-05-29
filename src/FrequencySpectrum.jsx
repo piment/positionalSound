@@ -30,7 +30,7 @@ export default function FrequencyFloor({
   width = 100,
   depth = 100,      // history length
   maxHeight = 10,
-  pointSize = 1.2,
+  pointSize = 0.62,
     smoothing = .5,
       fadePower = 0.5,
         subdivisions= 4
@@ -45,7 +45,7 @@ export default function FrequencyFloor({
   const halfZ = depth / 2
 
   // log frequency
-  const fMin = 20, fMax = 15000
+  const fMin = 20, fMax = 20000
   const logMin = Math.log10(fMin), logMax = Math.log10(fMax)
 
   // 1) static grid: X,Z and initial Y=0
@@ -69,13 +69,13 @@ export default function FrequencyFloor({
           f = Math.max(Math.min(f, fMax), fMin)
           const xNorm = (Math.log10(f) - logMin) / (logMax - logMin)
           // Uniformly space bins on a log scale so low frequencies have no gaps
-          pos[base3] = xNorm * width - halfW
+          pos[base3] = xNorm * width - halfW 
 
           // Y (updated dynamically)
           pos[base3 + 1] = 0
 
           // Z time slice
-          pos[base3 + 2] = z
+          pos[base3 + 2] = z + Math.random()
 
           // vertex color
           color.toArray(col, base3)
