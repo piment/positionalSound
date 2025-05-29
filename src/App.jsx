@@ -39,6 +39,7 @@ import {
   setColor,
   setVolume
 } from './reducer/trackSettingsSlice';
+import FrequencySpectrum from './FrequencySpectrum';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -67,13 +68,6 @@ export default function App() {
   //   a.smoothingTimeConstant = 0.8;
   //   return a;
   // }, [audioCtx]);
-useEffect(() => {
-  // listener.getInput() is a GainNode
-  const masterGain = listener.getInput();
-  // bump it up to 2.0 (200% volume)
-  masterGain.gain.value = 2
-  // masterGain.gain.setValueAtTime(2.0, audioCtx.currentTime);
-}, [listener, audioCtx]);
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
  const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
@@ -485,13 +479,13 @@ const sourcesForFloor = useMemo(() => {
               />
             );
           })}
-
+{/* 
           <FrequencyFloor
             analyser={masterAnalyser}
               sources={sourcesForFloor}
             // sources={sources}
             playing={playing}
-            numParticles={131072}
+            numParticles={1072}
             width={100}
             depth={100}
             // minLife={0.2}
@@ -501,8 +495,15 @@ const sourcesForFloor = useMemo(() => {
             gravity={-9.8}
             restitution={0.6}
             // pointSize={0.2}
-          />
-
+          /> */}
+<FrequencySpectrum
+    sources={sourcesForFloor}   // your AudioAnalyser
+  playing={playing}           // your play flag
+  // width={30}   
+    // depth={10}               // spread across X
+  maxHeight={15}              // Y scale
+  // pointSize={6}               // size of each dot
+/>
           <EnvComp />
           <Controls />
           <Perf deepAnalyze />

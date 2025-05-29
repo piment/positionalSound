@@ -5,7 +5,7 @@ import * as THREE          from 'three'
 import floorVert from './shaders/FrequencyFloor-vert.glsl'
 import floorFrag from './shaders/FrequencyFloor-frag.glsl'
 
-// circular sprite texture
+// create a circular sprite texture
 const circleTexture = (() => {
   const size = 64;
   const c = document.createElement('canvas');
@@ -23,66 +23,70 @@ const circleTexture = (() => {
 export default function FrequencyFloor({
   sources = [],
   playing,
-  numParticles    = 65536,
-  width           = 100,
-  depth           = 100,
-  bounceThreshold = 0.02,
+  numParticles = 36,
+  width = 100,
+  depth = 100,
+  bounceThreshold = 0.2,
   impulseStrength = 15,
-  gravity         = -9.8,
-  minLife         = 0.1,
-  maxLife         = 0.63,
-  pointSize       = 3.5,
+  gravity = -9.8,
+  minLife = 0.1,
+  maxLife = 0.63,
+  pointSize = 3.5,
 }) {
   const pointsRef = useRef();
   const total     = numParticles;
-  const halfW     = width  / 2;
-  const halfD     = depth  / 2;
-  const maxRadius = Math.min(halfW, halfD);
-    const minRadius = maxRadius * 0.02; 
-        const radiusRange = maxRadius - minRadius;     
-  // 1) STATIC BUFFERS
-  // Add angle per particle for circular mapping
-  const { positions, velocities, ages, lifetimes, binIndex, srcIndex, opacities, angles } = useMemo(() => {
-    const pos     = new Float32Array(total * 3);
-    const vel     = new Float32Array(total);
-    const age     = new Float32Array(total);
-    const life    = new Float32Array(total);
-    const bin     = new Uint16Array(total);
-    const src     = new Uint16Array(total);
-    const opacity = new Float32Array(total);
-    const ang     = new Float32Array(total);
+  const halfW     = width / 2;
+  const halfD     = depth / 2;
 
-    const binCount  = sources[0]?.analyser.frequencyBinCount ?? 128;
-    // avoid exact center
+  // 1) STATIC BUFFERS (mount only)
+  const {
+    positions,
+    velocities,
+    ages,
+    lifetimes,
+    binIndex,
+    srcIndex,
+    opacities
+  } = useMemo(() => {
+    const pos  = new Float32Array(total * 3);
+    const vel  = new Float32Array(total);
+    const age  = new Float32Array(total);
+    const life = new Float32Array(total);
+    const bin  = new Uint16Array(total);
+    const src  = new Uint16Array(total);
+    const opacity = new Float32Array(total); // per-particle opacity
 
-    for (let i = 0; i < total; i++) {
-      // pick a random bin and source
-      const b = Math.floor(Math.random() * binCount);
-      bin[i] = b;
-      src[i] = Math.floor(Math.random() * sources.length);
-      ang[i] = Math.random() * Math.PI * 2;
+    const binCount = sources[0]?.analyser.frequencyBinCount ?? 128;
+const sourceCount= sources.length || 1;
+      for (let i = 0; i < total; i++) {
 
-      // compute radial position based on bin
-      const freqFactor = b / (binCount - 1);
-      const r = minRadius + freqFactor * radiusRange;
-      pos[3 * i + 0] = Math.cos(ang[i]) * r;
-      pos[3 * i + 1] = 0;
-      pos[3 * i + 2] = Math.sin(ang[i]) * r;
+    const bIdx = i % binCount;
+    const sIdx = Math.floor(i / binCount) % sourceCount;
 
-      vel[i]       = 0;
-      age[i]       = life[i] + 1;
-      opacity[i]   = 0;
+    // normalized [0,1]
+    const xNorm = binCount > 1 ? bIdx / (binCount - 1) : 0.5;
+    const zNorm = sourceCount > 1 ? sIdx / (sourceCount - 1) : 0.5;
+
+    pos[3*i + 0] = xNorm * width *2 - halfW  ;
+    pos[3*i + 1] = 0;
+    pos[3 + 2] = zNorm * depth  - halfD;
+
+    vel[i]       = 0;
+    age[i]       = life[i] + 1;
+    bin[i]       = bIdx;
+    src[i]       = sIdx;
+      opacity[i]   = 0; // start fully transparent
     }
-    return { positions: pos, velocities: vel, ages: age, lifetimes: life, binIndex: bin, srcIndex: src, opacities: opacity, angles: ang };
-  }, [total, sources.length]);
+
+    return { positions: pos, velocities: vel, ages: age, lifetimes: life, binIndex: bin, srcIndex: src, opacities: opacity };
+  }, [total, width, depth, sources.length]);
 
   // 2) DYNAMIC BUFFERS
-  const binCount   = sources[0]?.analyser.frequencyBinCount ?? 128;
-  const colorArray = useMemo(() => new Float32Array(total * 3), [total]);
-  const fftBuffers = useMemo(() => sources.map(s => new Uint8Array(s.analyser.frequencyBinCount)), [sources]);
-  const prevSpectrum = useMemo(() => new Uint8Array(binCount), [binCount]);
+  const binCount    = sources[0]?.analyser.frequencyBinCount ?? 128;
+  const colorArray  = useMemo(() => new Float32Array(total * 3), [total]);
+  const fftBuffers  = useMemo(() => sources.map(s => new Uint8Array(s.analyser.frequencyBinCount)), [sources]);
 
-  // 3) GEOMETRY
+  // 3) BUILD GEOMETRY ONCE
   const geom = useMemo(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -91,24 +95,25 @@ export default function FrequencyFloor({
     return g;
   }, [positions, colorArray, opacities]);
 
-  // 4) MATERIAL
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    vertexShader:   floorVert,
-    fragmentShader: floorFrag,
-    transparent:    true,
-    depthWrite:     false,
-    vertexColors:   true,
-    uniforms: {
-      uPointSize: { value: pointSize },
-      uSprite:    { value: circleTexture },
-    }
-  }), [pointSize]);
+  // 4) SHADER MATERIAL
+  const material = useMemo(
+    () => new THREE.ShaderMaterial({
+      vertexShader:   floorVert,
+      fragmentShader: floorFrag,
+      transparent:    true,
+      depthWrite:     false,
+      vertexColors:   true,
+      uniforms: {
+        uPointSize: { value: pointSize },
+        uSprite:    { value: circleTexture },
+      }
+    }),
+    [pointSize]
+  );
 
   // 5) FRAME LOOP
   useFrame((_, delta) => {
     if (!playing || sources.length === 0) return;
-
-    // update FFT data
     sources.forEach((src, i) => src.analyser.getByteFrequencyData(fftBuffers[i]));
 
     for (let i = 0; i < total; i++) {
@@ -116,10 +121,9 @@ export default function FrequencyFloor({
       const si   = srcIndex[i];
       const b    = binIndex[i];
       const buf  = fftBuffers[si];
-      const amp  = (buf[b] / 255) * (sources[si].volume ?? 1);
-      const prev = prevSpectrum[b] / 255;
+      const amp  = (buf[b] / 255) * (sources[si].volume ?? 1)*4;
 
-      // age & physics
+      // age & position update omitted for brevity; keep existing logic
       ages[i] += delta;
       if (ages[i] <= lifetimes[i]) {
         velocities[i] += gravity * delta;
@@ -133,26 +137,19 @@ export default function FrequencyFloor({
       } else {
         positions[base + 1] = 0;
       }
-
-            // spawn on rising edge
-      if (ages[i] > lifetimes[i] && amp > bounceThreshold && amp > prev) {
-        ages[i]      = 0;
-        lifetimes[i] = THREE.MathUtils.lerp(minLife, maxLife, amp);
-        const freqFactor = b / (binCount - 1);
-        const r = minRadius + freqFactor * radiusRange;
-        const ang = angles[i];
-        positions[base + 0] = Math.cos(ang) * r;
-        positions[base + 2] = Math.sin(ang) * r;
+      if (ages[i] > lifetimes[i] && amp > bounceThreshold) {
+        ages[i]       = 0;
+        lifetimes[i]  = THREE.MathUtils.lerp(minLife, maxLife, amp);
         velocities[i] = amp * impulseStrength;
+        // positions[base + 0] = Math.random() * width  - halfW;
+        // positions[base + 2] = Math.random() * depth  - halfD;
       }
 
+      // write per-particle opacity
+      opacities[i] = amp*2;
 
-      // update color & opacity
+      // recolor
       sources[si].color.toArray(colorArray, base);
-      opacities[i] = amp;
-
-      // store last amplitude
-      prevSpectrum[b] = buf[b];
     }
 
     const g = pointsRef.current.geometry;

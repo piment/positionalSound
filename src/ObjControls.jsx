@@ -179,7 +179,8 @@ export function ObjSound({
           masterTapGain={masterTapGain}
      visible={visibleMap[sub.id]?.visible ?? false}
      onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}
-     onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}
+    //  onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}
+    onAnalyserReady={onAnalyserReady}
      onVolumeChange={(id, v) => onVolumeChange(id, v)}
         />
       ))}

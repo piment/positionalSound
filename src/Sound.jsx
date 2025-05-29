@@ -70,7 +70,8 @@ export default function Sound({
 
     const p = sound.panner;
     p.panningModel = 'equalpower';
-    p.rolloffFactor = 0;
+    // p.panningModel = 'HRTF'
+    p.rolloffFactor = 0.005;
 
     sound.setBuffer(buffer);
     sound.setRefDistance(dist);
