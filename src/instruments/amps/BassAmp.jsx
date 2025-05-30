@@ -20,8 +20,8 @@ textures.forEach(tex => {
           tex.needsUpdate = true; // ensure the change takes effect
         });
 
-  const ampHeadMat = useMemo(() => new THREE.MeshStandardMaterial({map: headCol, metalness: .8, metalnessMap: headMet, roughnessMap: headRough}))
-    const ampCabMat = useMemo(() => new THREE.MeshStandardMaterial({map: cabCol, normalMap: cabNorm, metalnessMap: cabMet, roughnessMap: cabRough}))
+  const ampHeadMat = new THREE.MeshStandardMaterial({map: headCol, metalness: .8, metalnessMap: headMet, roughnessMap: headRough, roughness: .1, envMapIntensity: 0})
+    const ampCabMat = new THREE.MeshStandardMaterial({map: cabCol, normalMap: cabNorm, metalnessMap: cabMet, roughnessMap: cabRough , envMapIntensity: 0})
   return (
     <group {...props} dispose={null}>
       <mesh

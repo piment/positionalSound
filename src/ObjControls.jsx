@@ -12,7 +12,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import SoundParticles from './SoundParticles';
 import FrequencyFloor from './FrequencyFloor';
-const modes = ['translate', 'rotate', 'scale'];
+const modes = ['translate', 'rotate'];
 const sceneState = proxy({ current: null, mode: 0 });
 
 export function Controls() {
@@ -23,9 +23,15 @@ export function Controls() {
       {snap.current && (
         <TransformControls
           object={scene.getObjectByName(snap.current)}
-          // mode={modes[snap.mode]}
-          mode='translate'
-          showY={false}
+          mode={modes[snap.mode]}
+          // mode='translate'
+          // showY={false}
+          showY={modes[snap.mode] === 'translate' ? false : true}
+            showX={modes[snap.mode] === 'rotate' ? false : true}
+              showZ={modes[snap.mode] === 'rotate' ? false : true}
+          rotateX={false}
+          rotateZ={false}
+          translateY={0}
         />
       )}
       <OrbitControls

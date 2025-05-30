@@ -72,6 +72,8 @@ export default function Sound({
     p.panningModel = 'equalpower';
     // p.panningModel = 'HRTF'
     p.rolloffFactor = 0.005;
+      p.coneInnerAngle = 360;
+  p.coneOuterAngle = 360;
 // p.rolloffFactor = 1;
     sound.setBuffer(buffer);
     sound.setRefDistance(dist);

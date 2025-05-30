@@ -422,8 +422,8 @@ const sourcesForFloor = useMemo(() => {
         gl.shadowMap.type       = THREE.PCFSoftShadowMap
         gl.physicallyCorrectLights = true
       }}>
-          <ambientLight intensity={1.3} />
-          <pointLight position={[5, 10, 5]} intensity={1000} />
+          <ambientLight intensity={.3} />
+          {/* <pointLight position={[5, 10, 5]} intensity={1000} /> */}
   <fog attach="fog" args={['#050505', 35, 80]} />
           {meshes.map((part, idx) => {
             const Part = COMPONENTS[part];
