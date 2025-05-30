@@ -14,7 +14,14 @@ export const Kick = forwardRef((props, ref) => {
           receiveShadow
           geometry={nodes.Circle053.geometry}
           material={padMat}
-        />
+        >
+       <pointLight
+  color={props.color}      // initial value; ObjSound will overwrite each frame
+  intensity={0}      // start dark
+  distance={5}
+  decay={2}
+/>
+        </mesh>
         <mesh
           castShadow
           receiveShadow

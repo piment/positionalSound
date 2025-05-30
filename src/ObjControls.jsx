@@ -23,7 +23,9 @@ export function Controls() {
       {snap.current && (
         <TransformControls
           object={scene.getObjectByName(snap.current)}
-          mode={modes[snap.mode]}
+          // mode={modes[snap.mode]}
+          mode='translate'
+          showY={false}
         />
       )}
       <OrbitControls
@@ -49,18 +51,17 @@ export function ObjSound({
   onAnalyserReady,
   onLevelChange,
   onVolumeChange,
-  analyser,
   masterTapGain,
  visibleMap,
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
-  const [levels, setLevels] = useState({});
   const smoothRef = useRef(0);
   const outerRef = useRef(); // the <group> you already had
   const innerRef = useRef(); // we’ll point this at the positioned child
+  const [lights, setLights] = useState([])
+
   const [ready, setReady] = useState(false);
-  const analyserRef = useRef(null);
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
@@ -70,19 +71,17 @@ export function ObjSound({
       setReady(true);
     }
   }, []);
-  // callback we pass down to each Sound
-  function handleLevel(subId, level) {
-    setLevels((prev) => {
-      if (prev[subId] === level) return prev;
-      return { ...prev, [subId]: level };
-    });
-  }
-  const playLevel = useMemo(() => {
-    const vals = Object.values(levels);
-    if (vals.length === 0) return 0;
-    const sum = vals.reduce((a, v) => a + v, 0);
-    return sum / vals.length; // average, still 0→1
-  }, [levels]);
+
+
+
+    useEffect(() => {
+    if (!outerRef.current) return
+    const arr = []
+    outerRef.current.traverse(obj => {
+      if (obj.isPointLight) arr.push(obj)
+    })
+    setLights(arr)
+  }, [])
 
   // cache pad-material meshes once after mount
   const [padMeshes, setPadMeshes] = useState([]);
@@ -96,18 +95,18 @@ export function ObjSound({
     });
     setPadMeshes(arr);
   }, []);
-
+const meshTrackId = subs.length > 0 ? subs[0].id : null
   // every frame, use playLevel (a number!) to drive emissive
   useFrame((_, delta) => {
     if (!padMeshes.length) return;
 
     // Optionally boost low/mid levels
-    const boosted = Math.sqrt(playLevel); // sqrt gives more punch on quieter sounds
+    const boosted = Math.sqrt(smoothRef.current); // sqrt gives more punch on quieter sounds
 
     // Use different lambdas for attack vs release:
     const lambda =
       boosted > smoothRef.current
-        ? 20 // fast attack
+        ? 0 // fast attack
         : 30; // even faster release
 
     // Smoothed value → smoothRef.current
@@ -127,6 +126,17 @@ export function ObjSound({
       // keep color proportional to level (or leave it white)
       m.material.emissive.setScalar(smoothRef.current);
     });
+// console.log(playLevel)
+     const lightInt = THREE.MathUtils.lerp(0.2, 14, smoothRef.current)
+// console.log(lightInt)
+  // Update each PointLight
+  lights.forEach(light => {
+    light.intensity = lightInt
+    // pull the color from Redux via visibleMap 
+    if(!visibleMap) return
+    const hex = visibleMap[meshTrackId]?.color || '#ffffff'
+    light.color.set(hex)
+  })
   });
 
   return (
@@ -167,15 +177,7 @@ export function ObjSound({
             onSubsChange(next);
           }}
           playStartTime={playStartTime}
-          // onAnalyserReady={analyser =>
-          //   onAnalyserReady(sub.id, analyser, sub.volume)
-          // }
-          // // onAnalysedLevel={level =>
-          // //   onLevelChange(sub.id, level)
-          // // }
-          // onVolumeChange={vol =>
-          //   onVolumeChange(sub.id, vol)
-          // }
+ 
           masterTapGain={masterTapGain}
      visible={visibleMap[sub.id]?.visible ?? false}
      onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}

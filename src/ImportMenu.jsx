@@ -1,29 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
-export default function ImportMenu({ onAdd, disabled = false }) {
+export default function ImportMenu({
+  onAdd,
+  onAutoAssign,      // new prop
+  disabled = false,
+}) {
   const [files, setFiles] = useState([]);
-
-  // Reset file input after add
-  const fileInputRef = React.useRef();
+  const fileInputRef     = useRef();
 
   function handleFileChange(e) {
-    const selected = Array.from(e.target.files || []);
-    setFiles(selected);
+    setFiles(Array.from(e.target.files || []));
+  }
+
+  function makeItems() {
+    return files.map(file => {
+      const url  = URL.createObjectURL(file);
+      const name = file.name.replace(/\.[^/.]+$/, '');
+      return { file, url, name };
+    });
+  }
+
+  function clear() {
+    setFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = null;
   }
 
   function handleAdd() {
     if (!files.length) return;
-    const items = files.map((file) => {
-      const url = URL.createObjectURL(file);
-      const name = file.name.replace(/\.[^/.]+$/, '');
-      return { file, url, name };
-    });
-    onAdd(items);
-    setFiles([]);
-    // clear input element
-    if (fileInputRef.current) {
-      fileInputRef.current.value = null;
-    }
+    onAdd(makeItems());
+    clear();
+  }
+
+  function handleAuto() {
+    if (!files.length || !onAutoAssign) return;
+    onAutoAssign(makeItems());
+    clear();
   }
 
   return (
@@ -43,6 +54,15 @@ export default function ImportMenu({ onAdd, disabled = false }) {
       >
         Add {files.length} Track{files.length > 1 ? 's' : ''}
       </button>
+      {/* {onAutoAssign && ( */}
+        <button
+          onClick={handleAuto}
+          disabled={disabled || files.length === 0}
+          style={{ marginLeft: '0.5em' }}
+        >
+          Auto Assign
+        </button>
+      {/* )} */}
     </div>
   );
 }

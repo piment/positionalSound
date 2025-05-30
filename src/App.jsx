@@ -28,10 +28,9 @@ import {
   DepthOfField,
   EffectComposer,
 } from '@react-three/postprocessing';
-import { Bvh } from '@react-three/drei';
-import FrequencyFloor from './FrequencyFloor';
-import Tuner from './Tuner';
+
 import { useSelector, useDispatch } from 'react-redux';
+import { setMode, toggleMode }      from './reducer/viewModeSlice'
 import {
   addTrack,
   removeTrack,
@@ -62,12 +61,6 @@ export default function App() {
   const listener = useMemo(() => new THREE.AudioListener(), []);
   const audioCtx = listener.context;
 
-  // const masterAnalyser = useMemo(() => {
-  //   const a = audioCtx.createAnalyser();
-  //   a.fftSize = 2048;
-  //   a.smoothingTimeConstant = 0.8;
-  //   return a;
-  // }, [audioCtx]);
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
  const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
@@ -81,6 +74,7 @@ export default function App() {
 
   const dispatch = useDispatch();
   const settings = useSelector((state) => state.trackSettings);
+  const mode     = useSelector(state => state.viewMode)
 
   const [tracks, setTracks] = useState([]);
   const [playing, setPlaying] = useState(false);
@@ -183,44 +177,6 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes));
   }, [meshes]);
 
-  // Add new track with default position and distance
-  function handleAddTrack({ name, url, file, groupName }) {
-    const groupObj = allGroups.find((g) => g.name === groupName);
-    if (!groupObj) return;
-
-    const newSub = {
-      id: nanoid(), // ← unique
-      name,
-      file,
-      url,
-      sendLevel: 0,
-      volume: 1,
-    };
-
-    setTracks((prev) => {
-      const idx = prev.findIndex((t) => t.group === groupObj);
-      if (idx >= 0) {
-        // append a new mic to existing mesh
-        const next = [...prev];
-        next[idx].subs.push(newSub);
-        return next;
-      } else {
-        // brand new mesh + first mic
-        const angle = (prev.length / 5) * Math.PI * 2;
-        const dist = 10 + prev.length * 5;
-        const defPos = [Math.cos(angle) * dist, 0, Math.sin(angle) * dist];
-        return [
-          ...prev,
-          {
-            group: groupObj,
-            defPos,
-            dist,
-            subs: [newSub],
-          },
-        ];
-      }
-    });
-  }
   function addMesh(partName) {
     if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
   }
@@ -264,6 +220,44 @@ export default function App() {
       };
     });
   }
+
+// assuming COMPONENTS is in scope, e.g.
+// const COMPONENTS = { Snare, Kick, … }
+
+function handleAutoAssign(items) {
+  // 1) build the same track objects
+  const newTracks = items.map(f => ({
+    id:   nanoid(),
+    file: f.file,
+    url:  f.url,
+    name: f.name,
+    volume: 1,
+    sendLevel: 0,
+  }))
+
+  // 2) add to your flat list
+  setTrackList(prev => [...prev, ...newTracks])
+
+  // 3) dispatch Redux addTrack for each
+  newTracks.forEach(t => dispatch(addTrack(t.id)))
+
+  // 4) bucket into assignments by name:
+  setAssignments(prev => {
+    // start with the old buckets
+    const next = { ...prev }
+    newTracks.forEach(t => {
+      // find the first COMPONENT key that matches the track name
+      const match = Object.keys(COMPONENTS)
+        .find(key => t.name.toLowerCase().includes(key.toLowerCase()))
+      const bucket = match || 'null'
+      next[bucket] = [ ...(next[bucket]||[]), t ]
+    })
+    return next
+  })
+}
+
+
+
   async function playAll() {
     setPlayOffset(audioCtx.currentTime);
     setPlaying(true);
@@ -479,23 +473,8 @@ const sourcesForFloor = useMemo(() => {
               />
             );
           })}
-{/* 
-          <FrequencyFloor
-            analyser={masterAnalyser}
-              sources={sourcesForFloor}
-            // sources={sources}
-            playing={playing}
-            numParticles={1072}
-            width={100}
-            depth={100}
-            // minLife={0.2}
-            // maxLife={0.6}
-            // bounceThreshold={0.02}
-            impulseStrength={20}
-            gravity={-9.8}
-            restitution={0.6}
-            // pointSize={0.2}
-          /> */}
+
+          {mode === 'visualizerMode' && (
 <FrequencySpectrum
     sources={sourcesForFloor}   // your AudioAnalyser
   playing={playing}           // your play flag
@@ -503,7 +482,7 @@ const sourcesForFloor = useMemo(() => {
     // depth={10}               // spread across X
   maxHeight={15}              // Y scale
   // pointSize={6}               // size of each dot
-/>
+/>)}
           <EnvComp />
           <Controls />
           <Perf deepAnalyze />
@@ -517,7 +496,7 @@ const sourcesForFloor = useMemo(() => {
         style={{ width: 300, borderLeft: '1px solid #333' }}
         className='panel-right'
       >
-        <ImportMenu onAdd={handleImport} />
+        <ImportMenu onAdd={handleImport} onAutoAssign={handleAutoAssign}/>
 
         <h4>Tracks</h4>
         {/* {trackList.map((t) => (
