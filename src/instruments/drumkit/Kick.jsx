@@ -1,11 +1,15 @@
 import React, { forwardRef, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useHelper } from '@react-three/drei'
 import { drumkit } from './drumkitMaterials'
+import * as THREE from 'three'
 export const Kick = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/drumkit/Kick.glb')
       const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
     const padMat  = useMemo(() => drumkit.padMat.clone(), []);
       const woodMat  = useMemo(() => drumkit.woodMat.clone(), []);
+
+        const lightRef   = useRef()
+         useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
   return (
     <group {...props} dispose={null}>
       <group position={[-0.002, 0.294, 0.013]}>
@@ -16,10 +20,13 @@ export const Kick = forwardRef((props, ref) => {
           material={padMat}
         >
        <pointLight
+             ref={lightRef}
   color={props.color}      // initial value; ObjSound will overwrite each frame
-  intensity={0}      // start dark
-  distance={5}
-  decay={2}
+  intensity={0}     
+  scale={.45}
+  // power={10}
+// distance={1}
+  decay={.52}
 />
         </mesh>
         <mesh

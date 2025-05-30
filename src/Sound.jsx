@@ -14,7 +14,7 @@ export default function Sound({
   convolver,
   sendLevel = 0,
   playStartTime = 0,
-  // onAnalysedLevel,
+  onAnalysedLevel,
   onAnalyserReady,
   onVolumeChange,
   trackId,
@@ -49,11 +49,11 @@ export default function Sound({
     }
   }, [volume, onVolumeChange])
 
-  //  useEffect(() => {
-  //   if (typeof onAnalyserReady === 'function') {
-  //     onAnalyserReady(analyser)
-  //   }
-  // }, [analyser, onAnalyserReady])
+   useEffect(() => {
+    if (typeof onAnalyserReady === 'function') {
+      onAnalyserReady(analyser)
+    }
+  }, [analyser, onAnalyserReady])
 
   // attach listener once
   useEffect(() => {
@@ -188,7 +188,7 @@ masterTapGain.gain.setValueAtTime(target, audioCtx.currentTime)
     // clamp 0→1
     level = Math.min(1, Math.max(0, level));
 
-    // onAnalysedLevel?.(level);
+    onAnalysedLevel?.(level);
     // console.log(avg*10)
   });
 

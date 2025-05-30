@@ -27,6 +27,9 @@ import {
   Bloom,
   DepthOfField,
   EffectComposer,
+  GodRays,
+  Noise,
+  Vignette,
 } from '@react-three/postprocessing';
 
 import { useSelector, useDispatch } from 'react-redux';
@@ -56,6 +59,8 @@ const STORAGE_KEYS = {
   assignments: 'myapp:assignments',
   meshes: 'myapp:meshes',
 };
+
+
 
 export default function App() {
   const listener = useMemo(() => new THREE.AudioListener(), []);
@@ -314,6 +319,7 @@ const sourcesForFloor = useMemo(() => {
       color: new THREE.Color(settings[id].color),
     }))
 }, [settings])
+
   // console.log(sources)
   return (
     <div style={{ height: '100vh' }}>
@@ -338,7 +344,8 @@ const sourcesForFloor = useMemo(() => {
             onChange={(e) => setBusLevel(parseFloat(e.target.value))}
           />
         </div>
-        {/* <div className='rev-sliders'>
+{/*         
+        <div className='rev-sliders'>
         <div style={{ margin: '1em 0' }} className='param'>
           <label>Left Delay (ms): {leftDelayTime}</label>
           <input
@@ -383,7 +390,8 @@ const sourcesForFloor = useMemo(() => {
             onChange={(e) => setLpfFreq(parseFloat(e.target.value))}
           />
         </div>
-        </div> */}
+        </div> 
+        */}
       </div>
       {/* Left: Parts palette */}
       <div
@@ -407,7 +415,7 @@ const sourcesForFloor = useMemo(() => {
         <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
           <ambientLight intensity={0.3} />
           <pointLight position={[5, 10, 5]} intensity={1} />
-
+  <fog attach="fog" args={['#202020', 5, 120]} />
           {meshes.map((part, idx) => {
             const Part = COMPONENTS[part];
             const angle = (idx / meshes.length) * Math.PI * 2;
@@ -416,6 +424,7 @@ const sourcesForFloor = useMemo(() => {
 
             return (
               <ObjSound
+          
                 key={part}
                 name={part}
                 // defPos={defPos}
@@ -486,7 +495,16 @@ const sourcesForFloor = useMemo(() => {
           <EnvComp />
           <Controls />
           <Perf deepAnalyze />
- 
+       <EffectComposer disableNormalPass>
+          
+    
+     
+            {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
+            {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
+            {/* <Bloom luminanceThreshold={.5} luminanceSmoothing={0.9} height={300} /> */}
+            <Noise opacity={0.02} />
+            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+          </EffectComposer>
         </Canvas>
         {/* <Tuner analyser={masterAnalyser} /> */}
       </div>
@@ -499,27 +517,7 @@ const sourcesForFloor = useMemo(() => {
         <ImportMenu onAdd={handleImport} onAutoAssign={handleAutoAssign}/>
 
         <h4>Tracks</h4>
-        {/* {trackList.map((t) => (
-          <div key={t.id}>
-            {t.name}
-            <select
-              value={
-                // find which bucket it lives in, or 'null'
-                Object.entries(assignments).find(([, arr]) =>
-                  arr.some((x) => x.id === t.id)
-                )?.[0] || 'null'
-              }
-              onChange={(e) => toggleAssign(t, e.target.value)}
-            >
-              <option value='null'>Unassigned</option>
-              {meshes.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))} */}
+      
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {trackList.map((t) => {
             const isOpen = selectedTrackId === t.id;

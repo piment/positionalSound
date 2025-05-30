@@ -60,6 +60,7 @@ export function ObjSound({
   const outerRef = useRef(); // the <group> you already had
   const innerRef = useRef(); // we’ll point this at the positioned child
   const [lights, setLights] = useState([])
+  const [levels, setLevels] = useState({})
 
   const [ready, setReady] = useState(false);
 
@@ -72,6 +73,19 @@ export function ObjSound({
     }
   }, []);
 
+  function handleAnalysedLevel(subId, level) {
+    setLevels(prev => {
+      // bail out if unchanged to avoid extra rerenders
+      if (prev[subId] === level) return prev
+      return { ...prev, [subId]: level }
+    })
+  }
+  const trackLevel = useMemo(() => {
+    const vals = Object.values(levels)
+    if (!vals.length) return 0
+    // e.g. use average
+    return vals.reduce((sum, v) => sum + v, 0) / vals.length
+  }, [levels])
 
 
     useEffect(() => {
@@ -110,28 +124,35 @@ const meshTrackId = subs.length > 0 ? subs[0].id : null
         : 30; // even faster release
 
     // Smoothed value → smoothRef.current
-    smoothRef.current = THREE.MathUtils.damp(
+   smoothRef.current = THREE.MathUtils.damp(
       smoothRef.current,
-      boosted,
-      lambda,
+      trackLevel,
+      30,   // attack/release speed
       delta
-    );
+    )
+
 
     // Map 0→1 into 0→maxIntensity
-    const intensity = THREE.MathUtils.lerp(0.2, 5, smoothRef.current);
+    const intensity = THREE.MathUtils.lerp(2.52, 5, smoothRef.current);
 
     padMeshes.forEach((m) => {
       // set to zero when smoothRef is zero → totally dark
+      const hex = visibleMap[meshTrackId]?.color
+if (hex) {m.material.emissive.set(hex)
+  m.material.color.set(hex)
+m.material.blendEquation = THREE.SubtractiveBlending ;
+}
       m.material.emissiveIntensity = intensity;
       // keep color proportional to level (or leave it white)
-      m.material.emissive.setScalar(smoothRef.current);
+      m.material.emissive.setScalar(smoothRef.current*2);
     });
 // console.log(playLevel)
-     const lightInt = THREE.MathUtils.lerp(0.2, 14, smoothRef.current)
+     const lightInt = THREE.MathUtils.lerp(0.2, 154, smoothRef.current)
 // console.log(lightInt)
   // Update each PointLight
   lights.forEach(light => {
     light.intensity = lightInt
+    // light.power = lightInt*10
     // pull the color from Redux via visibleMap 
     if(!visibleMap) return
     const hex = visibleMap[meshTrackId]?.color || '#ffffff'
@@ -180,7 +201,8 @@ const meshTrackId = subs.length > 0 ? subs[0].id : null
  
           masterTapGain={masterTapGain}
      visible={visibleMap[sub.id]?.visible ?? false}
-     onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}
+    //  onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}
+          onAnalysedLevel={(lvl) => handleAnalysedLevel(sub.id, lvl)}
     //  onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}
     onAnalyserReady={onAnalyserReady}
      onVolumeChange={(id, v) => onVolumeChange(id, v)}

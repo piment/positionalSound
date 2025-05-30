@@ -12,7 +12,7 @@ const floorRef = useRef()
    <>
    <mesh ref={floorRef} rotation={[-Math.PI*0.5,0,0]} position={[0,0,0]} castShadow >
     <planeGeometry args={[100,100]}/>
-    {mode === 'stageMode' ?
+    {/* {mode === 'stageMode' ?
     <MeshReflectorMaterial blur={[0, 0]} // Blur ground reflections (width, height), 0 skips blur
     mixBlur={0.4} // How much blur mixes with surface roughness (default = 1)
     mixStrength={1} // Strength of the reflections
@@ -27,7 +27,9 @@ const floorRef = useRef()
     envMapIntensity={0}
     />
     
-   :  <meshStandardMaterial color={"#050505"} roughness={0.5} metalness={1 }/> }
+   :  
+  } */}
+  <meshStandardMaterial color={"#050505"} roughness={.81} metalness={.1 } />
    </mesh>
 <Environment files='adamsbridge.hdr'/>
    </>
