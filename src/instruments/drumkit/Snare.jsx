@@ -11,11 +11,11 @@ export const Snare = forwardRef((props, ref) => {
 
 
             const lightRef   = useRef()
-             useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
+            //  useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
              
   return (
     <group {...props} dispose={null}>
-      <group position={[0.433, 0.636, -0.519]}>
+      <group position={[0.433, 0.63, -0.519]}>
         <mesh
           castShadow
           receiveShadow
@@ -54,20 +54,26 @@ export const Snare = forwardRef((props, ref) => {
         />
         <mesh
           castShadow
-          receiveShadow
+          // receiveShadow
           geometry={nodes.Circle021_6.geometry}
            material={padMat}
                >
 
         </mesh>
-        <group position={[0, -0.51, 0.0]}>
+        <group position={[0, -0.45, 0.0]}>
                  <pointLight
              ref={lightRef}
   color={props.color}      // initial value; ObjSound will overwrite each frame
   intensity={0}     
   scale={.25}
-
+castShadow
   decay={1}
+  shadow-bias={-0.00008} 
+       shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
+          shadow-radius={4}
+            shadow-camera-near={0.05}    // move the near clipping plane
+  shadow-camera-far={50} 
 />
         </group>
       </group>

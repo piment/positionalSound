@@ -9,25 +9,37 @@ export const Kick = forwardRef((props, ref) => {
       const woodMat  = useMemo(() => drumkit.woodMat.clone(), []);
 
         const lightRef   = useRef()
-         useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
+        //  useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
   return (
     <group {...props} dispose={null}>
       <group position={[-0.002, 0.294, 0.013]}>
         <mesh
           castShadow
-          receiveShadow
+          // receiveShadow
           geometry={nodes.Circle053.geometry}
           material={padMat}
         >
-       <pointLight
+       {/* <pointLight
              ref={lightRef}
   color={props.color}      // initial value; ObjSound will overwrite each frame
   intensity={0}     
-  scale={.45}
+  scale={.5}
+  castShadow
   // power={10}
 // distance={1}
+     shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
+  //         // shadow-camera-fov={45}      // make the cone wider or narrower
+  //         shadow-camera-left={-20}
+  // shadow-camera-right={20}
+  // shadow-camera-top={20}
+  // shadow-camera-bottom={-20}
+  shadow-bias={-0.0005} 
+  shadow-radius={4}
+  shadow-camera-near={0.05}    // move the near clipping plane
+  shadow-camera-far={50} 
   decay={.52}
-/>
+/> */}
         </mesh>
         <mesh
           castShadow

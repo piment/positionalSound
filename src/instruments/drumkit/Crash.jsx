@@ -7,7 +7,7 @@ export const Crash = forwardRef((props, ref) => {
 
   return (
     <group {...props} dispose={null}>
-      <group position={[0.526, 0.478, -0.214]}>
+      <group position={[0.526, 0.475, -0.214]}>
         <mesh
           castShadow
           receiveShadow

@@ -42,6 +42,8 @@ import {
   setVolume
 } from './reducer/trackSettingsSlice';
 import FrequencySpectrum from './FrequencySpectrum';
+import { GuitarAmp } from './instruments/amps/GuitarAmp';
+import { BassAmp } from './instruments/amps/BassAmp';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -52,6 +54,8 @@ const COMPONENTS = {
   FloorTom: FloorTom,
   Crash: Crash,
   Ride: Ride,
+  Guitar : GuitarAmp,
+  Bass: BassAmp
 };
 
 const STORAGE_KEYS = {
@@ -412,10 +416,15 @@ const sourcesForFloor = useMemo(() => {
 
       {/* Center: 3D canvas */}
       <div style={{ flex: 1 }} className='canvas-main'>
-        <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
-          <ambientLight intensity={0.3} />
-          <pointLight position={[5, 10, 5]} intensity={1} />
-  <fog attach="fog" args={['#202020', 5, 120]} />
+        <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows gl={{ antialias : true}}
+         onCreated={({ gl }) => {
+        gl.shadowMap.enabled    = true
+        gl.shadowMap.type       = THREE.PCFSoftShadowMap
+        gl.physicallyCorrectLights = true
+      }}>
+          <ambientLight intensity={1.3} />
+          <pointLight position={[5, 10, 5]} intensity={1000} />
+  <fog attach="fog" args={['#050505', 35, 80]} />
           {meshes.map((part, idx) => {
             const Part = COMPONENTS[part];
             const angle = (idx / meshes.length) * Math.PI * 2;
@@ -500,10 +509,10 @@ const sourcesForFloor = useMemo(() => {
     
      
             {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
-            {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
+            <DepthOfField focusDistance={0} focalLength={0.2} bokehScale={2} height={480} />
             {/* <Bloom luminanceThreshold={.5} luminanceSmoothing={0.9} height={300} /> */}
-            <Noise opacity={0.02} />
-            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+            {/* <Noise opacity={0.02} /> */}
+            {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
           </EffectComposer>
         </Canvas>
         {/* <Tuner analyser={masterAnalyser} /> */}

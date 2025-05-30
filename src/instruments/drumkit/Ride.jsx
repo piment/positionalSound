@@ -8,7 +8,7 @@ export const Ride = forwardRef((props, ref) => {
 
   return (
     <group {...props} dispose={null}>
-      <group position={[-0.627, 0.468, -0.242]}>
+      <group position={[-0.627, 0.465, -0.242]}>
         <mesh
           castShadow
           receiveShadow

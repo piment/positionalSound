@@ -6,7 +6,7 @@ export const Hihat = forwardRef((props, ref) => {
      const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
   return (
     <group {...props} dispose={null}>
-      <group position={[0.63, 0.386, -0.798]}>
+      <group position={[0.63, 0.378, -0.798]}>
         <mesh
           castShadow
           receiveShadow
@@ -23,7 +23,7 @@ export const Hihat = forwardRef((props, ref) => {
           castShadow
           receiveShadow
           geometry={nodes.Circle054_2.geometry}
-          //  material={metalMat}
+           material={metalMat}
         />
         <mesh
           castShadow
