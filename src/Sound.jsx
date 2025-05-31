@@ -194,5 +194,7 @@ masterTapGain.gain.setValueAtTime(target, audioCtx.currentTime)
     // console.log(avg*10)
   });
 
+  
+
   return <positionalAudio ref={soundRef} args={[listener]} />;
 }

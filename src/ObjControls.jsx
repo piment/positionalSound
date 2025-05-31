@@ -12,6 +12,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import SoundParticles from './SoundParticles';
 import FrequencyFloor from './FrequencyFloor';
+import { useSelector } from 'react-redux';
 const modes = ['translate', 'rotate'];
 const sceneState = proxy({ current: null, mode: 0 });
 
@@ -67,6 +68,10 @@ export function ObjSound({
   const innerRef = useRef(); // we’ll point this at the positioned child
   const [lights, setLights] = useState([])
   const [levels, setLevels] = useState({})
+const meshTrackId = subs.length > 0 ? subs[0].id : null;
+
+  // 2) **Narrow‐cast** to only the fields we need from visibleMap:
+  const visible = visibleMap[meshTrackId]?.visible ?? false;
 
   const [ready, setReady] = useState(false);
 
@@ -115,7 +120,7 @@ export function ObjSound({
     });
     setPadMeshes(arr);
   }, []);
-const meshTrackId = subs.length > 0 ? subs[0].id : null
+
   // every frame, use playLevel (a number!) to drive emissive
   useFrame((_, delta) => {
     if (!padMeshes.length) return;
@@ -206,7 +211,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
           playStartTime={playStartTime}
  
           masterTapGain={masterTapGain}
-     visible={visibleMap[sub.id]?.visible ?? false}
+    visible={visible} 
     //  onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}
           onAnalysedLevel={(lvl) => handleAnalysedLevel(sub.id, lvl)}
     //  onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}

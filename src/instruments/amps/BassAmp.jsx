@@ -20,10 +20,10 @@ textures.forEach(tex => {
           tex.needsUpdate = true; // ensure the change takes effect
         });
 
-  const ampHeadMat = new THREE.MeshStandardMaterial({map: headCol, metalness: .8, metalnessMap: headMet, roughnessMap: headRough, roughness: .1, envMapIntensity: 0})
-    const ampCabMat = new THREE.MeshStandardMaterial({map: cabCol, normalMap: cabNorm, metalnessMap: cabMet, roughnessMap: cabRough , envMapIntensity: 0})
+  const ampHeadMat = useMemo(() => new THREE.MeshPhongMaterial({map: headCol, metalness: .8, metalnessMap: headMet, roughnessMap: headRough, roughness: .1, envMapIntensity: 0}),[])
+    const ampCabMat = useMemo(() => new THREE.MeshPhongMaterial({map: cabCol,  metalnessMap: cabMet, roughnessMap: cabRough , envMapIntensity: 0}),[])
   return (
-    <group {...props} dispose={null}>
+    <group {...props} dispose={null} rotation={[0,-Math.PI*1.2,0]}>
       <mesh
         castShadow
         receiveShadow
@@ -36,7 +36,7 @@ textures.forEach(tex => {
         receiveShadow
         geometry={nodes.Head.geometry}
         material={ampHeadMat}
-       position={[0.001, 0.894, 0.039]}
+      //  position={[0.001, 0.894, 0.039]}
       />
     </group>
   )

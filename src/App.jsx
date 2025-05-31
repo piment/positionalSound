@@ -41,9 +41,11 @@ import {
   setColor,
   setVolume
 } from './reducer/trackSettingsSlice';
+import throttle from 'lodash.throttle';
 import FrequencySpectrum from './FrequencySpectrum';
 import { GuitarAmp } from './instruments/amps/GuitarAmp';
 import { BassAmp } from './instruments/amps/BassAmp';
+import {Overheads} from './instruments/drumkit/Overheads';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -54,6 +56,7 @@ const COMPONENTS = {
   FloorTom: FloorTom,
   Crash: Crash,
   Ride: Ride,
+  Overheads :Overheads,
   Guitar : GuitarAmp,
   Bass: BassAmp
 };
@@ -94,6 +97,7 @@ export default function App() {
   const [trackList, setTrackList] = useState([]);
   const [assignments, setAssignments] = useState({ null: [] });
 
+  
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
     return v ? JSON.parse(v) : [];
@@ -422,7 +426,7 @@ const sourcesForFloor = useMemo(() => {
         gl.shadowMap.type       = THREE.PCFSoftShadowMap
         gl.physicallyCorrectLights = true
       }}>
-          <ambientLight intensity={.3} />
+         
           {/* <pointLight position={[5, 10, 5]} intensity={1000} /> */}
   <fog attach="fog" args={['#050505', 35, 80]} />
           {meshes.map((part, idx) => {
@@ -460,6 +464,7 @@ const sourcesForFloor = useMemo(() => {
 
           {/* Play unassigned tracks as well (just at listener position) */}
           {(assignments.null || []).map((sub) => {
+           
             return (
               <Sound
                 key={sub.id}
@@ -501,7 +506,7 @@ const sourcesForFloor = useMemo(() => {
   maxHeight={15}              // Y scale
   // pointSize={6}               // size of each dot
 />)}
-          <EnvComp />
+          <EnvComp  playing={playing}/>
           <Controls />
           <Perf deepAnalyze />
        <EffectComposer disableNormalPass>
@@ -509,7 +514,7 @@ const sourcesForFloor = useMemo(() => {
     
      
             {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
-            <DepthOfField focusDistance={0} focalLength={0.2} bokehScale={2} height={480} />
+            {/* <DepthOfField focusDistance={0} focalLength={0.2} bokehScale={2} height={480} /> */}
             {/* <Bloom luminanceThreshold={.5} luminanceSmoothing={0.9} height={300} /> */}
             {/* <Noise opacity={0.02} /> */}
             {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
@@ -535,6 +540,8 @@ const sourcesForFloor = useMemo(() => {
                 arr.some((x) => x.id === t.id)
               )?.[0] || 'null';
             const cfg = settings[t.id] || { visible: false, color: '#88ccff' };
+              const currentVol = settings[t.id]?.volume ?? 0;
+  const currentSend = settings[t.id]?.sendLevel ?? 0;
             return (
               <li key={t.id} style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -573,10 +580,7 @@ const sourcesForFloor = useMemo(() => {
                         min={0}
                         max={1}
                         step={0.01}
-                        value={
-                          assignments.null.find((x) => x.id === t.id)?.volume ||
-                          0
-                        }
+                     value={currentVol}
                         onChange={(e) =>
                           updateUnassignedTrack(t.id, {
                             volume: parseFloat(e.target.value),
@@ -591,10 +595,7 @@ const sourcesForFloor = useMemo(() => {
                         min={0}
                         max={1}
                         step={0.01}
-                        value={
-                          assignments.null.find((x) => x.id === t.id)
-                            ?.sendLevel || 0
-                        }
+                   value={currentSend}
                         onChange={(e) =>
                           updateUnassignedTrack(t.id, {
                             sendLevel: parseFloat(e.target.value),
