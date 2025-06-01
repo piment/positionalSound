@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useFrame, useLoader, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export default function Sound({
   url,
+  buffer,
   on,
   paused,
   volume = 1,
   dist = 1,
   listener,
   convolver,
-  sendLevel = .2,
+  sendLevel = 0.2,
   playStartTime = 0,
   onAnalysedLevel,
   onAnalyserReady,
@@ -18,16 +19,16 @@ export default function Sound({
   trackId,
   masterTapGain,
   visible,
-  // position,
   meshRef,
-  buffer
 }) {
-  // const buffer = useLoader(THREE.AudioLoader, url);
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
 
   const soundRef = useRef(null);
-      const pos = new THREE.Vector3();
+  const drySrcRef = useRef(null);
+  const sendSrcRef = useRef(null);
+  const sendGainRef = useRef(null);
+
   const tapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
   const analyser = useMemo(() => {
     const a = audioCtx.createAnalyser();
@@ -36,164 +37,166 @@ export default function Sound({
     return a;
   }, [audioCtx]);
 
-  const sendSrcRef = useRef(null);
-  const sendGainRef = useRef(null);
-
-  useEffect(() => {
-    if (typeof onVolumeChange === 'function') {
-      onVolumeChange(volume);
-    }
-  }, [volume, onVolumeChange]);
-useEffect(() => {
-  if (soundRef.current) {
-    soundRef.current.setVolume(volume); // should react to volume prop changes
-  }
-}, [volume]);
+  // Track audio level for visuals
+  const data = useMemo(() => new Uint8Array(analyser.frequencyBinCount), [analyser]);
 
   useEffect(() => {
     if (typeof onAnalyserReady === 'function') {
-      onAnalyserReady(analyser);
+      onAnalyserReady(trackId, analyser);
     }
-  }, [analyser, onAnalyserReady]);
+  }, [analyser, onAnalyserReady, trackId]);
 
+  useEffect(() => {
+    if (typeof onVolumeChange === 'function') {
+      onVolumeChange(trackId, volume);
+    }
+  }, [volume, onVolumeChange, trackId]);
+
+  // Ensure listener is attached to camera
   useEffect(() => {
     camera.add(listener);
     return () => camera.remove(listener);
   }, [camera, listener]);
 
-useEffect(() => {
-  if (!buffer || !listener || soundRef.current) return;
+  // Clean up any audio nodes
+const stopAndCleanup = () => {
+  try {
+    drySrcRef.current?.stop?.();
+  } catch (e) {
+    console.warn('Dry src stop failed:', e);
+  }
+  try {
+    drySrcRef.current?.disconnect?.();
+  } catch (e) {
+    console.warn('Dry src disconnect failed:', e);
+  }
 
-  const sound = new THREE.PositionalAudio(listener);
-  soundRef.current = sound;
+  try {
+    sendSrcRef.current?.stop?.();
+  } catch (e) {
+    console.warn('Send src stop failed:', e);
+  }
+  try {
+    sendSrcRef.current?.disconnect?.();
+  } catch (e) {
+    console.warn('Send src disconnect failed:', e);
+  }
 
- const init = async () => {
-    const actualBuffer = buffer || await loadBuffer(url);
-    sound.setBuffer(actualBuffer);
-    // rest of setup
- 
+  try {
+    sendGainRef.current?.disconnect?.();
+  } catch (e) {
+    console.warn('Send gain disconnect failed:', e);
+  }
 
-  sound.setBuffer(buffer);
-  sound.setRefDistance(dist);
-  sound.setLoop(true);
-  sound.setVolume(volume);
-  sound.panner.panningModel = 'equalpower';
-  sound.panner.rolloffFactor = 0.005;
-  sound.panner.coneInnerAngle = 360;
-  sound.panner.coneOuterAngle = 360;
-
-  // Initial position
-  // if (position) sound.position.copy(position);
-
-  // Audio node routing
-  const gainNode = sound.getOutput();
-  gainNode.connect(tapGain);
-  tapGain.connect(analyser);
-  analyser.connect(masterTapGain);
-
-  // Add to scene only once
-  scene.add(sound);
-
-  // Callback
-  onAnalyserReady?.(trackId, analyser, volume);
-  onVolumeChange?.(trackId, volume);
-
-  return () => {
-    sound.stop();
-    gainNode.disconnect();
-    tapGain.disconnect();
-    analyser.disconnect();
-    scene.remove(sound);
-  }; };
-  init()
-}, [buffer, dist, listener, masterTapGain]);
-
-useEffect(() => {
-  const sound = soundRef.current;
-  if (!sound) return;
-
-  sound.setVolume(volume);
-
-  if (on && !paused) {
-    if (!sound.isPlaying) {
-      sound.play(0, playStartTime);
-    }
-  } else {
+  if (soundRef.current) {
     try {
-      sound.stop();
+      soundRef.current.stop();
     } catch {}
+    scene.remove(soundRef.current);
+    soundRef.current = null;
   }
 
-  const target = on && !paused && visible
-    ? sound.gain.gain.value
-    : 0;
-  masterTapGain.gain.setValueAtTime(target, audioCtx.currentTime);
-}, [on, paused, playStartTime, visible, volume, audioCtx, masterTapGain]);
+  drySrcRef.current = null;
+  sendSrcRef.current = null;
+  sendGainRef.current = null;
+};
 
-
+  // Playback logic (dry positional + send bus)
   useEffect(() => {
-    if (!buffer) return;
-    const ctx = listener.context;
-    const offset = Number.isFinite(playStartTime) ? playStartTime : 0;
+    // stopAndCleanup();
 
-    if (on && !paused) {
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.loop = true;
+    if (!on || paused || !buffer || !listener) return;
 
-      const gain = ctx.createGain();
-      const sl = Number.isFinite(sendLevel) ? sendLevel : 0;
-      gain.gain.setValueAtTime(sl, ctx.currentTime);
+    // Dry positional audio
+    const drySound = new THREE.PositionalAudio(listener);
+    drySound.setBuffer(buffer);
+    drySound.setRefDistance(dist);
+    drySound.setLoop(true);
+    drySound.setVolume(volume);
+    drySound.panner.panningModel = 'equalpower';
+    drySound.panner.rolloffFactor = 0.005;
+    drySound.panner.coneInnerAngle = 360;
+    drySound.panner.coneOuterAngle = 360;
 
-      src.connect(gain).connect(convolver);
-      src.start(ctx.currentTime, offset);
-
-      sendSrcRef.current = src;
-      sendGainRef.current = gain;
+    // Position the sound at mesh
+    if (meshRef?.current?.children?.[0]) {
+      const pos = new THREE.Vector3();
+      meshRef.current.children[0].getWorldPosition(pos);
+      drySound.position.copy(pos);
     }
 
-    return () => {
-      const src = sendSrcRef.current;
-      const gain = sendGainRef.current;
-      if (src) {
-        try {
-          src.stop();
-        } catch {}
-        src.disconnect();
-      }
-      if (gain) gain.disconnect();
-    };
-  }, [buffer, on, paused, convolver, listener, playStartTime]);
+    // Routing
+    const dryOutput = drySound.getOutput();
+    dryOutput.connect(tapGain);
+    tapGain.connect(analyser);
+    analyser.connect(masterTapGain);
 
+    scene.add(drySound);
+  const offset = Number.isFinite(playStartTime) ? playStartTime : 0;
+const ctxTime = audioCtx.currentTime;
+
+const src = audioCtx.createBufferSource();
+src.buffer = buffer;
+src.loop = true;
+src.connect(dryOutput); // already tapped to analyser → masterTapGain
+src.start(ctxTime, offset);
+
+soundRef.current = drySound;
+drySrcRef.current = src; // keep reference for cleanup
+
+    // Send (reverb bus) audio
+    const sendSource = audioCtx.createBufferSource();
+    sendSource.buffer = buffer;
+    sendSource.loop = true;
+
+    const sendGain = audioCtx.createGain();
+    sendGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
+
+    sendSource.connect(sendGain).connect(convolver);
+    sendSource.start(audioCtx.currentTime, playStartTime);
+
+    sendSrcRef.current = sendSource;
+    sendGainRef.current = sendGain;
+
+    console.log(playStartTime)
+    return () => stopAndCleanup();
+  }, [
+    on,
+    paused,
+    buffer,
+    listener,
+    convolver,
+    playStartTime,
+    volume,
+    dist,
+    masterTapGain,
+    sendLevel,
+    scene,
+    meshRef,
+  ]);
+
+  // Update send level dynamically
   useEffect(() => {
-    const gain = sendGainRef.current;
-    if (gain) {
-      const sl = Number.isFinite(sendLevel) ? sendLevel : 0;
-      gain.gain.setValueAtTime(sl, listener.context.currentTime);
+    if (sendGainRef.current) {
+      sendGainRef.current.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
     }
-  }, [sendLevel, listener]);
+  }, [sendLevel, audioCtx]);
 
-  const data = useMemo(
-    () => new Uint8Array(analyser.frequencyBinCount),
-    [analyser]
-  );
-
+  // Animate and update positional audio
   useFrame(() => {
-    analyser.getByteFrequencyData(data);
-    const sum = data.reduce((a, v) => a + v, 0);
-    let level = sum / data.length / 255;
-    level *= Number.isFinite(volume) ? volume : 1;
-    level = Math.min(1, Math.max(0, level));
-    onAnalysedLevel?.(level);
+    if (analyser) {
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((sum, v) => sum + v, 0) / data.length;
+      const level = Math.min(1, Math.max(0, (avg / 255) * volume));
+      onAnalysedLevel?.(level);
+    }
 
-    if (soundRef.current && meshRef?.current) {
-    const worldPos = new THREE.Vector3();
-    meshRef.current.children[0].getWorldPosition(worldPos);
-    soundRef.current.position.copy(worldPos);
-    soundRef.current.updateMatrixWorld();
-    // console.log(meshRef.current)
-  }
+    if (soundRef.current && meshRef?.current?.children?.[0]) {
+      const pos = new THREE.Vector3();
+      meshRef.current.children[0].getWorldPosition(pos);
+      soundRef.current.position.copy(pos);
+    }
   });
 
-  return null; // Nothing rendered, audio is handled programmatically
+  return null;
 }

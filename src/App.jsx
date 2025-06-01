@@ -93,16 +93,17 @@ const { loadBuffer, cache } = useBufferCache(audioCtx);
   const dispatch = useDispatch();
   const settings = useSelector((state) => state.trackSettings);
   const mode     = useSelector(state => state.viewMode)
+  
+const [playing, setPlaying] = useState(false);
+const [playOffset, setPlayOffset] = useState(0);
+const [pauseTime, setPauseTime] = useState(null)
 
   const [tracks, setTracks] = useState([]);
-  const [playing, setPlaying] = useState(false);
   const [sources, setSources] = useState([]);
-
-  const [playOffset, setPlayOffset] = useState(0);
   const sourcesRef = useRef([]);
   const [trackList, setTrackList] = useState([]);
   const [assignments, setAssignments] = useState({ null: [] });
-
+const [scrubPos, setScrubPos] = useState(0);
   
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
@@ -284,16 +285,28 @@ async function handleAutoAssign(items) {
 
 
 
-  async function playAll() {
-    setPlayOffset(audioCtx.currentTime);
-    setPlaying(true);
-  }
-  function stopAll() {
+function playAll() {
+  const resumeOffset = pauseTime || scrubPos || 0;
+  setPlayOffset(audioCtx.currentTime - resumeOffset);
+  setPlaying(true);
+  setPauseTime(null); // reset pause time
+}
+function pauseAll() {
+  setPauseTime(audioCtx.currentTime - playOffset);
+  setPlaying(false);
+}
+function stopAll() {
+    setPauseTime(0);
+  setScrubPos(0);  // ← record current play position
+  setPlaying(false);
+  setPlayOffset(0)
+}
 
-    // setSources([])
-    setPlaying(false);
-    // setPlayStartTime(null);
+useEffect(() => {
+  if (playing) {
+    setScrubPos(audioCtx.currentTime - playOffset);
   }
+}, [playing, audioCtx, playOffset]);
 
 function updateUnassignedTrack(id, props) {
   setAssignments((a) => ({
@@ -325,10 +338,6 @@ function updateUnassignedTrack(id, props) {
     setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, level } : s)));
   }, []);
 
-  // // 3) When the user moves a volume slider, update that entry
-  // const handleVolumeChange = useCallback((id, volume) => {
-  //   setSources((srcs) => srcs.map((s) => (s.id === id ? { ...s, volume } : s)));
-  // }, []);
 const handleVolumeChange = useCallback((trackId, newVol) => {
   dispatch(setVolume({ trackId, volume: newVol }))
 }, [dispatch])
@@ -350,7 +359,7 @@ const sourcesForFloor = useMemo(() => {
     }))
 }, [settings])
 
-  // console.log(sources)
+
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
@@ -358,6 +367,9 @@ const sourcesForFloor = useMemo(() => {
           <button onClick={playAll} style={{ marginRight: '0.5em' }}>
             ▶️ Play All
           </button>
+            <button onClick={pauseAll} style={{ marginRight: '0.5em' }}>
+    ⏸ Pause
+  </button>
           <button onClick={stopAll}>⏹ Stop All</button>
 
           <button onClick={clearSession}>Clear Session</button>
@@ -428,6 +440,25 @@ const sourcesForFloor = useMemo(() => {
         style={{ width: 200, borderRight: '1px solid #333' }}
         className='panel-left'
       >
+        <input
+  type="range"
+  min={0}
+  max={Math.max(...trackList.map(t => t.buffer?.duration || 0))}
+  step={0.01}
+  value={scrubPos}
+  onChange={(e) => {
+  const seek = parseFloat(e.target.value);
+  setPlayOffset(audioCtx.currentTime - seek);  // correct!
+  setScrubPos(seek);
+  if (playing) {
+    setPlaying(false);
+    setTimeout(() => setPlaying(true), 50);
+  } else {
+    setPauseTime(seek); // 🆕 add this!
+  }
+}}
+
+/>
         {Object.keys(COMPONENTS).map((part) => (
           <button
             key={part}
