@@ -47,6 +47,7 @@ import FrequencySpectrum from './FrequencySpectrum';
 import { GuitarAmp } from './instruments/amps/GuitarAmp';
 import { BassAmp } from './instruments/amps/BassAmp';
 import {Overheads} from './instruments/drumkit/Overheads';
+import { useAudioContext, useAudioListener } from './AudioContextProvider';
 
 const COMPONENTS = {
   Snare: Snare,
@@ -71,8 +72,9 @@ const STORAGE_KEYS = {
 
 
 export default function App() {
-  const listener = useMemo(() => new THREE.AudioListener(), []);
-  const audioCtx = listener.context;
+
+const listener = useAudioListener();
+const audioCtx = useAudioContext();
 
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])

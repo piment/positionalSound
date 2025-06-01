@@ -10,12 +10,12 @@ import { Provider } from 'react-redux'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
   <Intro>
-  {/* <AudioContextProvider> */}
+  <AudioContextProvider>
 
   <Provider store={store}>
     <App />
   </Provider>
-  {/* </AudioContextProvider> */}
+  </AudioContextProvider>
   </Intro>
   </React.StrictMode>,
 )

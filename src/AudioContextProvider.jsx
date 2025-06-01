@@ -1,37 +1,26 @@
-// AudioContextProvider.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import * as THREE from 'three';
 
-// Don’t name this the same as window.AudioContext
-const AudioCtxContext = createContext(null);
+const AudioContextContext = createContext(null);
+const ListenerContext = createContext(null);
 
 export function AudioContextProvider({ children }) {
-  const [audioContext, setAudioContext] = useState(null);
-
-  useEffect(() => {
-    // Create it once
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    setAudioContext(ctx);
-
-    return () => {
-      // Clean up on unmount
-      ctx.close();
-    };
-  }, []);
-
-  // While it’s initializing you could show nothing or a spinner
-  if (!audioContext) return null;
+  const listener = useMemo(() => new THREE.AudioListener(), []);
+  const audioContext = listener.context;
 
   return (
-    <AudioCtxContext.Provider value={audioContext}>
-      {children}
-    </AudioCtxContext.Provider>
+    <AudioContextContext.Provider value={audioContext}>
+      <ListenerContext.Provider value={listener}>
+        {children}
+      </ListenerContext.Provider>
+    </AudioContextContext.Provider>
   );
 }
 
 export function useAudioContext() {
-  const ctx = useContext(AudioCtxContext);
-  if (!ctx) {
-    throw new Error('useAudioContext must be used within an AudioContextProvider');
-  }
-  return ctx;
+  return useContext(AudioContextContext);
+}
+
+export function useAudioListener() {
+  return useContext(ListenerContext);
 }
