@@ -19,7 +19,7 @@ const floorRef = useRef()
         lightRef.current.intensity = 0
       }
       // Also keep target at 0 (so it stays dark while playing).
-      setTarget(0)
+      setTarget(1)
     } else {
       // When playback stops, set the target to 1 (we’ll lerp up to 1).
       setTarget(4)
@@ -46,7 +46,7 @@ const floorRef = useRef()
       color={0xffffff}
     />
    <mesh ref={floorRef} rotation={[-Math.PI*0.5,0,0]} position={[0,0,0]} castShadow  receiveShadow>
-    <planeGeometry args={[100,100]} />
+    <planeGeometry args={[200,200]} />
     {/* {mode === 'stageMode' ?
     <MeshReflectorMaterial blur={[0, 0]} // Blur ground reflections (width, height), 0 skips blur
     mixBlur={0.4} // How much blur mixes with surface roughness (default = 1)
@@ -64,7 +64,7 @@ const floorRef = useRef()
     
    :  
   } */}
-  <meshStandardMaterial color={"#050505"} roughness={.81} metalness={.1 } shadowSide={THREE.DoubleSide}/>
+  <meshStandardMaterial color={"#050505"} roughness={.81}  metalness={.1}/>
    </mesh>
 {/* <Environment files='adamsbridge.hdr' /> */}
    </>

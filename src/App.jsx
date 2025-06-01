@@ -39,7 +39,8 @@ import {
   removeTrack,
   toggleVisibility,
   setColor,
-  setVolume
+  setVolume,
+   setSendLevel,
 } from './reducer/trackSettingsSlice';
 import throttle from 'lodash.throttle';
 import FrequencySpectrum from './FrequencySpectrum';
@@ -282,12 +283,21 @@ function handleAutoAssign(items) {
     // setPlayStartTime(null);
   }
 
-  function updateUnassignedTrack(id, props) {
-    setAssignments((a) => ({
-      ...a,
-      null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
-    }));
+function updateUnassignedTrack(id, props) {
+  setAssignments((a) => ({
+    ...a,
+    null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
+  }));
+
+  // 🔁 Sync Redux with local change
+  if (props.volume !== undefined) {
+    dispatch(setVolume({ trackId: id, volume: props.volume }));
   }
+  if (props.sendLevel !== undefined) {
+    dispatch(setSendLevel({ trackId: id, sendLevel: props.sendLevel }));
+  }
+}
+
 
   function clearSession() {
     localStorage.removeItem(STORAGE_KEYS.meshes);
@@ -420,15 +430,19 @@ const sourcesForFloor = useMemo(() => {
 
       {/* Center: 3D canvas */}
       <div style={{ flex: 1 }} className='canvas-main'>
-        <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows gl={{ antialias : true}}
+        <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows gl={{ antialias : true,
+        //  precision: 'highp'
+        }}
          onCreated={({ gl }) => {
         gl.shadowMap.enabled    = true
         gl.shadowMap.type       = THREE.PCFSoftShadowMap
+                // gl.shadowMap.type       = THREE.VSMShadowMap
         gl.physicallyCorrectLights = true
-      }}>
+      }}
+      >
          
           {/* <pointLight position={[5, 10, 5]} intensity={1000} /> */}
-  <fog attach="fog" args={['#050505', 35, 80]} />
+  {/* <fog attach="fog" args={['#050505', 65, 80]} /> */}
           {meshes.map((part, idx) => {
             const Part = COMPONENTS[part];
             const angle = (idx / meshes.length) * Math.PI * 2;

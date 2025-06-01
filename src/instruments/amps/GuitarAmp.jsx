@@ -14,7 +14,7 @@ ampCol.flipY = ampNorm.flipY = false
 const ampMat = useMemo(() => new THREE.MeshStandardMaterial({map: ampCol, normalMap: ampNorm, roughness : .8, emissive: ampCol, emissiveIntensity:1, envMapIntensity: .01}))
 
   return (
-    <group {...props} dispose={null}>
+    <group {...props} dispose={null} rotation={[0,-Math.PI*.7,0]} >
       <mesh
         castShadow
         receiveShadow

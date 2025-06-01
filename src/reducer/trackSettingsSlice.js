@@ -36,6 +36,19 @@ const trackSettingsSlice = createSlice({
     state[trackId].volume = volume;
   }
     },
+    setSendLevel(state, action) {
+  const { trackId, sendLevel } = action.payload;
+  if (!state[trackId]) {
+    state[trackId] = {
+      visible: true,
+      color: "#88ccff",
+      volume: 1,
+      sendLevel,
+    };
+  } else {
+    state[trackId].sendLevel = sendLevel;
+  }
+}
   },
 })
 
@@ -45,5 +58,6 @@ export const {
   toggleVisibility,
   setColor,
     setVolume,
+     setSendLevel,
 } = trackSettingsSlice.actions
 export default trackSettingsSlice.reducer

@@ -10,20 +10,19 @@ import { Html, OrbitControls, TransformControls } from '@react-three/drei';
 import Sound from './Sound';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import SoundParticles from './SoundParticles';
-import FrequencyFloor from './FrequencyFloor';
-import { useSelector } from 'react-redux';
+
 const modes = ['translate', 'rotate'];
 const sceneState = proxy({ current: null, mode: 0 });
 
 export function Controls() {
   const snap = useSnapshot(sceneState);
   const scene = useThree((state) => state.scene);
+
   return (
     <>
       {snap.current && (
         <TransformControls
-          object={scene.getObjectByName(snap.current)}
+          object={scene.getObjectByName(snap.current).children[0]}
           mode={modes[snap.mode]}
           // mode='translate'
           // showY={false}
@@ -33,6 +32,7 @@ export function Controls() {
           rotateX={false}
           rotateZ={false}
           translateY={0}
+          // position={scene.getObjectByName(snap.current)?.userData?.center}
         />
       )}
       <OrbitControls
@@ -66,6 +66,7 @@ export function ObjSound({
   const smoothRef = useRef(0);
   const outerRef = useRef(); // the <group> you already had
   const innerRef = useRef(); // we’ll point this at the positioned child
+    const positionRef = useRef(new THREE.Vector3());
   const [lights, setLights] = useState([])
   const [levels, setLevels] = useState({})
 const meshTrackId = subs.length > 0 ? subs[0].id : null;
@@ -123,7 +124,7 @@ const meshTrackId = subs.length > 0 ? subs[0].id : null;
 
   // every frame, use playLevel (a number!) to drive emissive
   useFrame((_, delta) => {
-    if (!padMeshes.length) return;
+   if (!padMeshes.length && lights.length === 0) return;
 
     // Optionally boost low/mid levels
     const boosted = Math.sqrt(smoothRef.current); // sqrt gives more punch on quieter sounds
@@ -158,19 +159,18 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
       m.material.emissive.setScalar(smoothRef.current*2);
     });
 // console.log(playLevel)
-     const lightInt = THREE.MathUtils.lerp(0.2, 154, smoothRef.current)
-// console.log(lightInt)
-  // Update each PointLight
-  lights.forEach(light => {
-    light.intensity = lightInt
-    // light.power = lightInt*10
-    // pull the color from Redux via visibleMap 
-    if(!visibleMap) return
-    const hex = visibleMap[meshTrackId]?.color || '#ffffff'
-    light.color.set(hex)
-  })
+   lights.forEach((light) => {
+  const multiplier = light.userData?.intensityMultiplier ?? 1;
+  const lightInt = THREE.MathUtils.lerp(0, 154, smoothRef.current) * multiplier;
+  light.intensity = lightInt;
+
+  if (!visibleMap) return;
+  const hex = visibleMap[meshTrackId]?.color || '#ffffff';
+  light.color.set(hex);
+});
   });
 
+  // console.log('ORRRRR', outerRef.current)
   return (
     <group
       ref={outerRef}
@@ -217,6 +217,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
     //  onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}
     onAnalyserReady={onAnalyserReady}
      onVolumeChange={(id, v) => onVolumeChange(id, v)}
+      // position={positionRef.current.clone()}
         />
       ))}
 
@@ -242,6 +243,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
                   step={0.01}
                   value={sub.volume}
               onChange={e => {
+                e.stopPropagation()
           const newVol = parseFloat(e.target.value)
           // 1) update local subs[] state
           onSubsChange(
