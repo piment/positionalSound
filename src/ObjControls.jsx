@@ -218,6 +218,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
     onAnalyserReady={onAnalyserReady}
      onVolumeChange={(id, v) => onVolumeChange(id, v)}
       // position={positionRef.current.clone()}
+        buffer={sub.buffer}
         />
       ))}
 

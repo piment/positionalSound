@@ -48,6 +48,8 @@ import { GuitarAmp } from './instruments/amps/GuitarAmp';
 import { BassAmp } from './instruments/amps/BassAmp';
 import {Overheads} from './instruments/drumkit/Overheads';
 import { useAudioContext, useAudioListener } from './AudioContextProvider';
+import { useBufferCache } from './hooks/useBufferCache';
+
 
 const COMPONENTS = {
   Snare: Snare,
@@ -76,6 +78,7 @@ export default function App() {
 const listener = useAudioListener();
 const audioCtx = useAudioContext();
 
+const { loadBuffer, cache } = useBufferCache(audioCtx);
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
  const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
@@ -197,29 +200,33 @@ const audioCtx = useAudioContext();
     if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
   }
 
-  function handleImport(items) {
-    // build full track objects
-    const newTracks = items.map((f) => ({
-      id: nanoid(),
-      file: f.file,
-      url: f.url,
-      name: f.name,
-      volume: 1,
-      sendLevel: 0,
-    }));
+ async function handleImport(items) {
+  const newTracks = await Promise.all(
+    items.map(async (f) => {
+      const buffer = await loadBuffer(f.url);
+      return {
+        id: nanoid(),
+        file: f.file,
+        url: f.url,
+        name: f.name,
+        buffer,        // ✅ store preloaded buffer
+        volume: 1,
+        sendLevel: 0,
+      };
+    })
+  );
 
-    // optionally keep a flat list too
-    setTrackList((prev) => [...prev, ...newTracks]);
+  setTrackList((prev) => [...prev, ...newTracks]);
 
-    setAssignments((a) => ({
-      ...a,
-      null: [...(a.null || []), ...newTracks],
-    }));
+  setAssignments((a) => ({
+    ...a,
+    null: [...(a.null || []), ...newTracks],
+  }));
 
-    newTracks.forEach((t) => {
-      dispatch(addTrack(t.id));
-    });
-  }
+  newTracks.forEach((t) => {
+    dispatch(addTrack(t.id));
+  });
+}
   function toggleAssign(trackObj, targetMesh) {
     setAssignments((prev) => {
       // remove from every bucket
@@ -240,22 +247,25 @@ const audioCtx = useAudioContext();
 // assuming COMPONENTS is in scope, e.g.
 // const COMPONENTS = { Snare, Kick, … }
 
-function handleAutoAssign(items) {
-  // 1) build the same track objects
-  const newTracks = items.map(f => ({
-    id:   nanoid(),
-    file: f.file,
-    url:  f.url,
-    name: f.name,
-    volume: 1,
-    sendLevel: 0,
-  }))
+async function handleAutoAssign(items) {
+  const newTracks = await Promise.all(
+    items.map(async (f) => {
+      const buffer = await loadBuffer(f.url); // ✅ preload
+      return {
+        id: nanoid(),
+        file: f.file,
+        url: f.url,
+        name: f.name,
+        buffer,             // ✅ store the decoded buffer
+        volume: 1,
+        sendLevel: 0,
+      };
+    })
+  );
 
-  // 2) add to your flat list
-  setTrackList(prev => [...prev, ...newTracks])
+  setTrackList((prev) => [...prev, ...newTracks]);
 
-  // 3) dispatch Redux addTrack for each
-  newTracks.forEach(t => dispatch(addTrack(t.id)))
+  newTracks.forEach((t) => dispatch(addTrack(t.id)));
 
   // 4) bucket into assignments by name:
   setAssignments(prev => {
@@ -508,6 +518,7 @@ const sourcesForFloor = useMemo(() => {
                 onVolumeChange={handleVolumeChange}
                  masterTapGain={masterTapGain}
                 visible={settings[sub.id]?.visible}
+                buffer={sub.buffer}
                 // no meshRef or panner → dry playback
               />
             );

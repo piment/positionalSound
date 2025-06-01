@@ -19,9 +19,10 @@ export default function Sound({
   masterTapGain,
   visible,
   // position,
-  meshRef
+  meshRef,
+  buffer
 }) {
-  const buffer = useLoader(THREE.AudioLoader, url);
+  // const buffer = useLoader(THREE.AudioLoader, url);
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
 
@@ -66,6 +67,12 @@ useEffect(() => {
   const sound = new THREE.PositionalAudio(listener);
   soundRef.current = sound;
 
+ const init = async () => {
+    const actualBuffer = buffer || await loadBuffer(url);
+    sound.setBuffer(actualBuffer);
+    // rest of setup
+ 
+
   sound.setBuffer(buffer);
   sound.setRefDistance(dist);
   sound.setLoop(true);
@@ -97,7 +104,8 @@ useEffect(() => {
     tapGain.disconnect();
     analyser.disconnect();
     scene.remove(sound);
-  };
+  }; };
+  init()
 }, [buffer, dist, listener, masterTapGain]);
 
 useEffect(() => {
