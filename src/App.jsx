@@ -49,6 +49,7 @@ import { BassAmp } from './instruments/amps/BassAmp';
 import {Overheads} from './instruments/drumkit/Overheads';
 import { useAudioContext, useAudioListener } from './AudioContextProvider';
 import { useBufferCache } from './hooks/useBufferCache';
+import TrackConsole from './TrackConsole';
 
 
 const COMPONENTS = {
@@ -319,11 +320,31 @@ useEffect(() => {
 
 }, [playing, audioCtx, playOffset]);
 
-function updateUnassignedTrack(id, props) {
-  setAssignments((a) => ({
-    ...a,
-    null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
-  }));
+// function updateUnassignedTrack(id, props) {
+//   setAssignments((a) => ({
+//     ...a,
+//     null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
+//   }));
+
+//   // 🔁 Sync Redux with local change
+//   if (props.volume !== undefined) {
+//     dispatch(setVolume({ trackId: id, volume: props.volume }));
+//   }
+//   if (props.sendLevel !== undefined) {
+//     dispatch(setSendLevel({ trackId: id, sendLevel: props.sendLevel }));
+//   }
+// }
+
+function updateTrack(id, props) {
+  setAssignments((prev) => {
+    const updated = {};
+    for (const [bucket, tracks] of Object.entries(prev)) {
+      updated[bucket] = tracks.map((t) =>
+        t.id === id ? { ...t, ...props } : t
+      );
+    }
+    return updated;
+  });
 
   // 🔁 Sync Redux with local change
   if (props.volume !== undefined) {
@@ -333,8 +354,6 @@ function updateUnassignedTrack(id, props) {
     dispatch(setSendLevel({ trackId: id, sendLevel: props.sendLevel }));
   }
 }
-
-
   function clearSession() {
     localStorage.removeItem(STORAGE_KEYS.meshes);
     setTrackList([]);
@@ -614,7 +633,7 @@ const sourcesForFloor = useMemo(() => {
       >
         <ImportMenu onAdd={handleImport} onAutoAssign={handleAutoAssign}/>
 
-        <h4>Tracks</h4>
+        {/* <h4>Tracks</h4>
       
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {trackList.map((t) => {
@@ -696,7 +715,7 @@ const sourcesForFloor = useMemo(() => {
                         checked={cfg.visible}
                         onChange={() => dispatch(toggleVisibility(t.id))}
                       />
-                      {/* <label style={{ marginRight: 8 }}>{t.name}</label> */}
+              
                       <input
                         type='color'
                         value={cfg.color}
@@ -712,8 +731,16 @@ const sourcesForFloor = useMemo(() => {
               </li>
             );
           })}
-        </ul>
-      </div>
+        </ul> */} </div>
+  <TrackConsole
+  trackList={trackList}
+  settings={settings}
+  updateTrack={updateTrack}
+  visibleMap={settings}
+  toggleVisibility={(trackId) => dispatch(toggleVisibility(trackId))}
+  setColor={(trackId, color) => dispatch(setColor({ trackId, color }))}
+/>
+     
     </div>
   );
 }

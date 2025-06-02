@@ -205,22 +205,23 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
           paused={paused}
           listener={listener}
           convolver={convolver}
-          sendLevel={sub.sendLevel}
-          onSendLevelChange={(val) => {
-            const next = subs.map((s, j) =>
-              j === idx ? { ...s, sendLevel: val } : s
-            );
-            onSubsChange(next);
-          }}
+          // sendLevel={sub.sendLevel}
+              sendLevel={sub.sendLevel}
+          // onSendLevelChange={(val) => {
+          //   const next = subs.map((s, j) =>
+          //     j === idx ? { ...s, sendLevel: val } : s
+          //   );
+          //   onSubsChange(next);
+          // }}
           playStartTime={playStartTime}
- 
+//  onVolumeChange={onVolumeChange}
           masterTapGain={masterTapGain}
     visible={visible} 
     //  onAnalysedLevel={(lvl) => handleLevel(sub.id, lvl)}
           onAnalysedLevel={(lvl) => handleAnalysedLevel(sub.id, lvl)}
     //  onAnalyserReady={(id, a, vol) => onAnalyserReady(id, a, vol)}
     onAnalyserReady={onAnalyserReady}
-     onVolumeChange={(id, v) => onVolumeChange(id, v)}
+    //  onVolumeChange={(id, v) => onVolumeChange(id, v)}
       // position={positionRef.current.clone()}
         buffer={sub.buffer}
         pauseTime={pauseTime}
@@ -232,7 +233,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
       ))}
 
       {/* only show sliders when selected */}
-      {snap.current === name && (
+      {/* {snap.current === name && (
         <Html center position={[0, 1.5, 0]}>
           {subs.map((sub, idx) => (
             <div key={sub.id} style={{ marginBottom: 8 }}>
@@ -300,7 +301,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
             </div>
           ))}
         </Html>
-      )}
+      )} */}
     </group>
   );
 }

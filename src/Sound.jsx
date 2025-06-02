@@ -50,11 +50,11 @@ export default function Sound({
     }
   }, [analyser, onAnalyserReady, trackId]);
 
-  useEffect(() => {
-    if (typeof onVolumeChange === 'function') {
-      onVolumeChange(trackId, volume);
-    }
-  }, [volume, onVolumeChange, trackId]);
+  // useEffect(() => {
+  //   if (typeof onVolumeChange === 'function') {
+  //     onVolumeChange(trackId, volume);
+  //   }
+  // }, [volume, onVolumeChange, trackId]);
 
   // Ensure listener is attached to camera
   useEffect(() => {
