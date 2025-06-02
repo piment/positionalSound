@@ -55,6 +55,7 @@ export function ObjSound({
   onSubsChange,
   children,
   playStartTime,
+  pauseTime,
   onAnalyserReady,
   onLevelChange,
   onVolumeChange,
@@ -219,6 +220,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
      onVolumeChange={(id, v) => onVolumeChange(id, v)}
       // position={positionRef.current.clone()}
         buffer={sub.buffer}
+        pauseTime={pauseTime}
         />
       ))}
 

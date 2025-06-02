@@ -20,6 +20,7 @@ export default function Sound({
   masterTapGain,
   visible,
   meshRef,
+  pauseTime,
 }) {
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
@@ -108,15 +109,13 @@ const stopAndCleanup = () => {
     if (!on || paused || !buffer || !listener) return;
 
     // Dry positional audio
-    const drySound = new THREE.PositionalAudio(listener);
-    drySound.setBuffer(buffer);
-    drySound.setRefDistance(dist);
-    drySound.setLoop(true);
-    drySound.setVolume(volume);
-    drySound.panner.panningModel = 'equalpower';
-    drySound.panner.rolloffFactor = 0.005;
-    drySound.panner.coneInnerAngle = 360;
-    drySound.panner.coneOuterAngle = 360;
+const drySound = new THREE.PositionalAudio(listener);
+drySound.setRefDistance(dist);
+drySound.setVolume(volume);
+drySound.panner.panningModel = 'equalpower';
+drySound.panner.rolloffFactor = 0.05;
+    // drySound.panner.coneInnerAngle = 360;
+    // drySound.panner.coneOuterAngle = 360;
 
     // Position the sound at mesh
     if (meshRef?.current?.children?.[0]) {
@@ -126,23 +125,25 @@ const stopAndCleanup = () => {
     }
 
     // Routing
-    const dryOutput = drySound.getOutput();
-    dryOutput.connect(tapGain);
-    tapGain.connect(analyser);
-    analyser.connect(masterTapGain);
+const dryOutput = drySound.getOutput();
+dryOutput.connect(tapGain);
+tapGain.connect(analyser);
+analyser.connect(masterTapGain);
 
-    scene.add(drySound);
-  const offset = Number.isFinite(playStartTime) ? playStartTime : 0;
-const ctxTime = audioCtx.currentTime;
+scene.add(drySound);
 
-const src = audioCtx.createBufferSource();
-src.buffer = buffer;
-src.loop = true;
-src.connect(dryOutput); // already tapped to analyser → masterTapGain
-src.start(ctxTime, offset);
+// Apply offset correctly
+const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
+const sourceNode = audioCtx.createBufferSource();
+sourceNode.buffer = buffer;
+sourceNode.loop = true;
+drySound.setNodeSource(sourceNode); // ⬅️ critical
+sourceNode.start(audioCtx.currentTime, offset);
 
+
+// soundRef.current = drySound;
 soundRef.current = drySound;
-drySrcRef.current = src; // keep reference for cleanup
+drySrcRef.current = drySound; // keep reference for cleanup
 
     // Send (reverb bus) audio
     const sendSource = audioCtx.createBufferSource();
@@ -153,12 +154,12 @@ drySrcRef.current = src; // keep reference for cleanup
     sendGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
 
     sendSource.connect(sendGain).connect(convolver);
-    sendSource.start(audioCtx.currentTime, playStartTime);
+    sendSource.start(audioCtx.currentTime, offset);
 
     sendSrcRef.current = sendSource;
     sendGainRef.current = sendGain;
 
-    console.log(playStartTime)
+    // console.log(audioCtx.currentTime)
     return () => stopAndCleanup();
   }, [
     on,
@@ -167,14 +168,18 @@ drySrcRef.current = src; // keep reference for cleanup
     listener,
     convolver,
     playStartTime,
-    volume,
+    // volume,
     dist,
     masterTapGain,
-    sendLevel,
+    // sendLevel,
     scene,
     meshRef,
   ]);
-
+useEffect(() => {
+  if (soundRef.current) {
+    soundRef.current.setVolume(volume);
+  }
+}, [volume]);
   // Update send level dynamically
   useEffect(() => {
     if (sendGainRef.current) {
@@ -196,6 +201,7 @@ drySrcRef.current = src; // keep reference for cleanup
       meshRef.current.children[0].getWorldPosition(pos);
       soundRef.current.position.copy(pos);
     }
+    // console.log(audioCtx.currentTime)
   });
 
   return null;

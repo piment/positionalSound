@@ -285,14 +285,17 @@ async function handleAutoAssign(items) {
 
 
 
-function playAll() {
+async function playAll() {
+     await audioCtx.resume();
   const resumeOffset = pauseTime || scrubPos || 0;
   setPlayOffset(audioCtx.currentTime - resumeOffset);
   setPlaying(true);
-  setPauseTime(null); // reset pause time
+  // setPauseTime(null); // reset pause time
 }
-function pauseAll() {
+ function pauseAll() {
+ console.log(audioCtx.currentTime, playOffset)
   setPauseTime(audioCtx.currentTime - playOffset);
+  console.log(audioCtx.currentTime - playOffset)
   setPlaying(false);
 }
 function stopAll() {
@@ -306,6 +309,8 @@ useEffect(() => {
   if (playing) {
     setScrubPos(audioCtx.currentTime - playOffset);
   }
+
+
 }, [playing, audioCtx, playOffset]);
 
 function updateUnassignedTrack(id, props) {
@@ -440,7 +445,7 @@ const sourcesForFloor = useMemo(() => {
         style={{ width: 200, borderRight: '1px solid #333' }}
         className='panel-left'
       >
-        <input
+        {/* <input
   type="range"
   min={0}
   max={Math.max(...trackList.map(t => t.buffer?.duration || 0))}
@@ -458,7 +463,7 @@ const sourcesForFloor = useMemo(() => {
   }
 }}
 
-/>
+/> */}
         {Object.keys(COMPONENTS).map((part) => (
           <button
             key={part}
@@ -511,6 +516,7 @@ const sourcesForFloor = useMemo(() => {
                   setAssignments((a) => ({ ...a, [part]: newSubs }))
                 }
                 playStartTime={playOffset}
+                pauseTime={pauseTime}
                 masterTapGain={masterTapGain}
                 visibleMap={settings}
               >
@@ -540,6 +546,7 @@ const sourcesForFloor = useMemo(() => {
                 sendLevel={sub.sendLevel}
                 volume={sub.volume}
                 playStartTime={playOffset}
+                pauseTime={pauseTime}
                 // onAnalyserReady={(analyser) =>
                 //   handleAnalyserReady(sub.id, analyser, sub.volume)
                 // }
