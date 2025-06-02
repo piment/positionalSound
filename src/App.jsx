@@ -104,7 +104,8 @@ const [pauseTime, setPauseTime] = useState(null)
   const [trackList, setTrackList] = useState([]);
   const [assignments, setAssignments] = useState({ null: [] });
 const [scrubPos, setScrubPos] = useState(0);
-  
+const [mainTrackId, setMainTrackId] = useState(null);
+
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
     return v ? JSON.parse(v) : [];
@@ -283,7 +284,12 @@ async function handleAutoAssign(items) {
   })
 }
 
-
+useEffect(() => {
+  const longest = trackList.reduce((longest, track) => {
+    return track.buffer?.duration > (longest?.buffer?.duration || 0) ? track : longest;
+  }, null);
+  if (longest?.id) setMainTrackId(longest.id);
+}, [trackList]);
 
 async function playAll() {
      await audioCtx.resume();
@@ -345,7 +351,7 @@ function updateUnassignedTrack(id, props) {
 
 const handleVolumeChange = useCallback((trackId, newVol) => {
   dispatch(setVolume({ trackId, volume: newVol }))
-}, [dispatch])
+}, [])
 
   const analyserMapRef = useRef({})
 
@@ -519,6 +525,13 @@ const sourcesForFloor = useMemo(() => {
                 pauseTime={pauseTime}
                 masterTapGain={masterTapGain}
                 visibleMap={settings}
+                // mainDuration={longestDuration}
+  onMainEnded={() => {
+    setPauseTime(0);
+    setPlayOffset(0);
+    setPlaying(false);
+  }}
+  mainTrackId={mainTrackId}
               >
                 <Part />
               </ObjSound>
@@ -527,7 +540,7 @@ const sourcesForFloor = useMemo(() => {
 
           {/* Play unassigned tracks as well (just at listener position) */}
           {(assignments.null || []).map((sub) => {
-           
+            const isMain = sub.id === mainTrackId;
             return (
               <Sound
                 key={sub.id}
@@ -557,6 +570,12 @@ const sourcesForFloor = useMemo(() => {
                  masterTapGain={masterTapGain}
                 visible={settings[sub.id]?.visible}
                 buffer={sub.buffer}
+ isMain={isMain}                      // ✅ NEW
+      onMainEnded={() => {                 // ✅ NEW
+        setPauseTime(0);
+        setPlayOffset(0);
+        setPlaying(false);
+      }}
                 // no meshRef or panner → dry playback
               />
             );

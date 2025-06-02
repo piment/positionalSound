@@ -61,6 +61,8 @@ export function ObjSound({
   onVolumeChange,
   masterTapGain,
  visibleMap,
+ mainDuration, onMainEnded,
+ mainTrackId,
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
@@ -191,6 +193,7 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
       {children}
 
       {subs.map((sub, idx) => (
+        
         <Sound
           key={`dry:${sub.id}:${name}`}
           meshRef={outerRef}
@@ -221,6 +224,10 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
       // position={positionRef.current.clone()}
         buffer={sub.buffer}
         pauseTime={pauseTime}
+        mainDuration={mainDuration}
+      onMainEnded={onMainEnded}
+       isMain={sub.id === mainTrackId ? true : false}               
+
         />
       ))}
 
