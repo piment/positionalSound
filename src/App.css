@@ -16,7 +16,7 @@ body,
 body {
   font-family: 'Inter var', sans-serif;
   color: white;
-  background: #cc7b32;
+  background: #000000;
   user-select: none;
 }
 
@@ -43,6 +43,7 @@ body {
 .clicked {
   pointer-events: none;
   opacity: 0;
+  display: none;
 }
 
 a {
@@ -55,4 +56,60 @@ a {
 a:hover {
   text-decoration: underline;
   color: inherit;
+}
+.main{  width: 100vw;
+  height: 100vh;
+  top: 0;
+position: absolute;
+}
+.div-float{
+  position: absolute;
+}
+
+.canvas-main{
+  width: 100vw; 
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  /* z-index: 1; */
+  /* /* border: red solid 2px; */
+  /* display: flex; */
+  /* flex: 1; */
+  /* background-color: red; */
+}
+
+.panel-left{
+  position: fixed;
+  z-index: 10;
+  top: 20%;
+  overflow: scroll;
+}
+
+.panel-right{
+  position:absolute;
+  top:55%;
+  right: 0;
+  width: 25%;
+  height: 40%;
+  display: flex;
+  flex-direction: column;
+  overflow: scroll;
+}
+
+.rev-params{
+  display: flex;
+  position: absolute;
+  height: 10vh;
+  z-index: 40;
+}
+
+.rev-sliders{
+  display: flex;
+}
+
+.param {
+  display: flex;
+  width: 15vw;
+  flex-direction: column;
+  background: transparent;
 }

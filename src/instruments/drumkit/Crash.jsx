@@ -1,0 +1,40 @@
+import React, { forwardRef, useMemo, useRef } from 'react'
+import { useGLTF } from '@react-three/drei'
+import { drumkit } from './drumkitMaterials'
+export const Crash = forwardRef((props, ref) => {
+  const { nodes, materials } = useGLTF('/drumkit/Crash.glb')
+        const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
+
+  return (
+    <group {...props} dispose={null}>
+      <group position={[0.526, 0.475, -0.214]}>
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Circle044.geometry}
+         material={metalMat}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Circle044_1.geometry}
+          material={metalMat}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Circle044_2.geometry}
+         material={metalMat}
+        />
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Circle044_3.geometry}
+          material={nodes.Circle044_3.material}
+        />
+      </group>
+    </group>
+  )
+})
+
+useGLTF.preload('/drumkit/Crash.glb')

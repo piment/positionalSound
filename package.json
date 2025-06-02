@@ -12,8 +12,13 @@
   "dependencies": {
     "@react-three/drei": "^9.96.5",
     "@react-three/fiber": "^8.15.15",
+    "@react-three/postprocessing": "^2.15.13",
+    "@reduxjs/toolkit": "^2.8.2",
+    "lodash.throttle": "^4.1.1",
+    "r3f-perf": "^7.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-redux": "^9.2.0",
     "three": "^0.160.1",
     "valtio": "^1.13.0"
   },
@@ -25,6 +30,7 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vite-plugin-glsl": "^1.4.1"
   }
 }
