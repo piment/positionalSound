@@ -1,5 +1,5 @@
 import React from 'react';
-import './TrackConsole.css'; // You'll create this for styling
+import './css/TrackConsole.css'; // You'll create this for styling
 import { useDispatch, useSelector } from 'react-redux';
 import {
   addTrack,
@@ -9,11 +9,15 @@ import {
   setVolume,
    setSendLevel,
 } from './reducer/trackSettingsSlice';
+import ImportMenu from './ImportMenu';
+import { div } from 'three/examples/jsm/nodes/Nodes.js';
 export default function TrackConsole({
   trackList,
   settings,
   onClose,
-  updateTrack
+  updateTrack,
+  onAdd,
+ onAutoAssign
 }) {
 
 
@@ -57,6 +61,11 @@ export default function TrackConsole({
       </div>
     );
   })}
+  {trackList.length === 0 && (
+    <div>No track yet</div>
+  )}
+  <div className='import'>
+  <ImportMenu onAdd={onAdd} onAutoAssign={onAutoAssign} /></div>
 </div>
 
   );

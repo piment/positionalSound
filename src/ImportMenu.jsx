@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-
+import './css/ImportMenu.css'
 export default function ImportMenu({
   onAdd,
   onAutoAssign,      // new prop
@@ -47,11 +47,13 @@ export default function ImportMenu({
         disabled={disabled}
         onChange={handleFileChange}
       />
+      <div className="import-buttons">
+
       <button
         onClick={handleAdd}
         disabled={disabled || files.length === 0}
         style={{ marginLeft: '0.5em' }}
-      >
+        >
         Add {files.length} Track{files.length > 1 ? 's' : ''}
       </button>
       {/* {onAutoAssign && ( */}
@@ -59,10 +61,11 @@ export default function ImportMenu({
           onClick={handleAuto}
           disabled={disabled || files.length === 0}
           style={{ marginLeft: '0.5em' }}
-        >
+          >
           Auto Assign
         </button>
       {/* )} */}
+          </div>
     </div>
   );
 }

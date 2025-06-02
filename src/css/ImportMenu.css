@@ -1,0 +1,9 @@
+.import-menu{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  /* background-color: aqua; */
+  height: 100%;
+  align-items: center;
+   padding: 1em;
+}

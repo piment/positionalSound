@@ -2,12 +2,13 @@
   position: absolute;
   bottom: 0;
   left: 0;
+  padding-left: 1em;
   right: 0;
   height: 25vh;
   background-color: #181818;
   border-top: 1px solid #444;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   /* padding: .2rem; */
   overflow-x: auto;
   z-index: 100;
@@ -53,4 +54,13 @@
 
 .track-visible {
   margin-top: 6px;
+}
+
+
+.track-console > .import{
+  display: flex;
+  flex-direction: column;
+  /* background-color: aqua; */
+  height: 80%;
+ margin-left: 2em;
 }

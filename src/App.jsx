@@ -627,111 +627,7 @@ const sourcesForFloor = useMemo(() => {
       </div>
 
       {/* Right: Track list & assignment UI */}
-      <div
-        style={{ width: 300, borderLeft: '1px solid #333' }}
-        className='panel-right'
-      >
-        <ImportMenu onAdd={handleImport} onAutoAssign={handleAutoAssign}/>
 
-        {/* <h4>Tracks</h4>
-      
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {trackList.map((t) => {
-            const isOpen = selectedTrackId === t.id;
-            const bucket =
-              Object.entries(assignments).find(([, arr]) =>
-                arr.some((x) => x.id === t.id)
-              )?.[0] || 'null';
-            const cfg = settings[t.id] || { visible: false, color: '#88ccff' };
-              const currentVol = settings[t.id]?.volume ?? 0;
-  const currentSend = settings[t.id]?.sendLevel ?? 0;
-            return (
-              <li key={t.id} style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <button
-                    onClick={() => setSelectedTrackId(isOpen ? null : t.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#00f',
-                      cursor: 'pointer',
-                      padding: 0,
-                      marginRight: 8,
-                    }}
-                  >
-                    {t.name}
-                  </button>
-                  <select
-                    disabled={!meshes.length}
-                    value={bucket}
-                    onChange={(e) => toggleAssign(t, e.target.value)}
-                  >
-                    <option value='null'>Unassigned</option>
-                    {meshes.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {isOpen && (
-                  <div style={{ marginTop: 8, paddingLeft: 16 }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <label style={{ fontSize: '0.8em' }}>{t.name} Vol</label>
-                      <input
-                        type='range'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                     value={currentVol}
-                        onChange={(e) =>
-                          updateUnassignedTrack(t.id, {
-                            volume: parseFloat(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.8em' }}>{t.name} Send</label>
-                      <input
-                        type='range'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                   value={currentSend}
-                        onChange={(e) =>
-                          updateUnassignedTrack(t.id, {
-                            sendLevel: parseFloat(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                    <div
-                      key={t.id}
-                      style={{ display: 'flex', alignItems: 'center' }}
-                    >
-                      <input
-                        type='checkbox'
-                        checked={cfg.visible}
-                        onChange={() => dispatch(toggleVisibility(t.id))}
-                      />
-              
-                      <input
-                        type='color'
-                        value={cfg.color}
-                        onChange={(e) =>
-                          dispatch(
-                            setColor({ trackId: t.id, color: e.target.value })
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul> */} </div>
   <TrackConsole
   trackList={trackList}
   settings={settings}
@@ -739,6 +635,7 @@ const sourcesForFloor = useMemo(() => {
   visibleMap={settings}
   toggleVisibility={(trackId) => dispatch(toggleVisibility(trackId))}
   setColor={(trackId, color) => dispatch(setColor({ trackId, color }))}
+  onAdd={handleImport} onAutoAssign={handleAutoAssign}
 />
      
     </div>
