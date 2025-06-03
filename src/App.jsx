@@ -260,13 +260,13 @@ function toggleAssign(trackObj, targetMeshId) {
 async function handleAutoAssign(items) {
   const newTracks = await Promise.all(
     items.map(async (f) => {
-      const buffer = await loadBuffer(f.url); // ✅ preload
+      const buffer = await loadBuffer(f.url);
       return {
         id: nanoid(),
         file: f.file,
         url: f.url,
         name: f.name,
-        buffer,             // ✅ store the decoded buffer
+        buffer,
         volume: 1,
         sendLevel: 0,
       };
@@ -274,22 +274,37 @@ async function handleAutoAssign(items) {
   );
 
   setTrackList((prev) => [...prev, ...newTracks]);
-
   newTracks.forEach((t) => dispatch(addTrack(t.id)));
 
-  // 4) bucket into assignments by name:
-  setAssignments(prev => {
-    // start with the old buckets
-    const next = { ...prev }
-    newTracks.forEach(t => {
-      // find the first COMPONENT key that matches the track name
+  // build map of available meshes (multiple per type)
+  const meshBuckets = {}; // { Guitar: [meshId1, meshId2, ...] }
+  meshes.forEach(({ id, type }) => {
+    if (!meshBuckets[type]) meshBuckets[type] = [];
+    meshBuckets[type].push(id);
+  });
+
+  // counters for round-robin assignment
+  const assignedPerType = {};
+
+  setAssignments((prev) => {
+    const next = { ...prev };
+
+    newTracks.forEach((t) => {
       const match = Object.keys(COMPONENTS)
-        .find(key => t.name.toLowerCase().includes(key.toLowerCase()))
-      const bucket = match || 'null'
-      next[bucket] = [ ...(next[bucket]||[]), t ]
-    })
-    return next
-  })
+        .find((key) => t.name.toLowerCase().includes(key.toLowerCase()));
+
+      if (!match || !meshBuckets[match]?.length) return;
+
+      const candidates = meshBuckets[match];
+      const idx = assignedPerType[match] || 0;
+      const meshId = candidates[idx % candidates.length];
+      assignedPerType[match] = idx + 1;
+
+      next[meshId] = [...(next[meshId] || []), t];
+    });
+
+    return next;
+  });
 }
 
 useEffect(() => {
