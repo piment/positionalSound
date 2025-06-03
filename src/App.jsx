@@ -16,7 +16,7 @@ import { Controls, ObjSound } from './ObjControls';
 import EnvComp from './EnvComp';
 import Sound from './Sound';
 import { Kick } from './instruments/drumkit/Kick';
-import { Snare } from './instruments/drumkit/Snare';
+import { Snare } from './instruments/drumkit/SnareMin';
 import { Hihat } from './instruments/drumkit/Hihat';
 import { HiTom } from './instruments/drumkit/HiTom';
 import { MidTom } from './instruments/drumkit/MidTom';
