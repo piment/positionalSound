@@ -1,0 +1,17 @@
+.delete-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.delete-button{
+  position: absolute;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  right: -1.5em;
+  top: -1.5em;
+  width: 2em;
+  height: 2em;
+  padding: 0;
+}

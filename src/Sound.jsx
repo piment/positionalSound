@@ -21,6 +21,10 @@ export default function Sound({
   visible,
   meshRef,
   pauseTime,
+  mainDuration,
+  onMainEnded,
+  isMain = false,
+  onNodeReady
 }) {
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
@@ -47,11 +51,11 @@ export default function Sound({
     }
   }, [analyser, onAnalyserReady, trackId]);
 
-  useEffect(() => {
-    if (typeof onVolumeChange === 'function') {
-      onVolumeChange(trackId, volume);
-    }
-  }, [volume, onVolumeChange, trackId]);
+  // useEffect(() => {
+  //   if (typeof onVolumeChange === 'function') {
+  //     onVolumeChange(trackId, volume);
+  //   }
+  // }, [volume, onVolumeChange, trackId]);
 
   // Ensure listener is attached to camera
   useEffect(() => {
@@ -61,11 +65,11 @@ export default function Sound({
 
   // Clean up any audio nodes
 const stopAndCleanup = () => {
-  try {
-    drySrcRef.current?.stop?.();
-  } catch (e) {
-    console.warn('Dry src stop failed:', e);
-  }
+  // try {
+  //   drySrcRef.current?.stop?.();
+  // } catch (e) {
+  //   console.warn('Dry src stop failed:', e);
+  // }
   try {
     drySrcRef.current?.disconnect?.();
   } catch (e) {
@@ -89,13 +93,13 @@ const stopAndCleanup = () => {
     console.warn('Send gain disconnect failed:', e);
   }
 
-  if (soundRef.current) {
-    try {
-      soundRef.current.stop();
-    } catch {}
-    scene.remove(soundRef.current);
-    soundRef.current = null;
-  }
+  // if (soundRef.current) {
+  //   try {
+  //     soundRef.current.stop();
+  //   } catch {}
+  //   scene.remove(soundRef.current);
+  //   soundRef.current = null;
+  // }
 
   drySrcRef.current = null;
   sendSrcRef.current = null;
@@ -104,7 +108,7 @@ const stopAndCleanup = () => {
 
   // Playback logic (dry positional + send bus)
   useEffect(() => {
-    // stopAndCleanup();
+    stopAndCleanup();
 
     if (!on || paused || !buffer || !listener) return;
 
@@ -136,11 +140,13 @@ scene.add(drySound);
 const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
 const sourceNode = audioCtx.createBufferSource();
 sourceNode.buffer = buffer;
-sourceNode.loop = true;
+sourceNode.loop = false;
 drySound.setNodeSource(sourceNode); // ⬅️ critical
 sourceNode.start(audioCtx.currentTime, offset);
 
-
+if (typeof onNodeReady === 'function') {
+  onNodeReady(trackId, sourceNode);
+}
 // soundRef.current = drySound;
 soundRef.current = drySound;
 drySrcRef.current = drySound; // keep reference for cleanup
@@ -148,33 +154,44 @@ drySrcRef.current = drySound; // keep reference for cleanup
     // Send (reverb bus) audio
     const sendSource = audioCtx.createBufferSource();
     sendSource.buffer = buffer;
-    sendSource.loop = true;
+    sendSource.loop = false;
 
-    const sendGain = audioCtx.createGain();
-    sendGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
+  const sendGain = audioCtx.createGain();
+sendGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
+sendGainRef.current = sendGain;
 
-    sendSource.connect(sendGain).connect(convolver);
-    sendSource.start(audioCtx.currentTime, offset);
+sendSource.connect(sendGain).connect(convolver);
+sendSource.start(audioCtx.currentTime, offset);
 
-    sendSrcRef.current = sendSource;
-    sendGainRef.current = sendGain;
 
-    // console.log(audioCtx.currentTime)
-    return () => stopAndCleanup();
-  }, [
-    on,
-    paused,
-    buffer,
-    listener,
-    convolver,
-    playStartTime,
-    // volume,
-    dist,
-    masterTapGain,
-    // sendLevel,
-    scene,
-    meshRef,
-  ]);
+  },[
+  on,
+  paused,
+  buffer,
+  listener,
+  convolver,
+  playStartTime,
+  pauseTime,
+  dist,
+  masterTapGain,
+  scene,
+  meshRef,
+
+  // onMainEnded,
+]);
+useEffect(() => {
+  const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
+  if (isMain && buffer) {
+    const remaining = buffer.duration - offset;
+    const timeout = setTimeout(() => {
+      if (on && !paused) {
+        onMainEnded?.(); // ✅ now stable
+      }
+    }, remaining * 1000);
+
+    return () => clearTimeout(timeout);
+  }
+}, [isMain, buffer,  on, paused, onMainEnded]);
 useEffect(() => {
   if (soundRef.current) {
     soundRef.current.setVolume(volume);

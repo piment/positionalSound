@@ -49,8 +49,9 @@ import { BassAmp } from './instruments/amps/BassAmp';
 import {Overheads} from './instruments/drumkit/Overheads';
 import { useAudioContext, useAudioListener } from './AudioContextProvider';
 import { useBufferCache } from './hooks/useBufferCache';
-
-
+import TrackConsole from './TrackConsole';
+import { RxMixerVertical } from "react-icons/rx";
+import { sceneState } from './utils/sceneState';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -78,7 +79,8 @@ export default function App() {
 const listener = useAudioListener();
 const audioCtx = useAudioContext();
 
-const { loadBuffer, cache } = useBufferCache(audioCtx);
+const { loadBuffer, clearBuffer, clearAllBuffers, cache } = useBufferCache(audioCtx);
+
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
  const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
@@ -94,6 +96,9 @@ const { loadBuffer, cache } = useBufferCache(audioCtx);
   const settings = useSelector((state) => state.trackSettings);
   const mode     = useSelector(state => state.viewMode)
   
+  const [consoleOpen, setConsoleOpen] = useState(false);
+
+
 const [playing, setPlaying] = useState(false);
 const [playOffset, setPlayOffset] = useState(0);
 const [pauseTime, setPauseTime] = useState(null)
@@ -104,7 +109,10 @@ const [pauseTime, setPauseTime] = useState(null)
   const [trackList, setTrackList] = useState([]);
   const [assignments, setAssignments] = useState({ null: [] });
 const [scrubPos, setScrubPos] = useState(0);
-  
+const [mainTrackId, setMainTrackId] = useState(null);
+const activeNodesRef = useRef({});
+
+
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
     return v ? JSON.parse(v) : [];
@@ -197,10 +205,13 @@ const [scrubPos, setScrubPos] = useState(0);
     localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes));
   }, [meshes]);
 
-  function addMesh(partName) {
-    if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
-  }
-
+function addMesh(type) {
+  setMeshes((prev) => {
+    const count = prev.filter((m) => m.type === type).length;
+    const name = `${type} ${count + 1}`;
+    return [...prev, { id: nanoid(), type, name }];
+  });
+}
  async function handleImport(items) {
   const newTracks = await Promise.all(
     items.map(async (f) => {
@@ -228,22 +239,20 @@ const [scrubPos, setScrubPos] = useState(0);
     dispatch(addTrack(t.id));
   });
 }
-  function toggleAssign(trackObj, targetMesh) {
-    setAssignments((prev) => {
-      // remove from every bucket
-      const cleaned = Object.fromEntries(
-        Object.entries(prev).map(([mesh, arr]) => [
-          mesh,
-          arr.filter((t) => t.id !== trackObj.id),
-        ])
-      );
-      // add to target mesh
-      return {
-        ...cleaned,
-        [targetMesh]: [...(cleaned[targetMesh] || []), trackObj],
-      };
-    });
-  }
+function toggleAssign(trackObj, targetMeshId) {
+  setAssignments((prev) => {
+    const cleaned = Object.fromEntries(
+      Object.entries(prev).map(([meshId, arr]) => [
+        meshId,
+        arr.filter((t) => t.id !== trackObj.id),
+      ])
+    );
+    return {
+      ...cleaned,
+      [targetMeshId]: [...(cleaned[targetMeshId] || []), trackObj],
+    };
+  });
+}
 
 // assuming COMPONENTS is in scope, e.g.
 // const COMPONENTS = { Snare, Kick, … }
@@ -251,13 +260,13 @@ const [scrubPos, setScrubPos] = useState(0);
 async function handleAutoAssign(items) {
   const newTracks = await Promise.all(
     items.map(async (f) => {
-      const buffer = await loadBuffer(f.url); // ✅ preload
+      const buffer = await loadBuffer(f.url);
       return {
         id: nanoid(),
         file: f.file,
         url: f.url,
         name: f.name,
-        buffer,             // ✅ store the decoded buffer
+        buffer,
         volume: 1,
         sendLevel: 0,
       };
@@ -265,25 +274,45 @@ async function handleAutoAssign(items) {
   );
 
   setTrackList((prev) => [...prev, ...newTracks]);
-
   newTracks.forEach((t) => dispatch(addTrack(t.id)));
 
-  // 4) bucket into assignments by name:
-  setAssignments(prev => {
-    // start with the old buckets
-    const next = { ...prev }
-    newTracks.forEach(t => {
-      // find the first COMPONENT key that matches the track name
+  // build map of available meshes (multiple per type)
+  const meshBuckets = {}; // { Guitar: [meshId1, meshId2, ...] }
+  meshes.forEach(({ id, type }) => {
+    if (!meshBuckets[type]) meshBuckets[type] = [];
+    meshBuckets[type].push(id);
+  });
+
+  // counters for round-robin assignment
+  const assignedPerType = {};
+
+  setAssignments((prev) => {
+    const next = { ...prev };
+
+    newTracks.forEach((t) => {
       const match = Object.keys(COMPONENTS)
-        .find(key => t.name.toLowerCase().includes(key.toLowerCase()))
-      const bucket = match || 'null'
-      next[bucket] = [ ...(next[bucket]||[]), t ]
-    })
-    return next
-  })
+        .find((key) => t.name.toLowerCase().includes(key.toLowerCase()));
+
+      if (!match || !meshBuckets[match]?.length) return;
+
+      const candidates = meshBuckets[match];
+      const idx = assignedPerType[match] || 0;
+      const meshId = candidates[idx % candidates.length];
+      assignedPerType[match] = idx + 1;
+
+      next[meshId] = [...(next[meshId] || []), t];
+    });
+
+    return next;
+  });
 }
 
-
+useEffect(() => {
+  const longest = trackList.reduce((longest, track) => {
+    return track.buffer?.duration > (longest?.buffer?.duration || 0) ? track : longest;
+  }, null);
+  if (longest?.id) setMainTrackId(longest.id);
+}, [trackList]);
 
 async function playAll() {
      await audioCtx.resume();
@@ -313,11 +342,18 @@ useEffect(() => {
 
 }, [playing, audioCtx, playOffset]);
 
-function updateUnassignedTrack(id, props) {
-  setAssignments((a) => ({
-    ...a,
-    null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
-  }));
+
+
+function updateTrack(id, props) {
+  setAssignments((prev) => {
+    const updated = {};
+    for (const [bucket, tracks] of Object.entries(prev)) {
+      updated[bucket] = tracks.map((t) =>
+        t.id === id ? { ...t, ...props } : t
+      );
+    }
+    return updated;
+  });
 
   // 🔁 Sync Redux with local change
   if (props.volume !== undefined) {
@@ -327,14 +363,13 @@ function updateUnassignedTrack(id, props) {
     dispatch(setSendLevel({ trackId: id, sendLevel: props.sendLevel }));
   }
 }
-
-
   function clearSession() {
     localStorage.removeItem(STORAGE_KEYS.meshes);
     setTrackList([]);
     // setAssignments({ null: [] })
     setMeshes([]);
     stopAll();
+     clearAllBuffers();
   }
 
 
@@ -345,7 +380,7 @@ function updateUnassignedTrack(id, props) {
 
 const handleVolumeChange = useCallback((trackId, newVol) => {
   dispatch(setVolume({ trackId, volume: newVol }))
-}, [dispatch])
+}, [])
 
   const analyserMapRef = useRef({})
 
@@ -363,6 +398,48 @@ const sourcesForFloor = useMemo(() => {
       color: new THREE.Color(settings[id].color),
     }))
 }, [settings])
+
+
+function removeTrackById(trackId) {
+if (activeNodesRef.current[trackId]) {
+  try {
+    activeNodesRef.current[trackId].stop();
+  } catch (e) {
+    console.warn('Failed to stop source node:', e);
+  }
+  delete activeNodesRef.current[trackId];
+}
+    const track = trackList.find((t) => t.id === trackId);
+  if (track?.url) clearBuffer(track.url);
+  // 1. Remove from trackList
+  setTrackList((prev) => prev.filter((t) => t.id !== trackId));
+
+  // 2. Remove from assignments (all buckets)
+  setAssignments((prev) => {
+    const next = {};
+    for (const [bucket, arr] of Object.entries(prev)) {
+      next[bucket] = arr.filter((t) => t.id !== trackId);
+    }
+    return next;
+  });
+
+  // 3. Remove from Redux store
+  dispatch(removeTrack(trackId));
+}
+function removeMesh(meshId) {
+  const removed = meshes.find((m) => m.id === meshId);
+  if (!removed) return;
+
+  setMeshes((prev) => prev.filter((m) => m.id !== meshId));
+
+  setAssignments((prev) => {
+    const reassigned = [...(prev[meshId] || [])];
+    const next = { ...prev };
+    delete next[meshId];
+    next.null = [...(next.null || []), ...reassigned];
+    return next;
+  });
+}
 
 
   return (
@@ -487,39 +564,54 @@ const sourcesForFloor = useMemo(() => {
                 // gl.shadowMap.type       = THREE.VSMShadowMap
         gl.physicallyCorrectLights = true
       }}
+      onPointerMissed={() => {
+    sceneState.current = null; // ← clears selection on background click
+  }}
       >
          
           {/* <pointLight position={[5, 10, 5]} intensity={1000} /> */}
   {/* <fog attach="fog" args={['#050505', 65, 80]} /> */}
-          {meshes.map((part, idx) => {
-            const Part = COMPONENTS[part];
-            const angle = (idx / meshes.length) * Math.PI * 2;
-            const dist = 10 + idx * 5;
-            const subs = assignments[part] || [];
-
-            return (
-              <ObjSound
-          
-                key={part}
-                name={part}
-                // defPos={defPos}
-                dist={dist}
-                subs={subs}
-                on={playing}
-                
-                listener={listener}
-                convolver={convolver}
-                // analyser={analyser}
-                onAnalyserReady={handleAnalyserReady}
-                onVolumeChange={handleVolumeChange}
-                onSubsChange={(newSubs) =>
-                  setAssignments((a) => ({ ...a, [part]: newSubs }))
-                }
-                playStartTime={playOffset}
-                pauseTime={pauseTime}
-                masterTapGain={masterTapGain}
-                visibleMap={settings}
-              >
+{meshes.map((meshObj, idx) => {
+  const { id, type, name } = meshObj;
+  const Part = COMPONENTS[type];
+  const angle = (idx / meshes.length) * Math.PI * 2;
+  const dist = 10 + idx * 5;
+  const subs = assignments[id] || [];
+const syncedSubs = subs.map((t) => ({
+  ...t,
+  volume: settings[t.id]?.volume ?? t.volume,
+  sendLevel: settings[t.id]?.sendLevel ?? t.sendLevel,
+}));
+  return (
+    <ObjSound
+      key={id} // ✅ unique
+      name={name} // ✅ used in scene.getObjectByName
+      dist={dist}
+      subs={syncedSubs}
+      on={playing}
+      listener={listener}
+      convolver={convolver}
+      onAnalyserReady={handleAnalyserReady}
+      onVolumeChange={handleVolumeChange}
+      onSubsChange={(newSubs) =>
+        setAssignments((a) => ({ ...a, [id]: newSubs }))
+      }
+      playStartTime={playOffset}
+      pauseTime={pauseTime}
+      masterTapGain={masterTapGain}
+      visibleMap={settings}
+      onMainEnded={() => {
+        setPauseTime(0);
+        setPlayOffset(0);
+        setPlaying(false);
+      }}
+      mainTrackId={mainTrackId}
+        removeMesh={() => removeMesh(id)} 
+      onNodeReady={(trackId, node) => {
+        activeNodesRef.current[trackId]?.stop?.();
+        activeNodesRef.current[trackId] = node;
+      }}
+    >
                 <Part />
               </ObjSound>
             );
@@ -527,7 +619,7 @@ const sourcesForFloor = useMemo(() => {
 
           {/* Play unassigned tracks as well (just at listener position) */}
           {(assignments.null || []).map((sub) => {
-           
+            const isMain = sub.id === mainTrackId;
             return (
               <Sound
                 key={sub.id}
@@ -557,7 +649,17 @@ const sourcesForFloor = useMemo(() => {
                  masterTapGain={masterTapGain}
                 visible={settings[sub.id]?.visible}
                 buffer={sub.buffer}
+ isMain={isMain}                      // ✅ NEW
+      onMainEnded={() => {                 // ✅ NEW
+        setPauseTime(0);
+        setPlayOffset(0);
+        setPlaying(false);
+      }}
                 // no meshRef or panner → dry playback
+                onNodeReady={(id, node) => {
+  activeNodesRef.current[id]?.stop?.(); // Stop any old one
+  activeNodesRef.current[id] = node;
+}}
               />
             );
           })}
@@ -588,113 +690,29 @@ const sourcesForFloor = useMemo(() => {
         {/* <Tuner analyser={masterAnalyser} /> */}
       </div>
 
-      {/* Right: Track list & assignment UI */}
-      <div
-        style={{ width: 300, borderLeft: '1px solid #333' }}
-        className='panel-right'
-      >
-        <ImportMenu onAdd={handleImport} onAutoAssign={handleAutoAssign}/>
+  <div className="console-container">
+  <button className="toggle-button" onClick={() => setConsoleOpen(prev => !prev)}>
+    {/* {consoleOpen ? '▼' : '▲'} */}
+    <RxMixerVertical size={24}/>
+  </button>
+  <TrackConsole
+    className={`track-console ${consoleOpen ? 'open' : ''}`}
+    trackList={trackList}
+    settings={settings}
+    assignments={assignments}
+    updateTrack={updateTrack}
+    visibleMap={settings}
+    toggleVisibility={(trackId) => dispatch(toggleVisibility(trackId))}
+    setColor={(trackId, color) => dispatch(setColor({ trackId, color }))}
+    onAdd={handleImport}
+    onAutoAssign={handleAutoAssign}
+    removeTrack={removeTrackById}
+    meshes={meshes}
+    toggleAssign={toggleAssign}
+  />
+</div>
 
-        <h4>Tracks</h4>
-      
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {trackList.map((t) => {
-            const isOpen = selectedTrackId === t.id;
-            const bucket =
-              Object.entries(assignments).find(([, arr]) =>
-                arr.some((x) => x.id === t.id)
-              )?.[0] || 'null';
-            const cfg = settings[t.id] || { visible: false, color: '#88ccff' };
-              const currentVol = settings[t.id]?.volume ?? 0;
-  const currentSend = settings[t.id]?.sendLevel ?? 0;
-            return (
-              <li key={t.id} style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <button
-                    onClick={() => setSelectedTrackId(isOpen ? null : t.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#00f',
-                      cursor: 'pointer',
-                      padding: 0,
-                      marginRight: 8,
-                    }}
-                  >
-                    {t.name}
-                  </button>
-                  <select
-                    disabled={!meshes.length}
-                    value={bucket}
-                    onChange={(e) => toggleAssign(t, e.target.value)}
-                  >
-                    <option value='null'>Unassigned</option>
-                    {meshes.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {isOpen && (
-                  <div style={{ marginTop: 8, paddingLeft: 16 }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <label style={{ fontSize: '0.8em' }}>{t.name} Vol</label>
-                      <input
-                        type='range'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                     value={currentVol}
-                        onChange={(e) =>
-                          updateUnassignedTrack(t.id, {
-                            volume: parseFloat(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.8em' }}>{t.name} Send</label>
-                      <input
-                        type='range'
-                        min={0}
-                        max={1}
-                        step={0.01}
-                   value={currentSend}
-                        onChange={(e) =>
-                          updateUnassignedTrack(t.id, {
-                            sendLevel: parseFloat(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                    <div
-                      key={t.id}
-                      style={{ display: 'flex', alignItems: 'center' }}
-                    >
-                      <input
-                        type='checkbox'
-                        checked={cfg.visible}
-                        onChange={() => dispatch(toggleVisibility(t.id))}
-                      />
-                      {/* <label style={{ marginRight: 8 }}>{t.name}</label> */}
-                      <input
-                        type='color'
-                        value={cfg.color}
-                        onChange={(e) =>
-                          dispatch(
-                            setColor({ trackId: t.id, color: e.target.value })
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+     
     </div>
   );
 }
