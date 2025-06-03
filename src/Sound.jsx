@@ -136,13 +136,15 @@ analyser.connect(masterTapGain);
 
 scene.add(drySound);
 
+const startDelay = pauseTime === 0 ? .5 : 0;
+console.log(playStartTime)
 // Apply offset correctly
 const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
 const sourceNode = audioCtx.createBufferSource();
 sourceNode.buffer = buffer;
 sourceNode.loop = false;
 drySound.setNodeSource(sourceNode); // ⬅️ critical
-sourceNode.start(audioCtx.currentTime, offset);
+sourceNode.start(audioCtx.currentTime + startDelay, offset);
 
 if (typeof onNodeReady === 'function') {
   onNodeReady(trackId, sourceNode);
@@ -161,7 +163,7 @@ sendGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
 sendGainRef.current = sendGain;
 
 sendSource.connect(sendGain).connect(convolver);
-sendSource.start(audioCtx.currentTime, offset);
+sendSource.start(audioCtx.currentTime + startDelay, offset);
 
 
   },[

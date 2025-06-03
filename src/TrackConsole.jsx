@@ -34,42 +34,42 @@ export default function TrackConsole({
 
  const containerRef = useRef();
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  // useEffect(() => {
+  //   const el = containerRef.current;
+  //   if (!el) return;
 
-    let scrollTarget = el.scrollLeft;
-    let isScrolling = false;
+  //   let scrollTarget = el.scrollLeft;
+  //   let isScrolling = false;
 
-    const smoothScroll = () => {
-      if (!isScrolling) return;
-      el.scrollLeft += (scrollTarget - el.scrollLeft) * 0.1;
+  //   const smoothScroll = () => {
+  //     if (!isScrolling) return;
+  //     el.scrollLeft += (scrollTarget - el.scrollLeft) * 0.1;
 
-      if (Math.abs(scrollTarget - el.scrollLeft) > 0.5) {
-        requestAnimationFrame(smoothScroll);
-      } else {
-        isScrolling = false;
-      }
-    };
+  //     if (Math.abs(scrollTarget - el.scrollLeft) > 0.5) {
+  //       requestAnimationFrame(smoothScroll);
+  //     } else {
+  //       isScrolling = false;
+  //     }
+  //   };
 
-    const onWheel = (e) => {
-      if (e.deltaY !== 0) {
-        e.preventDefault();
-        scrollTarget += e.deltaY;
-        scrollTarget = Math.max(0, Math.min(scrollTarget, el.scrollWidth));
-        if (!isScrolling) {
-          isScrolling = true;
-          requestAnimationFrame(smoothScroll);
-        }
-      }
-    };
+  //   const onWheel = (e) => {
+  //     if (e.deltaY !== 0) {
+  //       e.preventDefault();
+  //       scrollTarget += e.deltaY;
+  //       scrollTarget = Math.max(0, Math.min(scrollTarget, el.scrollWidth));
+  //       // if (!isScrolling) {
+  //       //   isScrolling = true;
+  //       //   requestAnimationFrame(smoothScroll);
+  //       // }
+  //     }
+  //   };
 
-    el.addEventListener('wheel', onWheel, { passive: false });
+  //   el.addEventListener('wheel', onWheel, { passive: false });
 
-    return () => {
-      el.removeEventListener('wheel', onWheel);
-    };
-  }, []);
+  //   return () => {
+  //     el.removeEventListener('wheel', onWheel);
+  //   };
+  // }, []);
 
   function getAssignment(trackId) {
       // if (!assignments) return null;
