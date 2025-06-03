@@ -1,30 +1,77 @@
-.track-console {
+/* .track-console {
   position: absolute;
   bottom: 0;
   left: 0;
   padding-left: 1em;
   right: 0;
-  height: 25vh;
+  height: 35vh;
   background-color: #181818;
   border-top: 1px solid #444;
   display: flex;
   align-items: center;
-  /* padding: .2rem; */
+
   overflow-x: auto;
   z-index: 100;
+    transition: height 0.3s ease;
+
 }
+.track-console.open {
+  height: 30vh;
+} */
+
+
 
 .track-strip {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* align-items: center; */
   justify-content: space-around;
   margin:  2px;
-  padding: .5em;
-  width:5%;
-  height: 100%;
+  padding: .5em 0;
+  min-width:5%;
+  height: 90%;
   color: #eee;
+  border-radius: 6px;
 
+}
+
+.slider-buttons{
+  display: flex;
+  flex-direction:  row;
+height: inherit;
+width: 80%;
+margin: auto;
+/* background-color: red; */
+justify-content: space-around;
+
+}
+
+
+.slider-buttons > .buttons{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  height: 80%;
+  
+}
+
+.slider-buttons > .buttons > button{
+    display: flex;
+  align-items: center;
+  justify-content: space-around;
+  /* width: 12px; */
+  /* height: 12px; */
+  padding: 0.2em;
+  /* display: none; */
+}
+
+.mesh-icon{
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  position: relative;
+  margin: 0;
 }
 
 .track-name {
@@ -37,14 +84,9 @@
   text-align: center;
 }
 
-.track-slider {
-  height: 80%;
-  transform: rotate(-90deg);
-  margin-bottom: 4px;
-}
 
 .track-color {
-  width: 80%;
+  width: 100%;
   height: 15%;
   border: none;
   margin-top: 8px;

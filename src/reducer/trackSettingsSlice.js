@@ -9,7 +9,7 @@ const trackSettingsSlice = createSlice({
     addTrack(state, action) {
       const id = action.payload
       // when a new track is imported, default it visible + default color
-      state[id] = { visible: true, color: '#88ccff', volume: 1 }
+      state[id] = { visible: true, color: '#c4c3c3', volume: .8 }
     },
     removeTrack(state, action) {
       delete state[action.payload]

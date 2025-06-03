@@ -17,6 +17,8 @@ const sceneState = proxy({ current: null, mode: 0 });
 export function Controls() {
   const snap = useSnapshot(sceneState);
   const scene = useThree((state) => state.scene);
+  const selectedObject = scene.getObjectByName(snap.current);
+  const hasChild = selectedObject?.children?.[0];
 
   return (
     <>
@@ -63,6 +65,7 @@ export function ObjSound({
  visibleMap,
  mainDuration, onMainEnded,
  mainTrackId,
+ removeMesh
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
@@ -78,6 +81,19 @@ const meshTrackId = subs.length > 0 ? subs[0].id : null;
   const visible = visibleMap[meshTrackId]?.visible ?? false;
 
   const [ready, setReady] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+
+  const handleDoubleClick = () => {
+    setShowDelete(true);
+  };
+
+  const handleRemove = () => {
+    setShowDelete(false);
+    removeMesh?.(name);
+      if (sceneState.current === name) {
+    sceneState.current = null;}
+  };
+
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
@@ -173,6 +189,8 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
 });
   });
 
+
+
   // console.log('ORRRRR', outerRef.current)
   return (
     <group
@@ -189,9 +207,40 @@ m.material.blendEquation = THREE.SubtractiveBlending ;
           sceneState.mode = (snap.mode + 1) % modes.length;
         }
       }}
+   onDoubleClick={(e) => {e.stopPropagation() ,handleDoubleClick()}}
     >
       {children}
-
+   {showDelete && (
+        <Html distanceFactor={20} position={[0, 1, 0]} center>
+          <div
+            style={{
+              background: 'rgba(0,0,0,0.8)',
+              color: '#fff',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '0.85rem',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+            }}
+          >
+            <span>Remove <strong>{name}</strong>?</span>
+            <button
+              onClick={handleRemove}
+              style={{
+                background: '#e74c3c',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </Html>
+      )}
       {subs.map((sub, idx) => (
         
         <Sound

@@ -50,7 +50,7 @@ import {Overheads} from './instruments/drumkit/Overheads';
 import { useAudioContext, useAudioListener } from './AudioContextProvider';
 import { useBufferCache } from './hooks/useBufferCache';
 import TrackConsole from './TrackConsole';
-
+import { RxMixerVertical } from "react-icons/rx";
 
 const COMPONENTS = {
   Snare: Snare,
@@ -79,7 +79,8 @@ export default function App() {
 const listener = useAudioListener();
 const audioCtx = useAudioContext();
 
-const { loadBuffer, cache } = useBufferCache(audioCtx);
+const { loadBuffer, clearBuffer, clearAllBuffers, cache } = useBufferCache(audioCtx);
+
 
  const masterTapGain  = useMemo(() => audioCtx.createGain(),    [audioCtx])
  const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx])
@@ -95,6 +96,9 @@ const { loadBuffer, cache } = useBufferCache(audioCtx);
   const settings = useSelector((state) => state.trackSettings);
   const mode     = useSelector(state => state.viewMode)
   
+  const [consoleOpen, setConsoleOpen] = useState(false);
+
+
 const [playing, setPlaying] = useState(false);
 const [playOffset, setPlayOffset] = useState(0);
 const [pauseTime, setPauseTime] = useState(null)
@@ -106,6 +110,8 @@ const [pauseTime, setPauseTime] = useState(null)
   const [assignments, setAssignments] = useState({ null: [] });
 const [scrubPos, setScrubPos] = useState(0);
 const [mainTrackId, setMainTrackId] = useState(null);
+const activeNodesRef = useRef({});
+
 
   const [meshes, setMeshes] = useState(() => {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
@@ -320,20 +326,7 @@ useEffect(() => {
 
 }, [playing, audioCtx, playOffset]);
 
-// function updateUnassignedTrack(id, props) {
-//   setAssignments((a) => ({
-//     ...a,
-//     null: a.null.map((t) => (t.id === id ? { ...t, ...props } : t)),
-//   }));
 
-//   // 🔁 Sync Redux with local change
-//   if (props.volume !== undefined) {
-//     dispatch(setVolume({ trackId: id, volume: props.volume }));
-//   }
-//   if (props.sendLevel !== undefined) {
-//     dispatch(setSendLevel({ trackId: id, sendLevel: props.sendLevel }));
-//   }
-// }
 
 function updateTrack(id, props) {
   setAssignments((prev) => {
@@ -360,6 +353,7 @@ function updateTrack(id, props) {
     // setAssignments({ null: [] })
     setMeshes([]);
     stopAll();
+     clearAllBuffers();
   }
 
 
@@ -388,6 +382,46 @@ const sourcesForFloor = useMemo(() => {
       color: new THREE.Color(settings[id].color),
     }))
 }, [settings])
+
+
+function removeTrackById(trackId) {
+if (activeNodesRef.current[trackId]) {
+  try {
+    activeNodesRef.current[trackId].stop();
+  } catch (e) {
+    console.warn('Failed to stop source node:', e);
+  }
+  delete activeNodesRef.current[trackId];
+}
+    const track = trackList.find((t) => t.id === trackId);
+  if (track?.url) clearBuffer(track.url);
+  // 1. Remove from trackList
+  setTrackList((prev) => prev.filter((t) => t.id !== trackId));
+
+  // 2. Remove from assignments (all buckets)
+  setAssignments((prev) => {
+    const next = {};
+    for (const [bucket, arr] of Object.entries(prev)) {
+      next[bucket] = arr.filter((t) => t.id !== trackId);
+    }
+    return next;
+  });
+
+  // 3. Remove from Redux store
+  dispatch(removeTrack(trackId));
+}
+function removeMesh(partName) {
+  setMeshes((m) => m.filter((mesh) => mesh !== partName));
+
+  setAssignments((prev) => {
+    const reassigned = [...(prev[partName] || [])];
+    const next = { ...prev };
+    delete next[partName];
+
+    next.null = [...(next.null || []), ...reassigned];
+    return next;
+  });
+}
 
 
   return (
@@ -551,6 +585,11 @@ const sourcesForFloor = useMemo(() => {
     setPlaying(false);
   }}
   mainTrackId={mainTrackId}
+   removeMesh={removeMesh}
+   onNodeReady={(id, node) => {
+  activeNodesRef.current[id]?.stop?.(); // Stop any old one
+  activeNodesRef.current[id] = node;
+}}
               >
                 <Part />
               </ObjSound>
@@ -596,6 +635,10 @@ const sourcesForFloor = useMemo(() => {
         setPlaying(false);
       }}
                 // no meshRef or panner → dry playback
+                onNodeReady={(id, node) => {
+  activeNodesRef.current[id]?.stop?.(); // Stop any old one
+  activeNodesRef.current[id] = node;
+}}
               />
             );
           })}
@@ -626,17 +669,28 @@ const sourcesForFloor = useMemo(() => {
         {/* <Tuner analyser={masterAnalyser} /> */}
       </div>
 
-      {/* Right: Track list & assignment UI */}
-
+  <div className="console-container">
+  <button className="toggle-button" onClick={() => setConsoleOpen(prev => !prev)}>
+    {/* {consoleOpen ? '▼' : '▲'} */}
+    <RxMixerVertical size={24}/>
+  </button>
   <TrackConsole
-  trackList={trackList}
-  settings={settings}
-  updateTrack={updateTrack}
-  visibleMap={settings}
-  toggleVisibility={(trackId) => dispatch(toggleVisibility(trackId))}
-  setColor={(trackId, color) => dispatch(setColor({ trackId, color }))}
-  onAdd={handleImport} onAutoAssign={handleAutoAssign}
-/>
+    className={`track-console ${consoleOpen ? 'open' : ''}`}
+    trackList={trackList}
+    settings={settings}
+    assignments={assignments}
+    updateTrack={updateTrack}
+    visibleMap={settings}
+    toggleVisibility={(trackId) => dispatch(toggleVisibility(trackId))}
+    setColor={(trackId, color) => dispatch(setColor({ trackId, color }))}
+    onAdd={handleImport}
+    onAutoAssign={handleAutoAssign}
+    removeTrack={removeTrackById}
+    meshes={meshes}
+    toggleAssign={toggleAssign}
+  />
+</div>
+
      
     </div>
   );

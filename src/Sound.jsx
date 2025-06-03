@@ -23,7 +23,8 @@ export default function Sound({
   pauseTime,
   mainDuration,
   onMainEnded,
-  isMain = false
+  isMain = false,
+  onNodeReady
 }) {
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
@@ -143,7 +144,9 @@ sourceNode.loop = false;
 drySound.setNodeSource(sourceNode); // ⬅️ critical
 sourceNode.start(audioCtx.currentTime, offset);
 
-
+if (typeof onNodeReady === 'function') {
+  onNodeReady(trackId, sourceNode);
+}
 // soundRef.current = drySound;
 soundRef.current = drySound;
 drySrcRef.current = drySound; // keep reference for cleanup
