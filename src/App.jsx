@@ -51,7 +51,7 @@ import { useAudioContext, useAudioListener } from './AudioContextProvider';
 import { useBufferCache } from './hooks/useBufferCache';
 import TrackConsole from './TrackConsole';
 import { RxMixerVertical } from "react-icons/rx";
-
+import { sceneState } from './utils/sceneState';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -205,10 +205,13 @@ const activeNodesRef = useRef({});
     localStorage.setItem(STORAGE_KEYS.meshes, JSON.stringify(meshes));
   }, [meshes]);
 
-  function addMesh(partName) {
-    if (!meshes.includes(partName)) setMeshes((m) => [...m, partName]);
-  }
-
+function addMesh(type) {
+  setMeshes((prev) => {
+    const count = prev.filter((m) => m.type === type).length;
+    const name = `${type} ${count + 1}`;
+    return [...prev, { id: nanoid(), type, name }];
+  });
+}
  async function handleImport(items) {
   const newTracks = await Promise.all(
     items.map(async (f) => {
@@ -236,22 +239,20 @@ const activeNodesRef = useRef({});
     dispatch(addTrack(t.id));
   });
 }
-  function toggleAssign(trackObj, targetMesh) {
-    setAssignments((prev) => {
-      // remove from every bucket
-      const cleaned = Object.fromEntries(
-        Object.entries(prev).map(([mesh, arr]) => [
-          mesh,
-          arr.filter((t) => t.id !== trackObj.id),
-        ])
-      );
-      // add to target mesh
-      return {
-        ...cleaned,
-        [targetMesh]: [...(cleaned[targetMesh] || []), trackObj],
-      };
-    });
-  }
+function toggleAssign(trackObj, targetMeshId) {
+  setAssignments((prev) => {
+    const cleaned = Object.fromEntries(
+      Object.entries(prev).map(([meshId, arr]) => [
+        meshId,
+        arr.filter((t) => t.id !== trackObj.id),
+      ])
+    );
+    return {
+      ...cleaned,
+      [targetMeshId]: [...(cleaned[targetMeshId] || []), trackObj],
+    };
+  });
+}
 
 // assuming COMPONENTS is in scope, e.g.
 // const COMPONENTS = { Snare, Kick, … }
@@ -410,14 +411,16 @@ if (activeNodesRef.current[trackId]) {
   // 3. Remove from Redux store
   dispatch(removeTrack(trackId));
 }
-function removeMesh(partName) {
-  setMeshes((m) => m.filter((mesh) => mesh !== partName));
+function removeMesh(meshId) {
+  const removed = meshes.find((m) => m.id === meshId);
+  if (!removed) return;
+
+  setMeshes((prev) => prev.filter((m) => m.id !== meshId));
 
   setAssignments((prev) => {
-    const reassigned = [...(prev[partName] || [])];
+    const reassigned = [...(prev[meshId] || [])];
     const next = { ...prev };
-    delete next[partName];
-
+    delete next[meshId];
     next.null = [...(next.null || []), ...reassigned];
     return next;
   });
@@ -546,51 +549,54 @@ function removeMesh(partName) {
                 // gl.shadowMap.type       = THREE.VSMShadowMap
         gl.physicallyCorrectLights = true
       }}
+      onPointerMissed={() => {
+    sceneState.current = null; // ← clears selection on background click
+  }}
       >
          
           {/* <pointLight position={[5, 10, 5]} intensity={1000} /> */}
   {/* <fog attach="fog" args={['#050505', 65, 80]} /> */}
-          {meshes.map((part, idx) => {
-            const Part = COMPONENTS[part];
-            const angle = (idx / meshes.length) * Math.PI * 2;
-            const dist = 10 + idx * 5;
-            const subs = assignments[part] || [];
-
-            return (
-              <ObjSound
-          
-                key={part}
-                name={part}
-                // defPos={defPos}
-                dist={dist}
-                subs={subs}
-                on={playing}
-                
-                listener={listener}
-                convolver={convolver}
-                // analyser={analyser}
-                onAnalyserReady={handleAnalyserReady}
-                onVolumeChange={handleVolumeChange}
-                onSubsChange={(newSubs) =>
-                  setAssignments((a) => ({ ...a, [part]: newSubs }))
-                }
-                playStartTime={playOffset}
-                pauseTime={pauseTime}
-                masterTapGain={masterTapGain}
-                visibleMap={settings}
-                // mainDuration={longestDuration}
-  onMainEnded={() => {
-    setPauseTime(0);
-    setPlayOffset(0);
-    setPlaying(false);
-  }}
-  mainTrackId={mainTrackId}
-   removeMesh={removeMesh}
-   onNodeReady={(id, node) => {
-  activeNodesRef.current[id]?.stop?.(); // Stop any old one
-  activeNodesRef.current[id] = node;
-}}
-              >
+{meshes.map((meshObj, idx) => {
+  const { id, type, name } = meshObj;
+  const Part = COMPONENTS[type];
+  const angle = (idx / meshes.length) * Math.PI * 2;
+  const dist = 10 + idx * 5;
+  const subs = assignments[id] || [];
+const syncedSubs = subs.map((t) => ({
+  ...t,
+  volume: settings[t.id]?.volume ?? t.volume,
+  sendLevel: settings[t.id]?.sendLevel ?? t.sendLevel,
+}));
+  return (
+    <ObjSound
+      key={id} // ✅ unique
+      name={name} // ✅ used in scene.getObjectByName
+      dist={dist}
+      subs={syncedSubs}
+      on={playing}
+      listener={listener}
+      convolver={convolver}
+      onAnalyserReady={handleAnalyserReady}
+      onVolumeChange={handleVolumeChange}
+      onSubsChange={(newSubs) =>
+        setAssignments((a) => ({ ...a, [id]: newSubs }))
+      }
+      playStartTime={playOffset}
+      pauseTime={pauseTime}
+      masterTapGain={masterTapGain}
+      visibleMap={settings}
+      onMainEnded={() => {
+        setPauseTime(0);
+        setPlayOffset(0);
+        setPlaying(false);
+      }}
+      mainTrackId={mainTrackId}
+        removeMesh={() => removeMesh(id)} 
+      onNodeReady={(trackId, node) => {
+        activeNodesRef.current[trackId]?.stop?.();
+        activeNodesRef.current[trackId] = node;
+      }}
+    >
                 <Part />
               </ObjSound>
             );

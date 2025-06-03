@@ -100,7 +100,7 @@ export default function TrackConsole({
                 min={0}
                 max={1}
                 step={0.01}
-                value={trackSettings.volume || .8}
+                value={trackSettings.volume || 0}
                 onChange={(e) =>
                   updateTrack(track.id, { volume: parseFloat(e.target.value) })
                 }
@@ -153,11 +153,11 @@ export default function TrackConsole({
       }}
     >
       <option value="null">Unassigned</option>
-      {meshes.map((mesh) => (
-        <option key={mesh} value={mesh}>
-          {mesh}
-        </option>
-      ))}
+{meshes.map((meshObj) => (
+  <option key={meshObj.id} value={meshObj.id}>
+    {meshObj.name}
+  </option>
+))}
     </select>
   </div>
 )}
