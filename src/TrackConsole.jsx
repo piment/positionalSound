@@ -8,6 +8,7 @@ import {
   setColor,
   setVolume,
   setSendLevel,
+  setPan,
 } from './reducer/trackSettingsSlice';
 import ImportMenu from './ImportMenu';
 import { div } from 'three/examples/jsm/nodes/Nodes.js';
@@ -62,17 +63,20 @@ export function SortableTrackRow({
   };
 
   // Find current assignment
-  const getAssignment = (trackId) => {
-    for (const [meshId, arr] of Object.entries(assignments)) {
-      if (arr.some((t) => t.id === trackId)) return meshId;
+function getAssignment(trackId) {
+  for (const [meshId, arr] of Object.entries(assignments)) {
+    if (arr.some((t) => t.id === trackId)) {
+      // If the key in `assignments` is the literal string "null", we want JS null
+      return meshId === 'null' ? null : meshId;
     }
-    return null;
-  };
+  }
+  return null;
+}
 
   const trackSettings = settings[track.id] || {};
   const isFxOpen = fxVisible === track.id;
-  
-
+    const assignedMeshId = getAssignment(track.id);
+// console.log(assignedMeshId)
   return (
     <div
       ref={setNodeRef}
@@ -109,6 +113,31 @@ export function SortableTrackRow({
 
             className="track-slider"
           />
+          {assignedMeshId === null && (
+            <Slider
+              orientation="horizontal"
+              min={-1}
+              max={1}
+              step={0.01}
+              value={trackSettings.pan || 0}
+              onChange={(e, value) => dispatch(setPan({ trackId: track.id, pan: value }))}
+              className="track-pan-slider"
+              style={{ width: '6rem', margin: '0.5rem 0' }}
+            />
+          )}
+          {assignedMeshId !== null && (
+            <div
+              style={{
+                width: '6rem',
+                height: '2px',
+                margin: '0.5rem 0',
+                backgroundColor: '#f00',
+                opacity: 0.3,
+              }}
+            >
+              {/* Just an empty “disabled” bar to show no pan control */}
+            </div>
+          )}
           <div className="buttons">
             <button onClick={() => removeTrack(track.id)} id="delete">
               🗑

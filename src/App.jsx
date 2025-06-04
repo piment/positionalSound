@@ -365,9 +365,12 @@ export default function App() {
     }
   }
   function clearSession() {
+       trackList.forEach((track) => {
+      dispatch(removeTrack(track.id));
+    });
     localStorage.removeItem(STORAGE_KEYS.meshes);
     setTrackList([]);
-    // setAssignments({ null: [] })
+    setAssignments({ null: [] })
     setMeshes([]);
     stopAll();
     clearAllBuffers();
@@ -550,7 +553,9 @@ const canvasProps = useMemo(
              Canvas root won't re‐render unless canvasProps changes.
         */}
         <SceneContents {...canvasProps} />
-        <Perf/>
+        <Perf 
+        // deepAnalyze={true}
+        />
       </Canvas>
     ),
     // Only re‐memo when canvasProps changes
@@ -560,7 +565,7 @@ const canvasProps = useMemo(
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
-        <div style={{ margin: '1em 0', zIndex: '20' }}>
+        {/* <div style={{ margin: '1em 0', zIndex: '20' }}>
           <button onClick={playAll} style={{ marginRight: '0.5em' }}>
             ▶️ Play All
           </button>
@@ -582,7 +587,7 @@ const canvasProps = useMemo(
             value={busLevel}
             onChange={(e) => setBusLevel(parseFloat(e.target.value))}
           />
-        </div>
+        </div> */}
         {/*         
         <div className='rev-sliders'>
         <div style={{ margin: '1em 0' }} className='param'>
@@ -631,7 +636,7 @@ const canvasProps = useMemo(
         </div>
         </div> 
         */}
-            {/* <PlayController
+            <PlayController
       playAll={playAll}
       pauseAll={pauseAll}
       stopAll={stopAll}
@@ -641,7 +646,7 @@ const canvasProps = useMemo(
       duration={duration}
       currentTime={currentTime}
       playing={playing}
-    /> */}
+    />
       </div>
       {/* Left: Parts palette */}
       {/* <div

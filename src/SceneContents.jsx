@@ -82,6 +82,7 @@ export const SceneContents = memo(function SceneContents({
         const isMain = sub.id === mainTrackId;
          const reduxVolume = settings[sub.id]?.volume ?? sub.volume ?? 0;
         const reduxSend = settings[sub.id]?.sendLevel ?? sub.sendLevel ?? 0;
+          const reduxPan = settings[sub.id]?.pan ?? 0;
         return (
           <Sound
             key={sub.id}
@@ -93,6 +94,7 @@ export const SceneContents = memo(function SceneContents({
             paused={false}
               volume={reduxVolume}
             sendLevel={reduxSend}
+             pan={reduxPan} 
             listener={listener}
             convolver={convolver}
             onAnalyserReady={handleAnalyserReady}
@@ -116,6 +118,7 @@ export const SceneContents = memo(function SceneContents({
             onNodeReady={(id, node) => {
                 onNodeReady(id, node);
             }}
+            meshRef={null}
           />
         );
       })}
