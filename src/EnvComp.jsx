@@ -17,28 +17,25 @@ function EnvComp({ playing, analyser }) {
   const lightRef = useRef();
   // This will hold 0 or 1 depending on whether we want it dark or bright.
   const [target, setTarget] = useState(() => (playing ? 0 : 1));
-const repeatScale = 50;
+  const repeatScale = 50;
   const [floorCol, floorNorm, floorRough, floorAO, floorDif] = useTexture([
     '/stage_texture/Stage_Floor_001_basecolor.jpg',
     '/stage_texture/Stage_Floor_001_normal.jpg',
     '/stage_texture/floor_Rough-min.png',
     '/stage_texture/Stage_Floor_001_ambientOcclusion.jpg',
-      '/stage_texture/floor_Dif-min.png',
+    '/stage_texture/floor_Dif-min.png',
   ]);
 
   [floorCol, floorNorm, floorRough, floorAO, floorDif].forEach((tex) => {
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(repeatScale, repeatScale);
-  tex.colorSpace = THREE.SRGBColorSpace
-});
-const floorMat = 
-
-  //useMemo (
-  //   () =>
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(repeatScale, repeatScale);
+    tex.colorSpace = THREE.SRGBColorSpace;
+  });
+  const floorMat = useMemo(
+    () =>
       new THREE.MeshStandardMaterial({
         color: '#050505',
-   
-        
+
         // normalMap: floorNorm,
         // roughness: 1,
         roughnessMap: floorRough,
@@ -47,11 +44,11 @@ const floorMat =
         // aoMap: floorDif,
         // aoMapIntensity: .8
       })
-  // );
+  );
 
-useEffect(() => {
-  setTarget(playing ? 0 : 4);
-}, [playing]);
+  useEffect(() => {
+    setTarget(playing ? 0 : 4);
+  }, [playing]);
 
   useFrame((_, delta) => {
     if (!lightRef.current) return;
@@ -65,8 +62,8 @@ useEffect(() => {
   return (
     <>
       <pointLight
-      position={[0,15,0]}
-      castShadow
+        position={[-2, 15, 0]}
+        castShadow
         ref={lightRef}
         decay={0.2}
         power={0}
@@ -74,9 +71,8 @@ useEffect(() => {
         // Start initially at either 0 or 1 depending on playing
         // intensity={playing ? 0 : 4}
         color={0xffffff}
-         shadow-radius={2}
-           shadow-bias={-0.00008} 
-
+        shadow-radius={2}
+        shadow-bias={-0.00008}
       />
       <mesh
         ref={floorRef}
@@ -91,7 +87,7 @@ useEffect(() => {
 
         {/* <meshStandardMaterial color={"#050505"} roughness={.81}  metalness={.1}/> */}
       </mesh>
- <LightBars count={24} radius={120} analyser={analyser} />
+      <LightBars count={24} radius={120} analyser={analyser} />
       {/* <Environment files='adamsbridge.hdr' /> */}
     </>
   );

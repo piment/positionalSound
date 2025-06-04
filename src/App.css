@@ -156,3 +156,53 @@ position: absolute;
 .track-console.open {
   height: 30vh;
 }
+
+
+
+
+/* Keep drawer as before */
+.spawner-container {
+  position: absolute;
+  /* top: 20%; */
+  left: 0;
+  height: 100%;
+  margin:auto; 
+  width: 240px;
+  transform: translateX(-240px);
+  transition: transform 0.3s ease-out;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+
+}
+.spawner-container.open {
+  transform: translateX(0);
+}
+
+/* Place toggle inside drawer, but fix its vertical position 
+   so that top is always the same no matter the drawer height */
+.spawner-toggle {
+  position: absolute;   /* still inside the drawer hierarchy */
+  left: 100%;           /* hug the drawer’s right edge */
+  top: 50%;            /* center in the viewport, not the drawer */
+  /* transform: translateY(-50%); */
+  z-index: 100;
+
+  width: 2rem;
+  height: 4rem;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 0 0.5rem 0.5rem 0;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+
+.spawner-toggle:focus {
+  outline: none;
+}
+

@@ -28,7 +28,6 @@ export default function TrackConsole({
   toggleAssign,
 }) {
   const dispatch = useDispatch();
-  const [consoleOpen, setConsoleOpen] = useState(true);
   const [fxVisible, setFxVisible] = useState(null);
  const [assignVisible, setAssignVisible] = useState(null);
 

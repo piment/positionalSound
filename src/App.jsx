@@ -23,6 +23,10 @@ import { MidTom } from './instruments/drumkit/MidTom';
 import { FloorTom } from './instruments/drumkit/FloorTom';
 import { Crash } from './instruments/drumkit/Crash';
 import { Ride } from './instruments/drumkit/Ride';
+import { Overheads } from './instruments/drumkit/Overheads';
+import { BassSVTAmp } from './instruments/amps/BassSVTAmp';
+import { GuitarAmp } from './instruments/amps/GuitarAmp';
+import { Micro } from './instruments/mics/Micro';
 import {
   Bloom,
   DepthOfField,
@@ -44,14 +48,12 @@ import {
 } from './reducer/trackSettingsSlice';
 import throttle from 'lodash.throttle';
 import FrequencySpectrum from './FrequencySpectrum';
-import { GuitarAmp } from './instruments/amps/GuitarAmp';
-import { BassAmp } from './instruments/amps/BassAmp';
-import { Overheads } from './instruments/drumkit/Overheads';
 import { useAudioContext, useAudioListener } from './AudioContextProvider';
 import { useBufferCache } from './hooks/useBufferCache';
 import TrackConsole from './TrackConsole';
 import { RxMixerVertical } from 'react-icons/rx';
 import { sceneState } from './utils/sceneState';
+import { MeshSpawner } from './MeshSpawner';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -63,7 +65,8 @@ const COMPONENTS = {
   Ride: Ride,
   Overheads: Overheads,
   Guitar: GuitarAmp,
-  Bass: BassAmp,
+  Bass: BassSVTAmp,
+  Vocals : Micro
 };
 
 const STORAGE_KEYS = {
@@ -93,6 +96,7 @@ export default function App() {
   const mode = useSelector((state) => state.viewMode);
 
   const [consoleOpen, setConsoleOpen] = useState(false);
+  const [spawnerOpen, setSpawnerOpen] = useState(false)
 
   const [playing, setPlaying] = useState(false);
   const [playOffset, setPlayOffset] = useState(0);
@@ -507,10 +511,10 @@ export default function App() {
         */}
       </div>
       {/* Left: Parts palette */}
-      <div
+      {/* <div
         style={{ width: 200, borderRight: '1px solid #333' }}
         className='panel-left'
-      >
+      > */}
         {/* <input
   type="range"
   min={0}
@@ -530,7 +534,7 @@ export default function App() {
 }}
 
 /> */}
-        {Object.keys(COMPONENTS).map((part) => (
+        {/* {Object.keys(COMPONENTS).map((part) => (
           <button
             key={part}
             // disabled={meshes.includes(part)}
@@ -540,7 +544,27 @@ export default function App() {
             {meshes.includes(part) ? 'Spawned' : 'Spawn'} {part}
           </button>
         ))}
+      </div> */}
+      <div    className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
+
+
+        <button
+          className="spawner-toggle"
+          onClick={() => setSpawnerOpen((v) => !v)}
+          >
+          {spawnerOpen ? '×' : '☰'}
+        </button>
+
+        <MeshSpawner
+        className={`mesh-spawner ${spawnerOpen ? 'open' : ''}`}
+          components={COMPONENTS}
+          meshes={meshes}
+          addMesh={addMesh}
+          />
+        
       </div>
+
+    
 
       {/* Center: 3D canvas */}
       <div style={{ flex: 1 }} className='canvas-main'>

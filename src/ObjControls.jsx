@@ -125,10 +125,11 @@ export function ObjSound({
     if (!outerRef.current) return;
     const arr = [];
     outerRef.current.traverse((obj) => {
-      if (obj.isPointLight) arr.push(obj);
+      if (obj.isLight ) arr.push(obj);
     });
     setLights(arr);
   }, []);
+
 
   // cache pad-material meshes once after mount
   const [padMeshes, setPadMeshes] = useState([]);
