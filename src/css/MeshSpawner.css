@@ -19,14 +19,14 @@ border-radius:0  25px 25px 0;
 
 .mesh-spawner-list button {
   display: block;
-  /* width: 100%; */
+  width: 60%;
   /* margin: 0.5rem 0; */
   padding: 0.5rem 0.75rem;
   background-color: #2b2a2a;
   color: #fff;
   border: none;
   border-radius: 0.25rem;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: background-color 0.2s;
 box-shadow:  2px 5px 4px #1818185b,

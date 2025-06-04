@@ -16,7 +16,7 @@ export function MeshSpawner({ components, meshes, addMesh, className }) {
         style={{ display: 'block', margin: '4px 0' }}
         disabled={meshes.includes(part)}
         >
-          {meshes.includes(part) ? 'Spawned' : 'Spawn'} {part}
+       {part}
         </button>
       ))}
       </div>

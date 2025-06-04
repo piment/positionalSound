@@ -442,6 +442,20 @@ const onNodeReady = useCallback((trackId, node) => {
   activeNodesRef.current[trackId] = node;
 }, []);
 
+
+  const onReorderTracks = useCallback(({ active, over }) => {
+    if (!over) return;
+    setTrackList((prev) => {
+      const oldIndex = prev.findIndex((t) => t.id === active.id);
+      const newIndex = prev.findIndex((t) => t.id === over.id);
+      const newList = Array.from(prev);
+      newList.splice(oldIndex, 1);
+      newList.splice(newIndex, 0, prev[oldIndex]);
+      return newList;
+    });
+  }, []);
+
+
 const canvasProps = useMemo(
   () => ({
     meshes,
@@ -684,6 +698,8 @@ const canvasProps = useMemo(
           removeTrack={removeTrackById}
           meshes={meshes}
           toggleAssign={toggleAssign}
+            isReorderable={true}
+          onReorder={onReorderTracks}
         />
       </div>
     </div>
