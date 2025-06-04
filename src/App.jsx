@@ -54,6 +54,7 @@ import TrackConsole from './TrackConsole';
 import { RxMixerVertical } from 'react-icons/rx';
 import { sceneState } from './utils/sceneState';
 import { MeshSpawner } from './MeshSpawner';
+import { SceneContents } from './SceneContents';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -435,6 +436,96 @@ export default function App() {
     });
   }
 
+const onNodeReady = useCallback((trackId, node) => {
+  // if there was an old node, stop it
+  activeNodesRef.current[trackId]?.stop?.();
+  activeNodesRef.current[trackId] = node;
+}, []);
+
+const canvasProps = useMemo(
+  () => ({
+    meshes,
+    assignments,
+    settings,
+    listener,
+    convolver,
+    masterTapGain,
+    masterAnalyser,
+    handleAnalyserReady,
+    handleVolumeChange,
+    playing,
+    playOffset,
+    pauseTime,
+    setPlayOffset,    
+    setPauseTime,     
+    setPlaying,       
+    mainTrackId,
+    removeMesh,
+    sceneState,
+    sourcesForFloor,
+    updateTrack,
+    trackList,
+    components: COMPONENTS,
+    onNodeReady,     
+  }),
+  [
+    meshes,
+    assignments,
+    settings,
+    listener,
+    convolver,
+    masterTapGain,
+    masterAnalyser,
+    handleAnalyserReady,
+    handleVolumeChange,
+    playing,
+    playOffset,
+    pauseTime,
+    setPlayOffset,
+    setPauseTime,
+    setPlaying,
+    mainTrackId,
+    removeMesh,
+    sceneState,
+    sourcesForFloor,
+    updateTrack,
+    trackList,
+    onNodeReady,
+  ]
+);
+
+
+    const memoizedCanvas = useMemo(
+    () => (
+      <Canvas
+        camera={{ position: [0, 5, 20], fov: 35 }}
+        dpr={[1, 2]}
+        shadows
+        gl={{
+          antialias: true,
+        }}
+        onCreated={({ gl }) => {
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.physicallyCorrectLights = true;
+        }}
+        onPointerMissed={() => {
+          sceneState.current = null;
+        }}
+      >
+        {/*
+          3) Pass in all scene props at once.
+             SceneContents is wrapped in React.memo, but now _even_ the
+             Canvas root won't re‐render unless canvasProps changes.
+        */}
+        <SceneContents {...canvasProps} />
+        <Perf/>
+      </Canvas>
+    ),
+    // Only re‐memo when canvasProps changes
+    [canvasProps]
+  );
+
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
@@ -567,141 +658,8 @@ export default function App() {
     
 
       {/* Center: 3D canvas */}
-      <div style={{ flex: 1 }} className='canvas-main'>
-        <Canvas
-          camera={{ position: [0, 5, 20], fov: 35 }}
-          dpr={[1, 2]}
-          shadows
-          gl={{
-            antialias: true,
-            //  precision: 'highp'
-          }}
-          onCreated={({ gl }) => {
-            gl.shadowMap.enabled = true;
-            gl.shadowMap.type = THREE.PCFSoftShadowMap;
-
-            gl.physicallyCorrectLights = true;
-          }}
-          onPointerMissed={() => {
-            sceneState.current = null; // ← clears selection on background click
-          }}
-        >
-          {/* <fog attach="fog" args={['#050505', 65, 80]} /> */}
-          {meshes.map((meshObj, idx) => {
-            const { id, type, name } = meshObj;
-            const Part = COMPONENTS[type];
-            const angle = (idx / meshes.length) * Math.PI * 2;
-            const dist = 10 + idx * 5;
-            const subs = assignments[id] || [];
-            const syncedSubs = subs.map((t) => ({
-              ...t,
-              volume: settings[t.id]?.volume ?? t.volume,
-              sendLevel: settings[t.id]?.sendLevel ?? t.sendLevel,
-            }));
-            return (
-              <ObjSound
-                key={id} // ✅ unique
-                name={name} // ✅ used in scene.getObjectByName
-                dist={dist}
-                subs={syncedSubs}
-                on={playing}
-                listener={listener}
-                convolver={convolver}
-                onAnalyserReady={handleAnalyserReady}
-                onVolumeChange={handleVolumeChange}
-                onSubsChange={(newSubs) =>
-                  setAssignments((a) => ({ ...a, [id]: newSubs }))
-                }
-                playStartTime={playOffset}
-                pauseTime={pauseTime}
-                masterTapGain={masterTapGain}
-                visibleMap={settings}
-                onMainEnded={() => {
-                  setPauseTime(0);
-                  setPlayOffset(0);
-                  setPlaying(false);
-                }}
-                mainTrackId={mainTrackId}
-                removeMesh={() => removeMesh(id)}
-                onNodeReady={(trackId, node) => {
-                  activeNodesRef.current[trackId]?.stop?.();
-                  activeNodesRef.current[trackId] = node;
-                }}
-              >
-                <Part />
-              </ObjSound>
-            );
-          })}
-
-          {/* Play unassigned tracks as well (just at listener position) */}
-          {(assignments.null || []).map((sub) => {
-            const isMain = sub.id === mainTrackId;
-            return (
-              <Sound
-                key={sub.id}
-                name={sub.name}
-                subs={[sub]}
-                on={playing}
-                trackId={sub.id}
-                url={sub.url}
-                paused={false}
-                listener={listener}
-                convolver={convolver}
-                analyser={sources[0]?.analyser}
-                onSubsChange={(newSubs) =>
-                  setAssignments((a) => ({ ...a, null: newSubs }))
-                }
-                sendLevel={sub.sendLevel}
-                volume={sub.volume}
-                playStartTime={playOffset}
-                pauseTime={pauseTime}
-                // onAnalyserReady={(analyser) =>
-                //   handleAnalyserReady(sub.id, analyser, sub.volume)
-                // }
-                onAnalyserReady={handleAnalyserReady}
-                // onVolumeChange={(vol) => handleVolumeChange(sub.id, vol)}
-                onVolumeChange={handleVolumeChange}
-                masterTapGain={masterTapGain}
-                visible={settings[sub.id]?.visible}
-                buffer={sub.buffer}
-                isMain={isMain} // ✅ NEW
-                onMainEnded={() => {
-                  // ✅ NEW
-                  setPauseTime(0);
-                  setPlayOffset(0);
-                  setPlaying(false);
-                }}
-                // no meshRef or panner → dry playback
-                onNodeReady={(id, node) => {
-                  activeNodesRef.current[id]?.stop?.(); // Stop any old one
-                  activeNodesRef.current[id] = node;
-                }}
-              />
-            );
-          })}
-
-          {mode === 'visualizerMode' && (
-            <FrequencySpectrum
-              sources={sourcesForFloor} // your AudioAnalyser
-              playing={playing} // your play flag
-              // width={30}
-              // depth={10}               // spread across X
-              maxHeight={15} // Y scale
-              // pointSize={6}               // size of each dot
-            />
-          )}
-          <EnvComp playing={playing} analyser={masterAnalyser} />
-          <Controls />
-          <Perf deepAnalyze />
-          {/* <EffectComposer disableNormalPass> */}
-            {/* <LensFlare occlusion={{ enabled: false }} enabled={false}/> */}
-            {/* <DepthOfField focusDistance={0} focalLength={0.2} bokehScale={2} height={480} /> */}
-            {/* <Bloom luminanceThreshold={.5} luminanceSmoothing={0.9} height={300} /> */}
-            {/* <Noise opacity={0.02} /> */}
-            {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
-          {/* </EffectComposer> */}
-        </Canvas>
-   
+     <div className="canvas-main">
+        {memoizedCanvas}
       </div>
 
       <div className='console-container'>
