@@ -4,7 +4,7 @@ import './css/MeshSpawner.css'
 
 
 export function MeshSpawner({ components, meshes, addMesh, className }) {
-  console.log(className)
+
   return (
     <div className={className}>
 

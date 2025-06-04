@@ -1,0 +1,92 @@
+/* PlayController.css */
+
+.play-controller-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 1rem auto;
+  padding: 0.5rem 1rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  font-family: sans-serif;
+}
+
+/* ─── Button Row ───────────────────────────────── */
+.button-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ctrl-btn {
+  background: #444;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ctrl-btn:hover {
+  background: #666;
+}
+
+.clear-btn {
+  background: #a33;
+}
+
+.clear-btn:hover {
+  background: #c55;
+}
+
+/* ─── Reverb Bus Slider ───────────────────────────── */
+.reverb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.reverb-label {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.reverb-slider {
+  flex: 1;
+  cursor: pointer;
+}
+
+/* ─── Progress Bar ────────────────────────────────── */
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time-label {
+  font-size: 0.8rem;
+  width: 40px;
+  text-align: center;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: #444;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2ecc71;
+  transition: width 0.1s linear;
+  border-radius: 4px 0 0 4px;
+}

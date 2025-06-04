@@ -55,6 +55,7 @@ import { RxMixerVertical } from 'react-icons/rx';
 import { sceneState } from './utils/sceneState';
 import { MeshSpawner } from './MeshSpawner';
 import { SceneContents } from './SceneContents';
+import PlayController from './PlayController';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -371,8 +372,24 @@ export default function App() {
     stopAll();
     clearAllBuffers();
   }
+ const duration = useMemo(() => {
+    const main = trackList.find((t) => t.id === mainTrackId);
+    return main?.buffer?.duration || 0;
+  }, [mainTrackId, trackList]);
 
-
+const [currentTime, setCurrentTime] = useState(0);
+useEffect(() => {
+  let raf;
+  function updateTime() {
+    if (playing) {
+      const elapsed = audioCtx.currentTime - playOffset;
+      setCurrentTime(Math.min(elapsed, duration));
+    }
+    raf = requestAnimationFrame(updateTime);
+  }
+  raf = requestAnimationFrame(updateTime);
+  return () => cancelAnimationFrame(raf);
+}, [playing, playOffset, audioCtx, duration]);
 
   const handleVolumeChange = useCallback((trackId, newVol) => {
     dispatch(setVolume({ trackId, volume: newVol }));
@@ -614,6 +631,17 @@ const canvasProps = useMemo(
         </div>
         </div> 
         */}
+            {/* <PlayController
+      playAll={playAll}
+      pauseAll={pauseAll}
+      stopAll={stopAll}
+      clearSession={clearSession}
+      busLevel={busLevel}
+      setBusLevel={setBusLevel}
+      duration={duration}
+      currentTime={currentTime}
+      playing={playing}
+    /> */}
       </div>
       {/* Left: Parts palette */}
       {/* <div

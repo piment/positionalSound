@@ -8,7 +8,7 @@ export default function Sound({
   on,
   paused,
   volume = 1,
-  dist = 1,
+  dist = 5,
   listener,
   convolver,
   sendLevel = 0.2,

@@ -80,6 +80,8 @@ export const SceneContents = memo(function SceneContents({
 
       {(assignments.null || []).map((sub) => {
         const isMain = sub.id === mainTrackId;
+         const reduxVolume = settings[sub.id]?.volume ?? sub.volume ?? 0;
+        const reduxSend = settings[sub.id]?.sendLevel ?? sub.sendLevel ?? 0;
         return (
           <Sound
             key={sub.id}
@@ -89,10 +91,15 @@ export const SceneContents = memo(function SceneContents({
             trackId={sub.id}
             url={sub.url}
             paused={false}
+              volume={reduxVolume}
+            sendLevel={reduxSend}
             listener={listener}
             convolver={convolver}
             onAnalyserReady={handleAnalyserReady}
-            onVolumeChange={handleVolumeChange}
+            // onVolumeChange={handleVolumeChange}
+               onVolumeChange={(trackId, newVol) =>
+        updateTrack(trackId, { volume: newVol })
+      }
             masterTapGain={masterTapGain}
                    playStartTime={playOffset}    
             pauseTime={pauseTime}

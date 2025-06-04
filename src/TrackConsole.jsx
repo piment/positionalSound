@@ -71,6 +71,7 @@ export function SortableTrackRow({
 
   const trackSettings = settings[track.id] || {};
   const isFxOpen = fxVisible === track.id;
+  
 
   return (
     <div
@@ -100,9 +101,12 @@ export function SortableTrackRow({
             max={1}
             step={0.01}
             value={trackSettings.volume || 0}
-            onChange={(e) =>
-              updateTrack(track.id, { volume: parseFloat(e.target.value) })
-            }
+ onChange={(e, value) => {
+
+              // value is already a number
+              dispatch(setVolume({ trackId: track.id, volume: value }));
+            }}
+
             className="track-slider"
           />
           <div className="buttons">
@@ -121,11 +125,9 @@ export function SortableTrackRow({
                   max={1}
                   step={0.01}
                   value={trackSettings.sendLevel || 0}
-                  onChange={(e) =>
-                    updateTrack(track.id, {
-                      sendLevel: parseFloat(e.target.value),
-                    })
-                  }
+                 onChange={(e, value) =>
+  dispatch(setSendLevel({ trackId: track.id, sendLevel: value }))
+}
                   style={{ height: 100 }}
                 />
                 <div style={{ fontSize: '0.7em', textAlign: 'center' }}>
@@ -258,6 +260,7 @@ export default function TrackConsole({
         <div className="track-list-static">
           {trackList.map((track) => {
             const trackSettings = settings[track.id] || {};
+          
             const isFxOpen = fxVisible === track.id;
             return (
               <div
