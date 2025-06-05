@@ -532,7 +532,7 @@ const canvasProps = useMemo(
     const memoizedCanvas = useMemo(
     () => (
       <Canvas
-        camera={{ position: [0, 5, 20], fov: 35 }}
+        camera={{ position: [10, 5, 20], fov: 35 }}
         dpr={[1, 2]}
         shadows
         gl={{

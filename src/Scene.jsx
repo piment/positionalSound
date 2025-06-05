@@ -38,7 +38,7 @@ export default function Scene({ tracks, globalPlay, playTrigger, masterGain, rev
 
   console.log(tracks)
   return (
-    <Canvas camera={{ position: [0, 5, 20], fov: 35 }} dpr={[1, 2]} shadows>
+    <Canvas  dpr={[1, 2]} shadows>
       {/* Lighting */}
       <pointLight position={[5, 10, 5]} intensity={50.8} castShadow />
       

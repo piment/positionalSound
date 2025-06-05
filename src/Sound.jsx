@@ -8,7 +8,7 @@ export default function Sound({
   on,
   paused,
   volume = 1,
-  dist = 5,                // used for PositionalAudio refDistance
+  dist = 5,                 // PositionalAudio refDistance
   listener,
   convolver,
   sendLevel = 0.2,
@@ -19,28 +19,28 @@ export default function Sound({
   onSendLevelChange,
   trackId,
   masterTapGain,
-  visible,
   meshRef,
   pauseTime,
-  mainDuration,
   onMainEnded,
   isMain = false,
   onNodeReady,
-  pan = 0,                 // stereo pan for unassigned
+  pan = 0,                  // stereo pan for unassigned
 }) {
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
 
-  // Refs for our nodes:
-  const threeAudioRef = useRef(null);    // will hold THREE.PositionalAudio if assigned
-  const sourceRef = useRef(null);        // always the BufferSource for “dry”
-  const stereoSourceRef = useRef(null);  // BufferSource for “stereo” path if unassigned
-  const stereoPannerRef = useRef(null);  // holds StereoPannerNode if unassigned
-  const gainRef = useRef(null);          // GainNode for volume
-  const sendGainRef = useRef(null);      // GainNode for sendLevel
-  const analyserNodeRef = useRef(null);  // AnalyserNode for visuals
+  // ────────────────────────────────────────────────────────────────────────────────
+  // Refs for nodes we create
+  // ────────────────────────────────────────────────────────────────────────────────
+  const threeAudioRef    = useRef(null);    // THREE.PositionalAudio if assigned
+  const positionalSrcRef = useRef(null);    // BufferSource for “assigned” path
+  const stereoSrcRef     = useRef(null);    // BufferSource for “unassigned” path
+  const stereoPannerRef  = useRef(null);    // StereoPannerNode for unassigned
+  const gainRef          = useRef(null);    // GainNode that both branches share
+  const sendGainRef      = useRef(null);    // GainNode for send/reverb
+  const analyserRef      = useRef(null);    // AnalyserNode for visuals
 
-  // Create one AnalyserNode for this track
+  // Create exactly one AnalyserNode
   const analyserNode = useMemo(() => {
     const a = audioCtx.createAnalyser();
     a.fftSize = 4096;
@@ -48,7 +48,7 @@ export default function Sound({
     return a;
   }, [audioCtx]);
 
-  // U-array for analyser data
+  // Uint8Array buffer for analyser data
   const dataArray = useMemo(
     () => new Uint8Array(analyserNode.frequencyBinCount),
     [analyserNode]
@@ -56,109 +56,84 @@ export default function Sound({
 
   // Notify parent that analyser is ready
   useEffect(() => {
-    if (typeof onAnalyserReady === 'function') {
-      onAnalyserReady(trackId, analyserNode);
+    analyserRef.current = analyserNode;
+    if (typeof onAnalysedLevel === 'function') {
+      onAnalysedLevel(trackId, analyserNode);
     }
-    analyserNodeRef.current = analyserNode;
-  }, [analyserNode, onAnalyserReady, trackId]);
+  }, [analyserNode, onAnalysedLevel, trackId]);
 
-  // Ensure listener (THREE.AudioListener) is attached to camera
+  // Attach the listener to the camera once
   useEffect(() => {
     camera.add(listener);
-    return () => {
-      camera.remove(listener);
-    };
+    return () => camera.remove(listener);
   }, [camera, listener]);
 
-  // A safe cleanup that only stops/disconnects if the node exists:
-  const stopAndCleanup = () => {
-    // 1) If we used THREE.PositionalAudio:
+  // Helper: tear down absolutely everything we might have created
+  const stopAndCleanupAll = () => {
+    // (1) PositionalAudio + source
     if (threeAudioRef.current) {
-      try {
-        // underlying audio source is stopped/removed by Three.js automatically,
-        // but we can explicitly disconnect here:
-        threeAudioRef.current.disconnect();
-      } catch {}
-      try {
-        scene.remove(threeAudioRef.current);
-      } catch {}
+      try { threeAudioRef.current.disconnect(); } catch {}
+      try { scene.remove(threeAudioRef.current); } catch {}
       threeAudioRef.current = null;
     }
-
-    // 2) If we used a raw BufferSource for stereo/unassigned
-    if (stereoSourceRef.current) {
-      try {
-        stereoSourceRef.current.stop();
-      } catch {}
-      try {
-        stereoSourceRef.current.disconnect();
-      } catch {}
-      stereoSourceRef.current = null;
+    if (positionalSrcRef.current) {
+      try { positionalSrcRef.current.stop(); } catch {}
+      try { positionalSrcRef.current.disconnect(); } catch {}
+      positionalSrcRef.current = null;
     }
 
-    // 3) If we used a raw BufferSource for the PositionalAudio’s “setNodeSource” path:
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.stop();
-      } catch {}
-      try {
-        sourceRef.current.disconnect();
-      } catch {}
-      sourceRef.current = null;
+    // (2) Stereo source + panner
+    if (stereoSrcRef.current) {
+      try { stereoSrcRef.current.stop(); } catch {}
+      try { stereoSrcRef.current.disconnect(); } catch {}
+      stereoSrcRef.current = null;
     }
-
-    // 4) Disconnect gain
-    if (gainRef.current) {
-      try {
-        gainRef.current.disconnect();
-      } catch {}
-      gainRef.current = null;
-    }
-
-    // 5) Disconnect sendGain
-    if (sendGainRef.current) {
-      try {
-        sendGainRef.current.disconnect();
-      } catch {}
-      sendGainRef.current = null;
-    }
-
-    // 6) Disconnect stereoPanner
     if (stereoPannerRef.current) {
-      try {
-        stereoPannerRef.current.disconnect();
-      } catch {}
+      try { stereoPannerRef.current.disconnect(); } catch {}
       stereoPannerRef.current = null;
     }
 
-    // 7) Disconnect analyser (we’ll reconnect in the next effect)
-    if (analyserNodeRef.current) {
-      try {
-        analyserNodeRef.current.disconnect();
-      } catch {}
+    // (3) GainNode
+    if (gainRef.current) {
+      try { gainRef.current.disconnect(); } catch {}
+      gainRef.current = null;
+    }
+
+    // (4) SendGainNode
+    if (sendGainRef.current) {
+      try { sendGainRef.current.disconnect(); } catch {}
+      sendGainRef.current = null;
+    }
+
+    // (5) Analyser
+    if (analyserRef.current) {
+      try { analyserRef.current.disconnect(); } catch {}
     }
   };
 
-  // Main playback / node‐creation effect
+  // ────────────────────────────────────────────────────────────────────────────────
+  // 1) SETUP EFFECT: create the source(s) + pan + gain + send + analyser
+  //    Only re‐run when really necessary: on/pause/pauseTime/playStartTime/meshRef/buffer
+  // ────────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // First, clean up any existing nodes
-    stopAndCleanup();
+    // Always tear down any old nodes first
+    stopAndCleanupAll();
 
+    // If we’re not supposed to be playing, or if data is missing, bail out
     if (!on || paused || !buffer || !listener) {
       return;
     }
 
-    // Compute offset into buffer
+    // Compute offset (seek) and a small start delay if starting fresh
     const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
     const startDelay = pauseTime === 0 ? 0.01 : 0;
 
-    // ─── DRY PATH: either PositionalAudio (assigned) or StereoPanner (unassigned) ───
+    // ── A) ASSIGNED PATH (when meshRef.current exists) ─────────────────────────
     if (meshRef?.current?.children?.[0]) {
-      // ─── ASSIGNED: use THREE.PositionalAudio ─────────────────────────────────
+      // 1) Create PositionalAudio
       const threeAudio = new THREE.PositionalAudio(listener);
       threeAudioRef.current = threeAudio;
 
-      // Configure the PannerNode inside the PositionalAudio
       threeAudio.setRefDistance(dist);
       threeAudio.setRolloffFactor(0.05);
       threeAudio.panner.panningModel = 'equalpower';
@@ -166,158 +141,132 @@ export default function Sound({
       threeAudio.panner.coneInnerAngle = 360;
       threeAudio.panner.coneOuterAngle = 360;
 
-      // Position it at the mesh’s current world coordinates
+      // 2) Position it at the mesh’s current world coordinates
       const pos = new THREE.Vector3();
       meshRef.current.children[0].getWorldPosition(pos);
       threeAudio.position.copy(pos);
 
-      // Create a BufferSource and attach to PositionalAudio
-      const sourceNode = audioCtx.createBufferSource();
-      sourceNode.buffer = buffer;
-      sourceNode.loop = false;
-      sourceRef.current = sourceNode;
-      threeAudio.setNodeSource(sourceNode);
+      // 3) Create a BufferSource → attach to PositionalAudio
+      const posSource = audioCtx.createBufferSource();
+      positionalSrcRef.current = posSource;
+      posSource.buffer = buffer;
+      posSource.loop = false;
+      threeAudio.setNodeSource(posSource);
+threeAudio.getOutput().disconnect();
+      // 4) Create a shared GainNode for volume
+      const gNode = audioCtx.createGain();
+      gNode.gain.value = volume;
+      gainRef.current = gNode;
 
-      // Connect “dry” chain: the internal output of PositionalAudio → gain → analyser → masterTapGain → listener
-      const dryOutput = threeAudio.getOutput();
-      const gainNode = audioCtx.createGain();
-      gainNode.gain.value = volume;
-      gainRef.current = gainNode;
-
-      dryOutput.connect(gainNode);
-      gainNode.connect(analyserNode);
+      // 5) Wire: PositionalAudio.getOutput() → gain → analyser → masterTapGain → listener
+      threeAudio.getOutput().connect(gNode);
+      gNode.connect(analyserNode);
       analyserNode.connect(masterTapGain);
-      try {
-        masterTapGain.connect(listener.getInput());
-      } catch {
-        // may already be connected
-      }
+      try { masterTapGain.connect(listener.getInput()); } catch {}
 
-      // Add the PositionalAudio object into the scene so Three.js can update it each frame
+      // 6) Put PositionalAudio into the scene so it auto‐updates
       scene.add(threeAudio);
 
-      // Let parent know about the source so it can call .stop()/.start() if needed
+      // 7) Inform parent of the source node
       if (typeof onNodeReady === 'function') {
-        onNodeReady(trackId, sourceNode);
+        onNodeReady(trackId, posSource);
       }
 
-      // Start playback with offset
-      sourceNode.start(audioCtx.currentTime + startDelay, offset);
-    } else {
-      // ─── UNASSIGNED: use a raw StereoPannerNode ───────────────────────────────
-      const sourceNode = audioCtx.createBufferSource();
-      sourceNode.buffer = buffer;
-      sourceNode.loop = false;
-      stereoSourceRef.current = sourceNode;
+      // 8) Start playback
+      posSource.start(audioCtx.currentTime + startDelay, offset);
 
-      const stereoPanner = audioCtx.createStereoPanner();
-      stereoPanner.pan.value = pan; // initial pan −1…+1
-      stereoPannerRef.current = stereoPanner;
+      // 9) “Send” (reverb) chain
+      const sGain = audioCtx.createGain();
+      sGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
+      sendGainRef.current = sGain;
 
-      // Connect: source → stereoPanner → gain → analyser → masterTapGain → listener
-      const gainNode = audioCtx.createGain();
-      gainNode.gain.value = volume;
-      gainRef.current = gainNode;
+      const sendSource = audioCtx.createBufferSource();
+      sendSource.buffer = buffer;
+      sendSource.loop = false;
+      sendSource.connect(sGain).connect(convolver);
+      sendSource.start(audioCtx.currentTime + startDelay, offset);
 
-      sourceNode.connect(stereoPanner);
-      stereoPanner.connect(gainNode);
-      gainNode.connect(analyserNode);
-      analyserNode.connect(masterTapGain);
-      try {
-        masterTapGain.connect(listener.getInput());
-      } catch {}
-
-      // Let parent know about the source
-      if (typeof onNodeReady === 'function') {
-        onNodeReady(trackId, sourceNode);
-      }
-
-      sourceNode.start(audioCtx.currentTime + startDelay, offset);
+      // 10) Cleanup only assigned‐branch nodes
+      return () => {
+        if (threeAudioRef.current) {
+          try { threeAudioRef.current.disconnect(); } catch {}
+          try { scene.remove(threeAudioRef.current); } catch {}
+        }
+        if (positionalSrcRef.current) {
+          try { positionalSrcRef.current.stop(); } catch {}
+          try { positionalSrcRef.current.disconnect(); } catch {}
+        }
+        if (gainRef.current) {
+          try { gainRef.current.disconnect(); } catch {}
+        }
+        if (sendGainRef.current) {
+          try { sendGainRef.current.disconnect(); } catch {}
+        }
+        try { analyserNode.disconnect(); } catch {}
+        try { masterTapGain.disconnect(listener.getInput()); } catch {}
+      };
     }
 
-    // ─── SEND PATH (reverb): source → sendGain → convolver ─────────────────
-    // Both assigned/unassigned use the same send chain
-    const sendGainNode = audioCtx.createGain();
-    sendGainNode.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
-    sendGainRef.current = sendGainNode;
+    // ── B) UNASSIGNED PATH (no meshRef) ──────────────────────────────────────────
+    // 1) Create BufferSource
+    const stereoSource = audioCtx.createBufferSource();
+    stereoSrcRef.current = stereoSource;
+    stereoSource.buffer = buffer;
+    stereoSource.loop = false;
+
+    // 2) Create StereoPannerNode + set initial pan
+    const spanner = audioCtx.createStereoPanner();
+    stereoPannerRef.current = spanner;
+    spanner.pan.value = pan;
+
+    // 3) Create a shared GainNode for volume
+    const gNode = audioCtx.createGain();
+    gNode.gain.value = volume;
+    gainRef.current = gNode;
+
+    // 4) Wire: stereoSource → spanner → gain → analyser → masterTapGain → listener
+    stereoSource.connect(spanner);
+    spanner.connect(gNode);
+    gNode.connect(analyserNode);
+    analyserNode.connect(masterTapGain);
+    try { masterTapGain.connect(listener.getInput()); } catch {}
+
+    // 5) Inform parent of the source
+    if (typeof onNodeReady === 'function') {
+      onNodeReady(trackId, stereoSource);
+    }
+
+    // 6) Start playback
+    stereoSource.start(audioCtx.currentTime + startDelay, offset);
+
+    // 7) “Send” (reverb) chain
+    const sGain = audioCtx.createGain();
+    sGain.gain.setValueAtTime(sendLevel, audioCtx.currentTime);
+    sendGainRef.current = sGain;
 
     const sendSource = audioCtx.createBufferSource();
     sendSource.buffer = buffer;
     sendSource.loop = false;
-    sendSource.connect(sendGainNode).connect(convolver);
+    sendSource.connect(sGain).connect(convolver);
     sendSource.start(audioCtx.currentTime + startDelay, offset);
 
-    // No need to call onNodeReady again for the sendSource
-
+    // 8) Cleanup only unassigned‐branch nodes
     return () => {
-      // Cleanup when effect re-runs or component unmounts
-
-      // 1) Stop & remove PositionalAudio if used
-      if (threeAudioRef.current) {
-        try {
-          threeAudioRef.current.stop?.();
-        } catch {}
-        try {
-          threeAudioRef.current.disconnect();
-        } catch {}
-        try {
-          scene.remove(threeAudioRef.current);
-        } catch {}
+      if (stereoSrcRef.current) {
+        try { stereoSrcRef.current.stop(); } catch {}
+        try { stereoSrcRef.current.disconnect(); } catch {}
       }
-
-      // 2) Stop & disconnect the BufferSource(s)
-      if (sourceRef.current) {
-        try {
-          sourceRef.current.stop();
-        } catch {}
-        try {
-          sourceRef.current.disconnect();
-        } catch {}
+      if (stereoPannerRef.current) {
+        try { stereoPannerRef.current.disconnect(); } catch {}
       }
-      if (stereoSourceRef.current) {
-        try {
-          stereoSourceRef.current.stop();
-        } catch {}
-        try {
-          stereoSourceRef.current.disconnect();
-        } catch {}
-      }
-
-      // 3) Disconnect gain & sendGain
       if (gainRef.current) {
-        try {
-          gainRef.current.disconnect();
-        } catch {}
+        try { gainRef.current.disconnect(); } catch {}
       }
       if (sendGainRef.current) {
-        try {
-          sendGainRef.current.disconnect();
-        } catch {}
+        try { sendGainRef.current.disconnect(); } catch {}
       }
-
-      // 4) Disconnect panner if stereo
-      if (stereoPannerRef.current) {
-        try {
-          stereoPannerRef.current.disconnect();
-        } catch {}
-      }
-
-      // 5) Disconnect analyser and masterTapGain
-      try {
-        analyserNode.disconnect();
-      } catch {}
-      try {
-        masterTapGain.disconnect(listener.getInput());
-      } catch {}
-
-      // Clear all refs
-      threeAudioRef.current = null;
-      sourceRef.current = null;
-      stereoSourceRef.current = null;
-      // pannerRef.current = null;
-      gainRef.current = null;
-      sendGainRef.current = null;
-      stereoPannerRef.current = null;
+      try { analyserNode.disconnect(); } catch {}
+      try { masterTapGain.disconnect(listener.getInput()); } catch {}
     };
   }, [
     on,
@@ -329,44 +278,61 @@ export default function Sound({
     pauseTime,
     dist,
     masterTapGain,
-    meshRef,
-    // pan,         // watch pan so stereo updates
+    meshRef,      // re-run if meshRef toggles assigned ↔ unassigned
     trackId,
   ]);
 
-  // If this is the main track, fire onMainEnded when done:
-  useEffect(() => {
-    const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
-    if (isMain && buffer) {
-      const remaining = buffer.duration - offset;
-      const timeoutId = setTimeout(() => {
-        if (on && !paused) {
-          onMainEnded?.();
-        }
-      }, remaining * 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isMain, buffer, on, paused, playStartTime, pauseTime, onMainEnded]);
-
-  // Update dry volume in real time
+  // ────────────────────────────────────────────────────────────────────────────────
+  // 2) UPDATE “volume” in real time (shared by either branch)
+  // ────────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (gainRef.current) {
       gainRef.current.gain.linearRampToValueAtTime(volume, audioCtx.currentTime, 0.01);
     }
-    onVolumeChange?.(trackId, volume);
+    if (typeof onVolumeChange === 'function') {
+      onVolumeChange(trackId, volume);
+    }
   }, [volume, onVolumeChange, trackId, audioCtx]);
 
-  // Update send level in real time
+  // ────────────────────────────────────────────────────────────────────────────────
+  // 3) UPDATE “sendLevel” in real time (shared by either branch)
+  // ────────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (sendGainRef.current) {
       sendGainRef.current.gain.linearRampToValueAtTime(sendLevel, audioCtx.currentTime, 0.01);
     }
-    onSendLevelChange?.(trackId, sendLevel);
+    if (typeof onSendLevelChange === 'function') {
+      onSendLevelChange(trackId, sendLevel);
+    }
   }, [sendLevel, onSendLevelChange, trackId, audioCtx]);
 
-  // Every frame:
+  // ────────────────────────────────────────────────────────────────────────────────
+  // 4) UPDATE “pan” in real time, but only when unassigned
+  // ────────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!meshRef?.current?.children?.[0] && stereoPannerRef.current) {
+      stereoPannerRef.current.pan.setValueAtTime(pan, audioCtx.currentTime);
+    }
+  }, [pan, audioCtx, meshRef]);
+
+  // ────────────────────────────────────────────────────────────────────────────────
+  // 5) If this is the “main” track, fire onMainEnded when it finishes
+  // ────────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const offset = Number.isFinite(pauseTime) ? pauseTime : playStartTime || 0;
+    if (isMain && buffer) {
+      const remaining = buffer.duration - offset;
+      const timeout = setTimeout(() => {
+        if (on && !paused) onMainEnded?.();
+      }, remaining * 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isMain, buffer, on, paused, playStartTime, pauseTime, onMainEnded]);
+
+  // ────────────────────────────────────────────────────────────────────────────────
+  // 6) Each frame: analyser + update positional location
+  // ────────────────────────────────────────────────────────────────────────────────
   useFrame(() => {
-    // 1) Analyser:
     if (analyserNode) {
       analyserNode.getByteFrequencyData(dataArray);
       const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
@@ -374,18 +340,11 @@ export default function Sound({
       onAnalysedLevel?.(level);
     }
 
-    // 2) If assigned (using PositionalAudio), advance its position automatically
+    // If assigned, update PositionalAudio’s position each frame
     if (meshRef?.current?.children?.[0] && threeAudioRef.current) {
       const pos = new THREE.Vector3();
       meshRef.current.children[0].getWorldPosition(pos);
       threeAudioRef.current.position.copy(pos);
-    }
-
-    // 3) If unassigned, update StereoPanner’s pan smoothly
-    if (!meshRef?.current?.children?.[0] && stereoPannerRef.current) {
-      const now = audioCtx.currentTime;
-      stereoPannerRef.current.pan.cancelScheduledValues(now);
-      stereoPannerRef.current.pan.linearRampToValueAtTime(pan, now + 0.02);
     }
   });
 
