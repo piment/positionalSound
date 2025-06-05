@@ -57,10 +57,11 @@ export default function Sound({
   // Notify parent that analyser is ready
   useEffect(() => {
     analyserRef.current = analyserNode;
-    if (typeof onAnalysedLevel === 'function') {
-      onAnalysedLevel(trackId, analyserNode);
+
+    if (typeof onAnalyserReady === 'function') {
+      onAnalyserReady(trackId, analyserNode);
     }
-  }, [analyserNode, onAnalysedLevel, trackId]);
+  }, [analyserNode, onAnalyserReady, trackId]);
 
   // Attach the listener to the camera once
   useEffect(() => {
@@ -338,6 +339,7 @@ threeAudio.getOutput().disconnect();
       const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
       const level = Math.min(1, Math.max(0, (avg / 255) * volume));
       onAnalysedLevel?.(level);
+      // console.log(level)
     }
 
     // If assigned, update PositionalAudio’s position each frame

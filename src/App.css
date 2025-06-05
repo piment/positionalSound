@@ -170,7 +170,7 @@ position: absolute;
   width: 240px;
   transform: translateX(-240px);
   transition: transform 0.3s ease-out;
-  z-index: 50;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -187,7 +187,7 @@ position: absolute;
   left: 100%;           /* hug the drawer’s right edge */
   top: 50%;            /* center in the viewport, not the drawer */
   /* transform: translateY(-50%); */
-  z-index: 100;
+  z-index: 150;
 
   width: 2rem;
   height: 4rem;
@@ -199,6 +199,10 @@ position: absolute;
   font-size: 1.2rem;
   line-height: 1;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  display: flex;
+  /* justify-content: space-around; */
+  padding: 1em 2em 1em 1em;
+  align-items: center;
 }
 
 

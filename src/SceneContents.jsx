@@ -1,5 +1,5 @@
 // SceneContents.jsx
-import React, { memo, useMemo } from 'react';
+import React, { memo, Suspense, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { ObjSound } from './ObjControls';
@@ -7,7 +7,7 @@ import EnvComp from './EnvComp';
 import { Controls } from './ObjControls';
 import Sound from './Sound';
 import FrequencySpectrum from './FrequencySpectrum';
-// … import your Amp/Mic components, etc. …
+
 
 export const SceneContents = memo(function SceneContents({
   meshes,
@@ -122,11 +122,11 @@ export const SceneContents = memo(function SceneContents({
           />
         );
       })}
-
+      <Suspense fallback={null}>
       <EnvComp
         playing={playing}
-        analyser={masterAnalyser /* pass if needed */}
-      />
+        analyser={masterAnalyser}
+      /></Suspense>
       <Controls />
       {/* {settings.  && (
         <FrequencySpectrum

@@ -11,7 +11,6 @@ import {
   setPan,
 } from './reducer/trackSettingsSlice';
 import ImportMenu from './ImportMenu';
-import { div } from 'three/examples/jsm/nodes/Nodes.js';
 import { Slider } from '@mui/material';
 import MeshIcon from './assets/3d-modeling.png';
 import {
@@ -29,10 +28,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-
-
-
-
 export function SortableTrackRow({
   track,
   settings,
@@ -45,7 +40,7 @@ export function SortableTrackRow({
   const dispatch = useDispatch();
   const [fxVisible, setFxVisible] = useState(null);
   const [assignVisible, setAssignVisible] = useState(null);
-
+  const [panVisible, setPanVisible] = useState(null);
   // useSortable gives us transform/transition and drag‐handle props
   const {
     attributes,
@@ -63,20 +58,21 @@ export function SortableTrackRow({
   };
 
   // Find current assignment
-function getAssignment(trackId) {
-  for (const [meshId, arr] of Object.entries(assignments)) {
-    if (arr.some((t) => t.id === trackId)) {
-      // If the key in `assignments` is the literal string "null", we want JS null
-      return meshId === 'null' ? null : meshId;
+  function getAssignment(trackId) {
+    for (const [meshId, arr] of Object.entries(assignments)) {
+      if (arr.some((t) => t.id === trackId)) {
+        // If the key in `assignments` is the literal string "null", we want JS null
+        return meshId === 'null' ? null : meshId;
+      }
     }
+    return null;
   }
-  return null;
-}
 
   const trackSettings = settings[track.id] || {};
   const isFxOpen = fxVisible === track.id;
-    const assignedMeshId = getAssignment(track.id);
-// console.log(assignedMeshId)
+  const assignedMeshId = getAssignment(track.id);
+  const isPanOpen = panVisible === track.id;
+  // console.log(assignedMeshId)
   return (
     <div
       ref={setNodeRef}
@@ -84,79 +80,65 @@ function getAssignment(trackId) {
       className={`track-strip ${isDragging ? 'dragging' : ''}`}
     >
       {/* ------ DRAG HANDLE PLACED AT TOP ------ */}
-   
 
       {/* ------ REST OF THE ROW CONTENT ------ */}
       <div
-        className="track-strip-inner"
+        className='track-strip-inner'
         style={{ backgroundColor: `${trackSettings.color || '#88ccff'}c0` }}
-      >   <div
-        className="drag-handle"
-        {...attributes}
-        {...listeners}
-        style={{ cursor: 'grab', padding: '4px', textAlign: 'center' }}
       >
-        ☰
-      </div>
-        <div className="slider-buttons">
+        {' '}
+        <div
+          className='drag-handle'
+          {...attributes}
+          {...listeners}
+          style={{ cursor: 'grab', padding: '4px', textAlign: 'center' }}
+        >
+          ☰
+        </div>
+        <div className='slider-buttons'>
           <Slider
-            orientation="vertical"
+            orientation='vertical'
             min={0}
             max={1}
             step={0.01}
             value={trackSettings.volume || 0}
- onChange={(e, value) => {
-
+            onChange={(e, value) => {
               // value is already a number
               dispatch(setVolume({ trackId: track.id, volume: value }));
             }}
-
-            className="track-slider"
+            className='track-slider'
           />
-          {assignedMeshId === null && (
-            <Slider
-              orientation="horizontal"
-              min={-1}
-              max={1}
-              step={0.01}
-              value={trackSettings.pan || 0}
-              onChange={(e, value) => dispatch(setPan({ trackId: track.id, pan: value }))}
-              className="track-pan-slider"
-              style={{ width: '6rem', margin: '0.5rem 0' }}
-            />
-          )}
-          {assignedMeshId !== null && (
-            <div
-              style={{
-                width: '6rem',
-                height: '2px',
-                margin: '0.5rem 0',
-                backgroundColor: '#f00',
-                opacity: 0.3,
-              }}
-            >
-              {/* Just an empty “disabled” bar to show no pan control */}
-            </div>
-          )}
-          <div className="buttons">
-            <button onClick={() => removeTrack(track.id)} id="delete">
+
+          <div className='buttons'>
+            <button onClick={() => removeTrack(track.id)} id='delete'>
               🗑
             </button>
-            <button onClick={() => setFxVisible(track.id)}>FX</button>
+                      <div className="button-wrapper">
+            <button id='fx'
+              onClick={() =>
+                !isFxOpen ? setFxVisible(track.id) : setFxVisible(null)
+              }
+            >
+              FX
+            </button>
             {isFxOpen && (
               <div
-                className="fx-panel"
-                onPointerLeave={() => setFxVisible(null)}
+                className={`fx-panel${fxVisible ? ' open' : ''}`}
+                onPointerLeave={() => {
+                  setTimeout(() => setFxVisible(null), 1000);
+                }}
               >
                 <Slider
-                  orientation="vertical"
+                  orientation='vertical'
                   min={0}
                   max={1}
                   step={0.01}
                   value={trackSettings.sendLevel || 0}
-                 onChange={(e, value) =>
-  dispatch(setSendLevel({ trackId: track.id, sendLevel: value }))
-}
+                  onChange={(e, value) =>
+                    dispatch(
+                      setSendLevel({ trackId: track.id, sendLevel: value })
+                    )
+                  }
                   style={{ height: 100 }}
                 />
                 <div style={{ fontSize: '0.7em', textAlign: 'center' }}>
@@ -164,18 +146,19 @@ function getAssignment(trackId) {
                 </div>
               </div>
             )}
+            </div>
 
             <button onClick={() => setAssignVisible(track.id)}>
               <img
                 src={MeshIcon}
-                alt="mesh icon"
-                className="mesh-icon"
+                alt='mesh icon'
+                className='mesh-icon'
                 style={{ width: '1em', height: '1em' }}
               />
             </button>
             {assignVisible === track.id && (
               <div
-                className="assign-panel"
+                className='assign-panel'
                 onPointerLeave={() => setAssignVisible(null)}
                 style={{ position: 'absolute', zIndex: 10 }}
               >
@@ -188,7 +171,7 @@ function getAssignment(trackId) {
                     setAssignVisible(null);
                   }}
                 >
-                  <option value="null">Unassigned</option>
+                  <option value='null'>Unassigned</option>
                   {meshes.map((meshObj) => (
                     <option key={meshObj.id} value={meshObj.id}>
                       {meshObj.name}
@@ -197,17 +180,58 @@ function getAssignment(trackId) {
                 </select>
               </div>
             )}
+
+                      <div className="button-wrapper">
+            <button
+            id='pan'
+              onClick={() =>
+                !isPanOpen ? setPanVisible(track.id) : setPanVisible(null)
+              }
+            >
+              L-R
+            </button>
+            {isPanOpen && (
+              <div   className={`pan-panel${panVisible && assignedMeshId === null ? ' open' : ''}`}>
+                {assignedMeshId === null && (
+                  <Slider
+                    orientation='horizontal'
+                    min={-1}
+                    max={1}
+                    step={0.01}
+                    value={trackSettings.pan || 0}
+                    onChange={(_, value) =>
+                      dispatch(setPan({ trackId: track.id, pan: value }))
+                    }
+                    onPointerLeave={() => {
+                      setTimeout(() => setPanVisible(null), 2000);
+                    }}
+                    className='track-pan-slider'
+                    style={{ width: '6rem', margin: '0.5rem 0' }}
+                  />
+                )}
+                {assignedMeshId !== null && (
+                  <div
+                    style={{
+                      width: '1rem',
+                      height: '2px',
+                      margin: '0.5rem 0',
+                      backgroundColor: '#f00',
+                      opacity: 0.3,
+                    }}
+                  >
+                    {/* Disabled placeholder bar */}
+                  </div>
+                )}
+              </div>
+            )}</div>
           </div>
         </div>
-
         <input
-          type="color"
-          className="track-color"
+          type='color'
+          className='track-color'
           value={trackSettings.color || '#88ccff'}
           onChange={(e) =>
-            dispatch(
-              setColor({ trackId: track.id, color: e.target.value })
-            )
+            dispatch(setColor({ trackId: track.id, color: e.target.value }))
           }
         />
         {/* <input
@@ -218,7 +242,7 @@ function getAssignment(trackId) {
             dispatch(toggleVisibility(track.id))
           }
         /> */}
-        <div className="track-name">{track.name}</div>
+        <div className='track-name'>{track.name}</div>
       </div>
     </div>
   );
@@ -286,22 +310,22 @@ export default function TrackConsole({
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="track-list-static">
+        <div className='track-list-static'>
           {trackList.map((track) => {
             const trackSettings = settings[track.id] || {};
-          
+
             const isFxOpen = fxVisible === track.id;
             return (
               <div
                 key={track.id}
-                className="track-strip"
+                className='track-strip'
                 style={{
                   backgroundColor: `${trackSettings.color || '#88ccff'}c0`,
                 }}
               >
-                <div className="slider-buttons">
+                <div className='slider-buttons'>
                   <Slider
-                    orientation="vertical"
+                    orientation='vertical'
                     min={0}
                     max={1}
                     step={0.01}
@@ -311,20 +335,22 @@ export default function TrackConsole({
                         volume: parseFloat(e.target.value),
                       })
                     }
-                    className="track-slider"
+                    className='track-slider'
                   />
-                  <div className="buttons">
-                    <button onClick={() => removeTrack(track.id)} id="delete">
+                  <div className='buttons'>
+                    <button onClick={() => removeTrack(track.id)} id='delete'>
                       🗑
                     </button>
                     <button onClick={() => setFxVisible(track.id)}>FX</button>{' '}
                     {isFxOpen && (
                       <div
-                        className="fx-panel"
-                        onPointerLeave={() => setFxVisible(null)}
+                        className='fx-panel'
+                        onPointerLeave={() => {
+                          setTimeout(() => setFxVisible(null), 3000);
+                        }}
                       >
                         <Slider
-                          orientation="vertical"
+                          orientation='vertical'
                           min={0}
                           max={1}
                           step={0.01}
@@ -336,25 +362,21 @@ export default function TrackConsole({
                           }
                           style={{ height: 100 }}
                         />
-                        <div
-                          style={{ fontSize: '0.7em', textAlign: 'center' }}
-                        >
+                        <div style={{ fontSize: '0.7em', textAlign: 'center' }}>
                           Send
                         </div>
                       </div>
                     )}
-
                     <button onClick={() => setAssignVisible(track.id)}>
                       <img
                         src={MeshIcon}
-                        alt="mesh icon"
-                        className="mesh-icon"
+                        alt='mesh icon'
+                        className='mesh-icon'
                       />
                     </button>
-
                     {assignVisible === track.id && (
                       <div
-                        className="assign-panel"
+                        className='assign-panel'
                         onPointerLeave={() => setAssignVisible(null)}
                         style={{ position: 'absolute', zIndex: 10 }}
                       >
@@ -363,7 +385,8 @@ export default function TrackConsole({
                             for (const [meshId, arr] of Object.entries(
                               assignments
                             )) {
-                              if (arr.some((t) => t.id === track.id)) return meshId;
+                              if (arr.some((t) => t.id === track.id))
+                                return meshId;
                             }
                             return '';
                           })()}
@@ -374,7 +397,7 @@ export default function TrackConsole({
                             setAssignVisible(null);
                           }}
                         >
-                          <option value="null">Unassigned</option>
+                          <option value='null'>Unassigned</option>
                           {meshes.map((meshObj) => (
                             <option key={meshObj.id} value={meshObj.id}>
                               {meshObj.name}
@@ -387,8 +410,8 @@ export default function TrackConsole({
                 </div>
 
                 <input
-                  type="color"
-                  className="track-color"
+                  type='color'
+                  className='track-color'
                   value={trackSettings.color || '#88ccff'}
                   onChange={(e) =>
                     dispatch(
@@ -397,14 +420,12 @@ export default function TrackConsole({
                   }
                 />
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={trackSettings.visible || false}
-                  className="track-visible"
-                  onChange={() =>
-                    dispatch(toggleVisibility(track.id))
-                  }
+                  className='track-visible'
+                  onChange={() => dispatch(toggleVisibility(track.id))}
                 />
-                <div className="track-name">{track.name}</div>
+                <div className='track-name'>{track.name}</div>
               </div>
             );
           })}
@@ -413,7 +434,7 @@ export default function TrackConsole({
 
       {trackList.length === 0 && <div>No track yet</div>}
 
-      <div className="import">
+      <div className='import'>
         <ImportMenu onAdd={onAdd} onAutoAssign={onAutoAssign} />
       </div>
     </div>

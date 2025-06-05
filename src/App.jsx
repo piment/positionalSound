@@ -68,7 +68,7 @@ const COMPONENTS = {
   Overheads: Overheads,
   Guitar: GuitarAmp,
   Bass: BassSVTAmp,
-  Vocals : Micro
+  Vocals: Micro,
 };
 
 const STORAGE_KEYS = {
@@ -98,7 +98,7 @@ export default function App() {
   const mode = useSelector((state) => state.viewMode);
 
   const [consoleOpen, setConsoleOpen] = useState(false);
-  const [spawnerOpen, setSpawnerOpen] = useState(false)
+  const [spawnerOpen, setSpawnerOpen] = useState(false);
 
   const [playing, setPlaying] = useState(false);
   const [playOffset, setPlayOffset] = useState(0);
@@ -294,10 +294,10 @@ export default function App() {
           t.name.toLowerCase().includes(key.toLowerCase())
         );
 
-       if (!match || !meshBuckets[match]?.length) {
-    next['null'] = [...(next['null'] || []), t];
-    return;
-  }
+        if (!match || !meshBuckets[match]?.length) {
+          next['null'] = [...(next['null'] || []), t];
+          return;
+        }
         const candidates = meshBuckets[match];
         const idx = assignedPerType[match] || 0;
         const meshId = candidates[idx % candidates.length];
@@ -365,34 +365,34 @@ export default function App() {
     }
   }
   function clearSession() {
-       trackList.forEach((track) => {
+    trackList.forEach((track) => {
       dispatch(removeTrack(track.id));
     });
     localStorage.removeItem(STORAGE_KEYS.meshes);
     setTrackList([]);
-    setAssignments({ null: [] })
+    setAssignments({ null: [] });
     setMeshes([]);
     stopAll();
     clearAllBuffers();
   }
- const duration = useMemo(() => {
+  const duration = useMemo(() => {
     const main = trackList.find((t) => t.id === mainTrackId);
     return main?.buffer?.duration || 0;
   }, [mainTrackId, trackList]);
 
-const [currentTime, setCurrentTime] = useState(0);
-useEffect(() => {
-  let raf;
-  function updateTime() {
-    if (playing) {
-      const elapsed = audioCtx.currentTime - playOffset;
-      setCurrentTime(Math.min(elapsed, duration));
+  const [currentTime, setCurrentTime] = useState(0);
+  useEffect(() => {
+    let raf;
+    function updateTime() {
+      if (playing) {
+        const elapsed = audioCtx.currentTime - playOffset;
+        setCurrentTime(Math.min(elapsed, duration));
+      }
+      raf = requestAnimationFrame(updateTime);
     }
     raf = requestAnimationFrame(updateTime);
-  }
-  raf = requestAnimationFrame(updateTime);
-  return () => cancelAnimationFrame(raf);
-}, [playing, playOffset, audioCtx, duration]);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, playOffset, audioCtx, duration]);
 
   const handleVolumeChange = useCallback((trackId, newVol) => {
     dispatch(setVolume({ trackId, volume: newVol }));
@@ -456,12 +456,11 @@ useEffect(() => {
     });
   }
 
-const onNodeReady = useCallback((trackId, node) => {
-  // if there was an old node, stop it
-  activeNodesRef.current[trackId]?.stop?.();
-  activeNodesRef.current[trackId] = node;
-}, []);
-
+  const onNodeReady = useCallback((trackId, node) => {
+    // if there was an old node, stop it
+    activeNodesRef.current[trackId]?.stop?.();
+    activeNodesRef.current[trackId] = node;
+  }, []);
 
   const onReorderTracks = useCallback(({ active, over }) => {
     if (!over) return;
@@ -475,61 +474,59 @@ const onNodeReady = useCallback((trackId, node) => {
     });
   }, []);
 
+  const canvasProps = useMemo(
+    () => ({
+      meshes,
+      assignments,
+      settings,
+      listener,
+      convolver,
+      masterTapGain,
+      masterAnalyser,
+      handleAnalyserReady,
+      handleVolumeChange,
+      playing,
+      playOffset,
+      pauseTime,
+      setPlayOffset,
+      setPauseTime,
+      setPlaying,
+      mainTrackId,
+      removeMesh,
+      sceneState,
+      sourcesForFloor,
+      updateTrack,
+      trackList,
+      components: COMPONENTS,
+      onNodeReady,
+    }),
+    [
+      meshes,
+      assignments,
+      settings,
+      listener,
+      convolver,
+      masterTapGain,
+      masterAnalyser,
+      handleAnalyserReady,
+      handleVolumeChange,
+      playing,
+      playOffset,
+      pauseTime,
+      setPlayOffset,
+      setPauseTime,
+      setPlaying,
+      mainTrackId,
+      removeMesh,
+      sceneState,
+      sourcesForFloor,
+      updateTrack,
+      trackList,
+      onNodeReady,
+    ]
+  );
 
-const canvasProps = useMemo(
-  () => ({
-    meshes,
-    assignments,
-    settings,
-    listener,
-    convolver,
-    masterTapGain,
-    masterAnalyser,
-    handleAnalyserReady,
-    handleVolumeChange,
-    playing,
-    playOffset,
-    pauseTime,
-    setPlayOffset,    
-    setPauseTime,     
-    setPlaying,       
-    mainTrackId,
-    removeMesh,
-    sceneState,
-    sourcesForFloor,
-    updateTrack,
-    trackList,
-    components: COMPONENTS,
-    onNodeReady,     
-  }),
-  [
-    meshes,
-    assignments,
-    settings,
-    listener,
-    convolver,
-    masterTapGain,
-    masterAnalyser,
-    handleAnalyserReady,
-    handleVolumeChange,
-    playing,
-    playOffset,
-    pauseTime,
-    setPlayOffset,
-    setPauseTime,
-    setPlaying,
-    mainTrackId,
-    removeMesh,
-    sceneState,
-    sourcesForFloor,
-    updateTrack,
-    trackList,
-    onNodeReady,
-  ]
-);
-
-
-    const memoizedCanvas = useMemo(
+  const memoizedCanvas = useMemo(
     () => (
       <Canvas
         camera={{ position: [10, 5, 20], fov: 35 }}
@@ -553,7 +550,7 @@ const canvasProps = useMemo(
              Canvas root won't re‐render unless canvasProps changes.
         */}
         <SceneContents {...canvasProps} />
-        <Perf 
+        <Perf
         // deepAnalyze={true}
         />
       </Canvas>
@@ -636,24 +633,24 @@ const canvasProps = useMemo(
         </div>
         </div> 
         */}
-            <PlayController
-      playAll={playAll}
-      pauseAll={pauseAll}
-      stopAll={stopAll}
-      clearSession={clearSession}
-      busLevel={busLevel}
-      setBusLevel={setBusLevel}
-      duration={duration}
-      currentTime={currentTime}
-      playing={playing}
-    />
+        <PlayController
+          playAll={playAll}
+          pauseAll={pauseAll}
+          stopAll={stopAll}
+          clearSession={clearSession}
+          busLevel={busLevel}
+          setBusLevel={setBusLevel}
+          duration={duration}
+          currentTime={currentTime}
+          playing={playing}
+        />
       </div>
       {/* Left: Parts palette */}
       {/* <div
         style={{ width: 200, borderRight: '1px solid #333' }}
         className='panel-left'
       > */}
-        {/* <input
+      {/* <input
   type="range"
   min={0}
   max={Math.max(...trackList.map(t => t.buffer?.duration || 0))}
@@ -672,7 +669,7 @@ const canvasProps = useMemo(
 }}
 
 /> */}
-        {/* {Object.keys(COMPONENTS).map((part) => (
+      {/* {Object.keys(COMPONENTS).map((part) => (
           <button
             key={part}
             // disabled={meshes.includes(part)}
@@ -683,38 +680,35 @@ const canvasProps = useMemo(
           </button>
         ))}
       </div> */}
-      <div    className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
-
-
+      <div
+        className={`spawner-container ${spawnerOpen ? 'open' : ''}`}
+        // onPointerLeave={setTimeout(() => {
+        //   setSpawnerOpen(false);
+        // }, 3000)}
+      >
         <button
-          className="spawner-toggle"
+          className='spawner-toggle'
           onClick={() => setSpawnerOpen((v) => !v)}
-          >
+        >
           {spawnerOpen ? '×' : '☰'}
         </button>
 
         <MeshSpawner
-        className={`mesh-spawner ${spawnerOpen ? 'open' : ''}`}
+          className={`mesh-spawner ${spawnerOpen ? 'open' : ''}`}
           components={COMPONENTS}
           meshes={meshes}
           addMesh={addMesh}
-          />
-        
+        />
       </div>
-
-    
 
       {/* Center: 3D canvas */}
-     <div className="canvas-main">
-        {memoizedCanvas}
-      </div>
+      <div className='canvas-main'>{memoizedCanvas}</div>
 
       <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
         >
-          {/* {consoleOpen ? '▼' : '▲'} */}
           <RxMixerVertical size={24} />
         </button>
         <TrackConsole
@@ -731,7 +725,7 @@ const canvasProps = useMemo(
           removeTrack={removeTrackById}
           meshes={meshes}
           toggleAssign={toggleAssign}
-            isReorderable={true}
+          isReorderable={true}
           onReorder={onReorderTracks}
         />
       </div>

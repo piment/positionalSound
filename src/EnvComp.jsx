@@ -1,8 +1,5 @@
 import {
-  CameraShake,
   Environment,
-  MeshReflectorMaterial,
-  Sparkles,
   useTexture,
 } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -43,7 +40,7 @@ function EnvComp({ playing, analyser }) {
         metalnessMap: floorRough,
         // aoMap: floorDif,
         // aoMapIntensity: .8
-      })
+      }),
   );
 
   useEffect(() => {
@@ -88,7 +85,7 @@ function EnvComp({ playing, analyser }) {
         {/* <meshStandardMaterial color={"#050505"} roughness={.81}  metalness={.1}/> */}
       </mesh>
       <LightBars count={24} radius={120} analyser={analyser} />
-      {/* <Environment files='adamsbridge.hdr' /> */}
+      <Environment files='adamsbridge.hdr' environmentIntensity={.1}/>
     </>
   );
 }
