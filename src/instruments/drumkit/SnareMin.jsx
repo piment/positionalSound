@@ -14,7 +14,7 @@ export const Snare = forwardRef((props, ref) => {
             //  useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
              
   return (
-    <group {...props} dispose={null}>
+    <group {...props} dispose={null} position={[0,0,-3]}>
       <group position={[0.433, 0.63, -0.519]}>
       <group {...props} dispose={null}>
       <mesh

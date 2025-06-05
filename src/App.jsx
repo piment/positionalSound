@@ -18,11 +18,13 @@ import Sound from './Sound';
 import { Kick } from './instruments/drumkit/Kick';
 import { Snare } from './instruments/drumkit/SnareMin';
 import { Hihat } from './instruments/drumkit/Hihat';
+import { HihatMin } from './instruments/drumkit/HihatMin';
 import { HiTom } from './instruments/drumkit/HiTom';
 import { MidTom } from './instruments/drumkit/MidTom';
 import { FloorTom } from './instruments/drumkit/FloorTom';
 import { Crash } from './instruments/drumkit/Crash';
 import { Ride } from './instruments/drumkit/Ride';
+import { RideMin } from './instruments/drumkit/RideMin';
 import { Overheads } from './instruments/drumkit/Overheads';
 import { BassSVTAmp } from './instruments/amps/BassSVTAmp';
 import { GuitarAmp } from './instruments/amps/GuitarAmp';
@@ -59,12 +61,12 @@ import PlayController from './PlayController';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
-  Hihat: Hihat,
+  Hihat: HihatMin,
   HiTom: HiTom,
   MidTom: MidTom,
   FloorTom: FloorTom,
   Crash: Crash,
-  Ride: Ride,
+  Ride: RideMin,
   Overheads: Overheads,
   Guitar: GuitarAmp,
   Bass: BassSVTAmp,
@@ -534,6 +536,7 @@ export default function App() {
         shadows
         gl={{
           antialias: true,
+           preserveDrawingBuffer: true,
         }}
         onCreated={({ gl }) => {
           gl.shadowMap.enabled = true;

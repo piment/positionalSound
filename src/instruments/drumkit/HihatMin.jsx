@@ -1,9 +1,10 @@
-import React, { forwardRef, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
-import { drumkit } from './drumkitMaterials'
-export const Crash = forwardRef((props, ref) => {
-  const { nodes, materials } = useGLTF('/drumkit/Crash.glb')
-        const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
+import React, { forwardRef, useMemo, useRef } from 'react';
+import { useGLTF, useTexture } from '@react-three/drei';
+import { drumkit } from './drumkitMaterials';
+import * as THREE from 'three';
+export const HihatMin = forwardRef((props, ref) => {
+  const { nodes, materials } = useGLTF('/drumkit/HihatMin.glb');
+
   const [cymEmissiveMap, cymNormalMap] = useTexture([
     '/drumkit/textures/cym_EmissiveMap.png',
     '/drumkit/textures/cym_normals.png',
@@ -28,36 +29,41 @@ export const Crash = forwardRef((props, ref) => {
       emissiveIntensity: 0,
     });
   }, [cymNormalMap, cymEmissiveMap]);
+  const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
+  //  const cymMat = useMemo(()=> new THREE.MeshStandardMaterial({normalMap: cymNorm, emissiveMap: cymEmissive}),[])
   return (
-    <group {...props} dispose={null} position={[0,0,-3]}>
-      <group position={[0.526, 0.475, -0.214]}>
+    <group {...props} dispose={null} position={[0, 0, -3]}>
+      <group position={[0.63, 0.378, -0.798]}>
         <mesh
           castShadow
           receiveShadow
-          geometry={nodes.Circle044.geometry}
-         material={metalMat}
+          geometry={nodes.Circle001.geometry}
+          material={metalMat}
         />
         <mesh
+          // visible={false}
           castShadow
           receiveShadow
-          geometry={nodes.Circle044_1.geometry}
+          geometry={nodes.Circle001_1.geometry}
+          //  material={cymMat}
           material={metalMat}
         />
         <mesh
           castShadow
           receiveShadow
-          geometry={nodes.Circle044_2.geometry}
-         material={metalMat}
+          geometry={nodes.Circle001_2.geometry}
+          material={cymbalMaterial}
+          // material-color={'red'}
         />
         <mesh
           castShadow
           receiveShadow
-          geometry={nodes.Circle044_3.geometry}
-          material={nodes.Circle044_3.material}
+          geometry={nodes.Circle001_3.geometry}
+          material={metalMat}
         />
       </group>
     </group>
-  )
-})
+  );
+});
 
-useGLTF.preload('/drumkit/Crash.glb')
+useGLTF.preload('/drumkit/HihatMin.glb');
