@@ -31,7 +31,7 @@ export const Kick = forwardRef((props, ref) => {
           castShadow
           receiveShadow
           geometry={nodes.Circle053_2.geometry}
-          //  material={metalMat}
+           material={metalMat}
         />
         <mesh
           castShadow

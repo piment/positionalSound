@@ -2,6 +2,7 @@ import React, { forwardRef, useMemo, useRef } from 'react';
 import { useGLTF, useTexture } from '@react-three/drei';
 import { drumkit } from './drumkitMaterials';
 import * as THREE from 'three';
+import { useLoader } from '@react-three/fiber';
 export const HihatMin = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/drumkit/HihatMin.glb');
 
@@ -9,15 +10,6 @@ export const HihatMin = forwardRef((props, ref) => {
     '/drumkit/textures/cym_EmissiveMap.png',
     '/drumkit/textures/cym_normals.png',
   ]);
-  useMemo(() => {
-    if (cymNormalMap) {
-      cymNormalMap.flipY = false;
-      cymNormalMap.encoding = THREE.LinearEncoding;
-    }
-    if (cymEmissiveMap) {
-      cymEmissiveMap.encoding = THREE.sRGBEncoding;
-    }
-  }, [cymNormalMap, cymEmissiveMap]);
   const cymbalMaterial = useMemo(() => {
     return new THREE.MeshStandardMaterial({
       color: '#e8cc95', // a base diffuse color
@@ -27,10 +19,11 @@ export const HihatMin = forwardRef((props, ref) => {
       emissive: new THREE.Color(0xe8cc95),
       emissiveMap: cymEmissiveMap || null,
       emissiveIntensity: 0,
+      name: 'cymbalMat'
     });
   }, [cymNormalMap, cymEmissiveMap]);
   const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
-  //  const cymMat = useMemo(()=> new THREE.MeshStandardMaterial({normalMap: cymNorm, emissiveMap: cymEmissive}),[])
+  const padMat  = useMemo(() => drumkit.padMat.clone(), []);
   return (
     <group {...props} dispose={null} position={[0, 0, -3]}>
       <group position={[0.63, 0.378, -0.798]}>

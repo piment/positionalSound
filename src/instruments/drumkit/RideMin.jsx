@@ -1,23 +1,17 @@
 
 import React, { forwardRef, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useTexture } from '@react-three/drei'
 import { drumkit } from './drumkitMaterials'
+import * as THREE from 'three'
 export const RideMin = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/drumkit/RideMin.glb')
         const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
+        const padMat  = useMemo(() => drumkit.padMat.clone(), []);
   const [cymEmissiveMap, cymNormalMap] = useTexture([
     '/drumkit/textures/cym_EmissiveMap.png',
     '/drumkit/textures/cym_normals.png',
   ]);
-  useMemo(() => {
-    if (cymNormalMap) {
-      cymNormalMap.flipY = false;
-      cymNormalMap.encoding = THREE.LinearEncoding;
-    }
-    if (cymEmissiveMap) {
-      cymEmissiveMap.encoding = THREE.sRGBEncoding;
-    }
-  }, [cymNormalMap, cymEmissiveMap]);
+
   const cymbalMaterial = useMemo(() => {
     return new THREE.MeshStandardMaterial({
       color: '#e8cc95', // a base diffuse color
@@ -27,6 +21,7 @@ export const RideMin = forwardRef((props, ref) => {
       emissive: new THREE.Color(0xe8cc95),
       emissiveMap: cymEmissiveMap || null,
       emissiveIntensity: 0,
+       name: 'cymbalMat'
     });
   }, [cymNormalMap, cymEmissiveMap]);
   return (
@@ -42,7 +37,7 @@ export const RideMin = forwardRef((props, ref) => {
           castShadow
           receiveShadow
           geometry={nodes.Circle003_1.geometry}
-          material={nodes.Circle003_1.material}
+       material={padMat}
         />
         <mesh
           castShadow
@@ -54,7 +49,7 @@ export const RideMin = forwardRef((props, ref) => {
           castShadow
           receiveShadow
           geometry={nodes.Circle003_3.geometry}
-          material={nodes.Circle003_3.material}
+          material={cymbalMaterial}
         />
       </group>
     </group>

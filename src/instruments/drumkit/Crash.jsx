@@ -1,6 +1,7 @@
 import React, { forwardRef, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useTexture } from '@react-three/drei'
 import { drumkit } from './drumkitMaterials'
+import * as THREE from 'three'
 export const Crash = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/drumkit/Crash.glb')
         const metalMat = useMemo(() => drumkit.metalMat.clone(), []);
@@ -26,6 +27,7 @@ export const Crash = forwardRef((props, ref) => {
       emissive: new THREE.Color(0xe8cc95),
       emissiveMap: cymEmissiveMap || null,
       emissiveIntensity: 0,
+       name: 'cymbalMat'
     });
   }, [cymNormalMap, cymEmissiveMap]);
   return (
@@ -53,7 +55,7 @@ export const Crash = forwardRef((props, ref) => {
           castShadow
           receiveShadow
           geometry={nodes.Circle044_3.geometry}
-          material={nodes.Circle044_3.material}
+          material={cymbalMaterial}
         />
       </group>
     </group>
