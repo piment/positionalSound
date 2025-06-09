@@ -11,7 +11,7 @@ export const Overheads = forwardRef((props, ref) => {
 
   return (
     <group {...props} dispose={null} scale={1.5}>
-      <group position={[0, -.015, -0.25]}>
+      <group position={[0, -.015, -2.35]}>
  
         <mesh
           castShadow

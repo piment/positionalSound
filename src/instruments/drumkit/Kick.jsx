@@ -11,7 +11,7 @@ export const Kick = forwardRef((props, ref) => {
         const lightRef   = useRef()
         //  useHelper(lightRef, THREE.PointLightHelper, 0.5, 'hotpink')
   return (
-    <group {...props} dispose={null}>
+    <group {...props} dispose={null} position={[0,0,-3]}>
       <group position={[-0.002, 0.294, 0.013]}>
         <mesh
           castShadow
@@ -31,7 +31,7 @@ export const Kick = forwardRef((props, ref) => {
           castShadow
           receiveShadow
           geometry={nodes.Circle053_2.geometry}
-          //  material={metalMat}
+           material={metalMat}
         />
         <mesh
           castShadow

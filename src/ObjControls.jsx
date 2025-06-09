@@ -125,10 +125,11 @@ export function ObjSound({
     if (!outerRef.current) return;
     const arr = [];
     outerRef.current.traverse((obj) => {
-      if (obj.isPointLight) arr.push(obj);
+      if (obj.isLight ) arr.push(obj);
     });
     setLights(arr);
   }, []);
+
 
   // cache pad-material meshes once after mount
   const [padMeshes, setPadMeshes] = useState([]);
@@ -143,14 +144,22 @@ export function ObjSound({
     setPadMeshes(arr);
   }, []);
 
-
+  const [cymbalMeshes, setCymbalMeshes] = useState([]);
+  useEffect(() => {
+    if (!outerRef.current) return;
+    const arr = [];
+    outerRef.current.traverse(obj => {
+      if (obj.isMesh && obj.material.name === 'cymbalMat') arr.push(obj);
+    });
+    setCymbalMeshes(arr);
+  }, []);
 
 
 
   
   // every frame, use playLevel (a number!) to drive emissive
   useFrame((_, delta) => {
-    if (!padMeshes.length && lights.length === 0) return;
+    if (!padMeshes.length && !cymbalMeshes.length && lights.length === 0) return;
 
     // Optionally boost low/mid levels
     const boosted = Math.sqrt(smoothRef.current); // sqrt gives more punch on quieter sounds
@@ -171,7 +180,7 @@ export function ObjSound({
 
     // Map 0→1 into 0→maxIntensity
     const intensity = THREE.MathUtils.lerp(2.52, 5, smoothRef.current);
-
+// console.log(intensity)
     padMeshes.forEach((m) => {
       // set to zero when smoothRef is zero → totally dark
       const hex = visibleMap[meshTrackId]?.color;
@@ -194,6 +203,12 @@ export function ObjSound({
       if (!visibleMap) return;
       const hex = visibleMap[meshTrackId]?.color || '#ffffff';
       light.color.set(hex);
+    });
+    cymbalMeshes.forEach(m => {
+      // scale 0 → 3 feels about right; tweak to taste
+      m.material.emissiveIntensity = THREE.MathUtils.lerp(0, 50, smoothRef.current/2);
+
+      // don’t touch m.material.emissive!  The map already modulates it.
     });
   });
 

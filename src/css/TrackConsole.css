@@ -19,16 +19,20 @@
   height: 30vh;
 } */
 
+.track-strip{
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
 
-
-.track-strip {
+.track-strip-inner {
   display: flex;
   flex-direction: column;
   /* align-items: center; */
   justify-content: space-around;
   margin:  2px;
-  padding: .5em 0;
-  min-width:5%;
+  /* padding: .5em 0; */
+  min-width:fit-content;
   height: 90%;
   color: #eee;
   border-radius: 6px;
@@ -40,7 +44,7 @@
   flex-direction:  row;
 height: inherit;
 width: 80%;
-margin: auto;
+/* margin: auto; */
 /* background-color: red; */
 justify-content: space-around;
 
@@ -56,14 +60,20 @@ justify-content: space-around;
   
 }
 
-.slider-buttons > .buttons > button{
+.slider-buttons > .buttons > button , .slider-buttons > .buttons > .button-wrapper > button{
     display: flex;
   align-items: center;
   justify-content: space-around;
-  /* width: 12px; */
+  width: 2rem;
   /* height: 12px; */
   padding: 0.2em;
+    box-shadow: rgba(0, 0, 0, 0.521) 0 1px 2px 1px,
+ rgba(116, 116, 116, 0.671) 0 2px 3px 2px;
   /* display: none; */
+}
+
+.slider-buttons > .buttons > button:focus{
+  outline: none;
 }
 
 .mesh-icon{
@@ -81,7 +91,10 @@ justify-content: space-around;
   margin-bottom: 6px;
   /* height: 80px; */
   overflow: hidden;
+
+
   text-align: center;
+  width: 13ch;
 }
 
 
@@ -105,4 +118,91 @@ justify-content: space-around;
   /* background-color: aqua; */
   height: 80%;
  margin-left: 2em;
+ border: rgba(245, 245, 245, 0.315) solid 2px ;
+ border-radius: 12px;
+}
+
+.drag-handle {
+  /* position: fixed; */
+  /* background-color: aqua; */
+  cursor: grab;
+  margin-top: 0;
+  top: 0
+  /* height: 6px; */
+  /* margin-right: 8px; */
+}
+/* ------------------------------------------------------------------------
+   Container for each “button + floating panel” pair
+   ------------------------------------------------------------------------ */
+.button-wrapper {
+  position: relative;
+  display: inline-block; /* so that children can be absolutely positioned */
+}
+
+/* ------------------------------------------------------------------------
+   FX slider panel: appears to the right of its button, centered vertically
+   ------------------------------------------------------------------------ */
+.fx-panel {
+  position: absolute;
+  left: 100%;                   /* immediately to the right of button */
+  top: 50%;                     /* vertical center */
+  transform-origin: left center;
+  transform: translateY(-50%) scaleY(0);
+  /* start collapsed (scaleY=0) and vertically centered */
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  opacity: 0;
+  background: #222;
+  padding: 0.4rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+/* When “.open” is present, un-collapse */
+.fx-panel.open {
+  transform: translateY(-50%) scaleY(1);
+  opacity: 1;
+}
+
+/* The vertical thumb in the FX panel */
+.fx-panel .MuiSlider-root {
+  height: 6rem; /* make it taller if desired */
+}
+
+/* ------------------------------------------------------------------------
+   Pan (L-R) slider panel: appears above its button, horizontally centered
+   ------------------------------------------------------------------------ */
+.pan-panel {
+  position: absolute;
+  bottom: 100%;                 /* immediately above the button */
+  left: 50%;                    /* start at horizontal center of button */
+  transform-origin: bottom center;
+  transform: translateX(-50%) scaleY(0);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  opacity: 0;
+  background: #222;
+  padding: 0.4rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+/* Show when open */
+.pan-panel.open {
+  transform: translateX(-50%) scaleY(1);
+  opacity: 1;
+  height: 2em;
+  display: flex;
+  align-items: center;
+}
+
+/* The horizontal thumb in the pan panel */
+.pan-panel .MuiSlider-root {
+  width: 6rem; /* adjust width as you like */
+}
+
+
+
+#fx , #pan{
+  font-size: 12px;
 }

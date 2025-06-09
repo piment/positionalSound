@@ -8,7 +8,7 @@ export const HiTom = forwardRef((props, ref) => {
       const padMat  = useMemo(() => drumkit.padMat.clone(), []);
         const woodMat  = useMemo(() => drumkit.woodMat.clone(), []);
   return (
-    <group {...props} dispose={null}>
+    <group {...props} dispose={null} position={[0,0,-3]}>
       <group position={[0.139, 0.831, -0.287]}>
         <mesh
           castShadow
