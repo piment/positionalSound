@@ -183,7 +183,7 @@ export function SortableTrackRow({
 
                       <div className="button-wrapper">
             <button
-            id='pan'
+            className={`pan ${assignedMeshId === null ? '' : 'disabled'}`}
               onClick={() =>
                 !isPanOpen ? setPanVisible(track.id) : setPanVisible(null)
               }

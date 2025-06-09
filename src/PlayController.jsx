@@ -1,7 +1,7 @@
 // PlayController.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import './css/PlayController.css';
-
+import { RxPause, RxPlay, RxStop } from "react-icons/rx";
 export default function PlayController({
   playAll,
   pauseAll,
@@ -25,24 +25,11 @@ export default function PlayController({
     setProgress(pct);
   }, [currentTime, duration]);
 
-  return (
-    <div className="play-controller-container">
-      <div className="button-row">
-        <button onClick={playAll} className="ctrl-btn">
-          ▶️
-        </button>
-        <button onClick={pauseAll} className="ctrl-btn">
-          ⏸
-        </button>
-        <button onClick={stopAll} className="ctrl-btn">
-          ⏹
-        </button>
-        <button onClick={clearSession} className="ctrl-btn clear-btn">
-          ✖️ Clear
-        </button>
-      </div>
-
-      <div className="reverb-row">
+  return (  
+    
+   <div className="play-controller-container"> 
+  
+    <div className="reverb-row">
         <label htmlFor="bus-slider" className="reverb-label">
           Reverb Bus Level
         </label>
@@ -57,6 +44,33 @@ export default function PlayController({
           className="reverb-slider"
         />
       </div>
+     
+  
+
+      <div className="player-main">
+
+      <div className="button-row">
+        <div className='play-btns'>
+
+        <button onClick={playAll} className="ctrl-btn">
+       <RxPlay />
+        </button>
+        <button onClick={pauseAll} className="ctrl-btn">
+         <RxPause />
+        </button>
+        <button onClick={stopAll} className="ctrl-btn">
+         <RxStop />
+        </button>
+        </div>
+        <div className='clear-btn-wrap'>
+
+        <button onClick={clearSession} className="ctrl-btn clear-btn">
+          ✖️ Clear Session
+        </button>
+        </div>
+      </div>
+
+ 
 
       <div className="progress-bar-container">
         <div className="time-label">{formatTime(currentTime)}</div>
@@ -64,11 +78,12 @@ export default function PlayController({
           <div
             className="progress-fill"
             style={{ width: `${(progress || 0) * 100}%` }}
-          />
+            />
         </div>
         <div className="time-label">{formatTime(duration)}</div>
       </div>
     </div>
+            </div> 
   );
 }
 

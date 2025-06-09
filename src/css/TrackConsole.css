@@ -203,6 +203,12 @@ justify-content: space-around;
 
 
 
-#fx , #pan{
+#fx , .pan{
   font-size: 12px;
+}
+
+.pan.disabled{
+  pointer-events: none;
+  opacity: .8;
+  color: rgb(80, 80, 80);
 }

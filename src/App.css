@@ -30,6 +30,7 @@ body {
   justify-content: center;
   align-items: center;
   transition: all 1s;
+  z-index: 250;
 }
 
 .bg {
@@ -100,7 +101,9 @@ position: absolute;
   display: flex;
   position: absolute;
   height: 10vh;
+  width: 100%;
   z-index: 40;
+  /* background-color: aqua; */
 }
 
 .rev-sliders{
@@ -124,10 +127,10 @@ position: absolute;
 
 .toggle-button {
   position: absolute;
-  top: -4dvh; /* Adjust as needed */
+  top: -3.5dvh; /* Adjust as needed */
   left: 50%;
   transform: translateX(-50%);
-  background-color: #333;
+  background-color: #1a19197a;
   width: 5vw;
   color: white;
   border: none;
@@ -192,7 +195,7 @@ position: absolute;
 
   width: 2rem;
   height: 4rem;
-  background-color: #333;
+  background-color: #20202088;
   color: #fff;
   border: none;
   border-radius: 0 0.5rem 0.5rem 0;
@@ -211,3 +214,8 @@ position: absolute;
   outline: none;
 }
 
+
+
+.toggle-button:hover, .spawner-toggle:hover{
+  background-color: #1d1d1d;
+}

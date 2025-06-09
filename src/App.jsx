@@ -59,6 +59,9 @@ import { sceneState } from './utils/sceneState';
 import { MeshSpawner } from './MeshSpawner';
 import { SceneContents } from './SceneContents';
 import PlayController from './PlayController';
+import { CustomOrbitControls } from './CustomOrbitControls';
+import { KeyboardControls } from '@react-three/drei';
+import { CameraControls } from './CameraControls';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -72,6 +75,20 @@ const COMPONENTS = {
   Guitar: GuitarAmp,
   Bass: BassSVTAmp,
   Vocals: Micro,
+};
+const AUTO_ASSIGN_KEYWORDS = {
+  Guitar: ['guitar', 'gtr', 'gtramp', 'guitar amp'],
+  Vocals: ['vocals', 'voc', 'vox', 'sing', 'vocal', 'lead vox'],
+  Bass: ['bass', 'svt', 'bass amp'],
+  Snare: ['snare', 'sn'],
+  Kick: ['kick', 'bd'],
+  Hihat: ['hi-hat', 'hihat', 'hh'],
+  HiTom: ['hitom', 'hi tom'],
+  MidTom: ['midtom', 'mid tom'],
+  FloorTom: ['floortom', 'floor tom'],
+  Crash: ['crash'],
+  Ride: ['ride'],
+  Overheads: ['overhead', 'oh'],
 };
 
 const STORAGE_KEYS = {
@@ -261,6 +278,7 @@ export default function App() {
   // const COMPONENTS = { Snare, Kick, … }
 
   async function handleAutoAssign(items) {
+    // 1) preload buffers & build newTracks
     const newTracks = await Promise.all(
       items.map(async (f) => {
         const buffer = await loadBuffer(f.url);
@@ -276,37 +294,50 @@ export default function App() {
       })
     );
 
+    // 2) add to trackList & dispatch Redux
     setTrackList((prev) => [...prev, ...newTracks]);
     newTracks.forEach((t) => dispatch(addTrack(t.id)));
 
-    // build map of available meshes (multiple per type)
-    const meshBuckets = {}; // { Guitar: [meshId1, meshId2, ...] }
-    meshes.forEach(({ id, type }) => {
-      if (!meshBuckets[type]) meshBuckets[type] = [];
-      meshBuckets[type].push(id);
-    });
+    // 3) bucket your meshes by type
+    const meshBuckets = meshes.reduce((b, m) => {
+      (b[m.type] ||= []).push(m.id);
+      return b;
+    }, {});
 
-    // counters for round-robin assignment
+    // 4) round-robin counters
     const assignedPerType = {};
 
+    // 5) update assignments state
     setAssignments((prev) => {
       const next = { ...prev };
 
       newTracks.forEach((t) => {
-        const match = Object.keys(COMPONENTS).find((key) =>
-          t.name.toLowerCase().includes(key.toLowerCase())
-        );
+        const nameLower = t.name.toLowerCase();
 
-        if (!match || !meshBuckets[match]?.length) {
-          next['null'] = [...(next['null'] || []), t];
-          return;
+        // try keyword lookup
+        let match = Object.entries(AUTO_ASSIGN_KEYWORDS).find(([type, keys]) =>
+          keys.some((kw) => nameLower.includes(kw))
+        )?.[0];
+
+        // fallback to literal COMPONENTS key
+        if (!match) {
+          match = Object.keys(COMPONENTS).find((key) =>
+            nameLower.includes(key.toLowerCase())
+          );
         }
-        const candidates = meshBuckets[match];
-        const idx = assignedPerType[match] || 0;
-        const meshId = candidates[idx % candidates.length];
-        assignedPerType[match] = idx + 1;
 
-        next[meshId] = [...(next[meshId] || []), t];
+        // if we found a type and there are meshes available
+        if (match && meshBuckets[match]?.length) {
+          const candidates = meshBuckets[match];
+          const i = assignedPerType[match] || 0;
+          const meshId = candidates[i % candidates.length];
+          assignedPerType[match] = i + 1;
+
+          next[meshId] = [...(next[meshId] || []), t];
+        } else {
+          // no match → leave it unassigned
+          next.null = [...(next.null || []), t];
+        }
       });
 
       return next;
@@ -529,66 +560,56 @@ export default function App() {
     ]
   );
 
-  const memoizedCanvas = useMemo(
-    () => (
-      <Canvas
-        camera={{ position: [10, 5, 20], fov: 35 }}
-        dpr={[1, 2]}
-        shadows
-        gl={{
-          antialias: true,
-           preserveDrawingBuffer: true,
-        }}
-        onCreated={({ gl }) => {
-          gl.shadowMap.enabled = true;
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          // gl.physicallyCorrectLights = true;
-        }}
-        onPointerMissed={() => {
-          sceneState.current = null;
-        }}
-      >
-        {/*
-          3) Pass in all scene props at once.
-             SceneContents is wrapped in React.memo, but now _even_ the
-             Canvas root won't re‐render unless canvasProps changes.
-        */}
-        <SceneContents {...canvasProps} />
-        <Perf
-        // deepAnalyze={true}
-        />
-      </Canvas>
-    ),
-    // Only re‐memo when canvasProps changes
-    [canvasProps]
-  );
+  // const memoizedCanvas = useMemo(
+  //   () => (
+  //     <KeyboardControls
+  //       map={[
+  //         { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
+  //         { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
+  //         { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
+  //         { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
+  //         { name: 'jump', keys: ['Space'] },
+  //       ]}
+  //     >
+  //       <Canvas
+  //         camera={{ position: [10, 5, 20], fov: 35 }}
+  //         dpr={[1, 2]}
+  //         shadows
+  //         gl={{
+  //           antialias: true,
+  //           preserveDrawingBuffer: true,
+  //         }}
+  //         onCreated={({ gl }) => {
+  //           gl.shadowMap.enabled = true;
+  //           gl.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  //           // gl.physicallyCorrectLights = true;
+  //         }}
+  //         onPointerMissed={() => {
+  //           sceneState.current = null;
+  //         }}
+  //       >
+  //         {/*
+  //         3) Pass in all scene props at once.
+  //            SceneContents is wrapped in React.memo, but now _even_ the
+  //            Canvas root won't re‐render unless canvasProps changes.
+  //       */}
+
+  //         <SceneContents {...canvasProps} />
+
+  //         <Perf
+  //         // deepAnalyze={true}
+  //         />
+  //       </Canvas>{' '}
+  //     </KeyboardControls>
+  //   ),
+  //   // Only re‐memo when canvasProps changes
+  //   [canvasProps]
+  // );
 
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
-        {/* <div style={{ margin: '1em 0', zIndex: '20' }}>
-          <button onClick={playAll} style={{ marginRight: '0.5em' }}>
-            ▶️ Play All
-          </button>
-          <button onClick={pauseAll} style={{ marginRight: '0.5em' }}>
-            ⏸ Pause
-          </button>
-          <button onClick={stopAll}>⏹ Stop All</button>
-
-          <button onClick={clearSession}>Clear Session</button>
-        </div>
-
-        <div style={{ margin: '1em 0' }}>
-          <label>Reverb Bus Level:</label>
-          <input
-            type='range'
-            min={0}
-            max={2}
-            step={0.01}
-            value={busLevel}
-            onChange={(e) => setBusLevel(parseFloat(e.target.value))}
-          />
-        </div> */}
         {/*         
         <div className='rev-sliders'>
         <div style={{ margin: '1em 0' }} className='param'>
@@ -649,47 +670,8 @@ export default function App() {
           playing={playing}
         />
       </div>
-      {/* Left: Parts palette */}
-      {/* <div
-        style={{ width: 200, borderRight: '1px solid #333' }}
-        className='panel-left'
-      > */}
-      {/* <input
-  type="range"
-  min={0}
-  max={Math.max(...trackList.map(t => t.buffer?.duration || 0))}
-  step={0.01}
-  value={scrubPos}
-  onChange={(e) => {
-  const seek = parseFloat(e.target.value);
-  setPlayOffset(audioCtx.currentTime - seek);  // correct!
-  setScrubPos(seek);
-  if (playing) {
-    setPlaying(false);
-    setTimeout(() => setPlaying(true), 50);
-  } else {
-    setPauseTime(seek); // 🆕 add this!
-  }
-}}
 
-/> */}
-      {/* {Object.keys(COMPONENTS).map((part) => (
-          <button
-            key={part}
-            // disabled={meshes.includes(part)}
-            onClick={() => addMesh(part)}
-            style={{ display: 'block', margin: '4px 0' }}
-          >
-            {meshes.includes(part) ? 'Spawned' : 'Spawn'} {part}
-          </button>
-        ))}
-      </div> */}
-      <div
-        className={`spawner-container ${spawnerOpen ? 'open' : ''}`}
-        // onPointerLeave={setTimeout(() => {
-        //   setSpawnerOpen(false);
-        // }, 3000)}
-      >
+      <div className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
         <button
           className='spawner-toggle'
           onClick={() => setSpawnerOpen((v) => !v)}
@@ -706,7 +688,41 @@ export default function App() {
       </div>
 
       {/* Center: 3D canvas */}
-      <div className='canvas-main'>{memoizedCanvas}</div>
+
+      {/* <div className='canvas-main'>{memoizedCanvas}</div> */}
+
+      <div className='canvas-main'>
+        <KeyboardControls
+          map={[
+            { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
+            { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
+            { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
+            { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
+            { name: 'jump', keys: ['Space'] },
+          ]}
+        >
+          <Canvas
+            camera={{ position: [10, 5, 20], fov: 35 }}
+            dpr={[1, 2]}
+            shadows
+            gl={{ antialias: true, preserveDrawingBuffer: true }}
+            onCreated={({ gl }) => {
+              gl.shadowMap.enabled = true;
+              gl.shadowMap.type = THREE.PCFSoftShadowMap;
+            }}
+            onPointerMissed={() => {
+              sceneState.current = null;
+            }}
+          >
+            <CameraControls />
+            <SceneContents {...canvasProps} />
+
+            <Perf
+            // deepAnalyze={true}
+            />
+          </Canvas>
+        </KeyboardControls>
+      </div>
 
       <div className='console-container'>
         <button
