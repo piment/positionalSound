@@ -56,65 +56,14 @@ export const Snare = forwardRef((props, ref) => {
     </group>
 
 
-      {/* <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.snare003.geometry}
-        material={nodes.snare003.material}
-     
-      />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle021.geometry}
-        material={woodMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle021_1.geometry}
-           material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle021_2.geometry}
-          material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle021_3.geometry}
-         material={metalMat}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle021_4.geometry}
-          material={nodes.Circle021_4.material}
-        />
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Circle021_5.geometry}
-         material={metalMat}
-        />
-        <mesh
-          castShadow
-          // receiveShadow
-          geometry={nodes.Circle021_6.geometry}
-           material={padMat}
-               >
-
-        </mesh> */}
-        <group position={[0, -0.45, 0.0]}>
+        {/* <group position={[0, -0.45, 0.0]}>
                  <pointLight
              ref={lightRef}
   color={props.color}      // initial value; ObjSound will overwrite each frame
   intensity={0}     
   scale={.25}
 castShadow
-  decay={1}
+  decay={1.5}
   shadow-bias={-0.00008} 
        shadow-mapSize-width={512}
         shadow-mapSize-height={512}
@@ -122,7 +71,7 @@ castShadow
             shadow-camera-near={0.05}    // move the near clipping plane
   shadow-camera-far={50} 
 />
-        </group>
+        </group> */}
       </group>
     </group>
   )

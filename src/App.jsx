@@ -22,7 +22,8 @@ import { HihatMin } from './instruments/drumkit/HihatMin';
 import { HiTom } from './instruments/drumkit/HiTom';
 import { MidTom } from './instruments/drumkit/MidTom';
 import { FloorTom } from './instruments/drumkit/FloorTom';
-import { Crash } from './instruments/drumkit/Crash';
+// import { Crash } from './instruments/drumkit/Crash';
+import { CrashMin } from './instruments/drumkit/CrashMin';
 import { Ride } from './instruments/drumkit/Ride';
 import { RideMin } from './instruments/drumkit/RideMin';
 import { Overheads } from './instruments/drumkit/Overheads';
@@ -65,7 +66,7 @@ const COMPONENTS = {
   HiTom: HiTom,
   MidTom: MidTom,
   FloorTom: FloorTom,
-  Crash: Crash,
+  Crash: CrashMin,
   Ride: RideMin,
   Overheads: Overheads,
   Guitar: GuitarAmp,
@@ -541,7 +542,7 @@ export default function App() {
         onCreated={({ gl }) => {
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          gl.physicallyCorrectLights = true;
+          // gl.physicallyCorrectLights = true;
         }}
         onPointerMissed={() => {
           sceneState.current = null;

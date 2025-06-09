@@ -33,11 +33,11 @@ export const Micro = forwardRef((props, ref) => {
         <spotLight
           ref={lightRef}
           castShadow
-          userData={{ intensityMultiplier: 50 }}
+          userData={{ intensityMultiplier: 1000 }}
           color={props.color}
-          angle={0.4}
+          angle={0.24}
           penumbra={0.42}
-          distance={100}
+          distance={50}
         />
       </group>
       <mesh

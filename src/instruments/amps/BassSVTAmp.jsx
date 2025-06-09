@@ -1,9 +1,19 @@
-import React, { forwardRef, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
-
+import React, { forwardRef, useMemo, useRef } from 'react'
+import { useGLTF, useTexture } from '@react-three/drei'
+import * as THREE from 'three'
 export const  BassSVTAmp= forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/amps/bass_svt.glb')
     const lightRef = useRef();
+    const [svtCol,svtNorm,svtRough,svtMetal] = useTexture([
+      '/amps/textures/Comb_Comb_BaseColor.png',
+      '/amps/textures/Comb_Comb_Normal.png',
+      '/amps/textures/Comb_Comb_Roughness.png',
+      '/amps/textures/Comb_Comb_Metallic.png',
+    ])
+
+    svtCol.flipY = svtNorm.flipY = svtRough.flipY = svtMetal.flipY = false
+
+    const svtMat =new THREE.MeshStandardMaterial({map : svtCol, normalMap: svtNorm, roughnessMap: svtRough, metalnessMap: svtMetal,})
    
   return (
     <group    {...props}
@@ -14,20 +24,20 @@ export const  BassSVTAmp= forwardRef((props, ref) => {
         castShadow
         receiveShadow
         geometry={nodes.CombUp001.geometry}
-        material={nodes.CombUp001.material}
+        material={svtMat}
       />
       <mesh
         castShadow
         receiveShadow
         geometry={nodes.CombDown001.geometry}
-        material={nodes.CombDown001.material}
+        material={svtMat}
       />
-            <group position={[0,.4,0.483]}>
+            <group position={[-.74,.6,0.24483]}>
         <pointLight
           ref={lightRef}
           color={props.color} // initial value; ObjSound will overwrite each frame
           intensity={0}
-          userData={{ intensityMultiplier: 2 }} 
+          userData={{ intensityMultiplier: 4 }} 
           // scale={.15}
           // distance={120.5}
           castShadow

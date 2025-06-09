@@ -85,7 +85,8 @@ function EnvComp({ playing, analyser }) {
         {/* <meshStandardMaterial color={"#050505"} roughness={.81}  metalness={.1}/> */}
       </mesh>
       <LightBars count={24} radius={120} analyser={analyser} />
-      <Environment preset='city' environmentIntensity={.21}/>
+      <Environment preset='city' environmentIntensity={.02}/>
+      {/* <ambientLight intensity={100} /> */}
     </>
   );
 }
