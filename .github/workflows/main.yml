@@ -6,7 +6,7 @@ on:
   # Se déclenche à chaque push sur la branche 'main'
   push:
     branches:
-      - test
+      - main
   # Permet de lancer le workflow manuellement depuis l'interface GitHub
   workflow_dispatch:
 
