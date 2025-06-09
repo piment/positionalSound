@@ -6,7 +6,7 @@ on:
   # Se déclenche à chaque push sur la branche 'main'
   push:
     branches:
-      - test
+      - main
   # Permet de lancer le workflow manuellement depuis l'interface GitHub
   workflow_dispatch:
 
@@ -39,7 +39,7 @@ jobs:
 
       # Étape 5: Déployer les fichiers sur le serveur via SSH (rsync)
       - name: Deploy to Server
-        uses: easing-themes/ssh-deploy@main # Utilisation d'une action communautaire populaire pour le déploiement
+        uses: easingthemes/ssh-deploy@main # Utilisation d'une action communautaire populaire pour le déploiement
         with:
           # Clé privée SSH pour l'authentification
           SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
