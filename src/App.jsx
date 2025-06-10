@@ -59,6 +59,10 @@ import { sceneState } from './utils/sceneState';
 import { MeshSpawner } from './MeshSpawner';
 import { SceneContents } from './SceneContents';
 import PlayController from './PlayController';
+import { CustomOrbitControls } from './CustomOrbitControls';
+import { KeyboardControls } from '@react-three/drei';
+import { CameraControls } from './CameraControls';
+import HintTab from './HintTab';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -72,6 +76,20 @@ const COMPONENTS = {
   Guitar: GuitarAmp,
   Bass: BassSVTAmp,
   Vocals: Micro,
+};
+const AUTO_ASSIGN_KEYWORDS = {
+  Guitar: ['guitar', 'gtr', 'gtramp', 'guitar amp'],
+  Vocals: ['vocals', 'voc', 'vox', 'sing', 'vocal', 'lead vox'],
+  Bass: ['bass', 'svt', 'bass amp'],
+  Snare: ['snare', 'sn'],
+  Kick: ['kick', 'bd'],
+  Hihat: ['hi-hat', 'hihat', 'hh'],
+  HiTom: ['hitom', 'hi tom'],
+  MidTom: ['midtom', 'mid tom'],
+  FloorTom: ['floortom', 'floor tom'],
+  Crash: ['crash'],
+  Ride: ['ride'],
+  Overheads: ['overhead', 'oh'],
 };
 
 const STORAGE_KEYS = {
@@ -89,16 +107,17 @@ export default function App() {
 
   const masterTapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
   const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
-  // wire them once—no destination hookup!
+
+
   useMemo(() => {
     masterTapGain.gain.value = 1;
     masterTapGain.connect(masterAnalyser);
-    // ──> (do *not* connect masterAnalyser to destination)
+    // ──> !!!!!!!!!!! (do *not* connect masterAnalyser to destination)
   }, [masterTapGain, masterAnalyser]);
 
   const dispatch = useDispatch();
   const settings = useSelector((state) => state.trackSettings);
-  const mode = useSelector((state) => state.viewMode);
+
 
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [spawnerOpen, setSpawnerOpen] = useState(false);
@@ -106,10 +125,9 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [playOffset, setPlayOffset] = useState(0);
   const [pauseTime, setPauseTime] = useState(0);
+   const [uiVisible, setUiVisible] = useState(true);
+  const [perfVisible, setPerfVisible] = useState(false)
 
-  const [tracks, setTracks] = useState([]);
-  const [sources, setSources] = useState([]);
-  const sourcesRef = useRef([]);
   const [trackList, setTrackList] = useState([]);
   const [assignments, setAssignments] = useState({ null: [] });
   const [scrubPos, setScrubPos] = useState(0);
@@ -120,7 +138,7 @@ export default function App() {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
     return v ? JSON.parse(v) : [];
   });
-  const [selectedTrackId, setSelectedTrackId] = useState(null);
+
 
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
   const [rightDelayTime, setRightDelayTime] = useState(0.04181);
@@ -261,6 +279,7 @@ export default function App() {
   // const COMPONENTS = { Snare, Kick, … }
 
   async function handleAutoAssign(items) {
+    // 1) preload buffers & build newTracks
     const newTracks = await Promise.all(
       items.map(async (f) => {
         const buffer = await loadBuffer(f.url);
@@ -276,37 +295,50 @@ export default function App() {
       })
     );
 
+    // 2) add to trackList & dispatch Redux
     setTrackList((prev) => [...prev, ...newTracks]);
     newTracks.forEach((t) => dispatch(addTrack(t.id)));
 
-    // build map of available meshes (multiple per type)
-    const meshBuckets = {}; // { Guitar: [meshId1, meshId2, ...] }
-    meshes.forEach(({ id, type }) => {
-      if (!meshBuckets[type]) meshBuckets[type] = [];
-      meshBuckets[type].push(id);
-    });
+    // 3) bucket your meshes by type
+    const meshBuckets = meshes.reduce((b, m) => {
+      (b[m.type] ||= []).push(m.id);
+      return b;
+    }, {});
 
-    // counters for round-robin assignment
+    // 4) round-robin counters
     const assignedPerType = {};
 
+    // 5) update assignments state
     setAssignments((prev) => {
       const next = { ...prev };
 
       newTracks.forEach((t) => {
-        const match = Object.keys(COMPONENTS).find((key) =>
-          t.name.toLowerCase().includes(key.toLowerCase())
-        );
+        const nameLower = t.name.toLowerCase();
 
-        if (!match || !meshBuckets[match]?.length) {
-          next['null'] = [...(next['null'] || []), t];
-          return;
+        // try keyword lookup
+        let match = Object.entries(AUTO_ASSIGN_KEYWORDS).find(([type, keys]) =>
+          keys.some((kw) => nameLower.includes(kw))
+        )?.[0];
+
+        // fallback to literal COMPONENTS key
+        if (!match) {
+          match = Object.keys(COMPONENTS).find((key) =>
+            nameLower.includes(key.toLowerCase())
+          );
         }
-        const candidates = meshBuckets[match];
-        const idx = assignedPerType[match] || 0;
-        const meshId = candidates[idx % candidates.length];
-        assignedPerType[match] = idx + 1;
 
-        next[meshId] = [...(next[meshId] || []), t];
+        // if we found a type and there are meshes available
+        if (match && meshBuckets[match]?.length) {
+          const candidates = meshBuckets[match];
+          const i = assignedPerType[match] || 0;
+          const meshId = candidates[i % candidates.length];
+          assignedPerType[match] = i + 1;
+
+          next[meshId] = [...(next[meshId] || []), t];
+        } else {
+          // no match → leave it unassigned
+          next.null = [...(next.null || []), t];
+        }
       });
 
       return next;
@@ -327,6 +359,7 @@ export default function App() {
     const resumeOffset = pauseTime || scrubPos || 0;
     setPlayOffset(audioCtx.currentTime - resumeOffset);
     setPlaying(true);
+       setUiVisible(false)
     // setPauseTime(null); // reset pause time
   }
   function pauseAll() {
@@ -334,12 +367,15 @@ export default function App() {
     setPauseTime(audioCtx.currentTime - playOffset);
     console.log(audioCtx.currentTime - playOffset);
     setPlaying(false);
+       setUiVisible(true)
+   
   }
   function stopAll() {
     setPauseTime(0);
     setScrubPos(0); // ← record current play position
     setPlaying(false);
     setPlayOffset(0);
+      setUiVisible(true)
   }
 
   useEffect(() => {
@@ -347,6 +383,26 @@ export default function App() {
       setScrubPos(audioCtx.currentTime - playOffset);
     }
   }, [playing, audioCtx, playOffset]);
+
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();              // avoid scrolling
+        if (playing) pauseAll();
+        else         playAll();
+      }
+      if (e.code === 'KeyU') {
+        setUiVisible(v => !v);
+      }
+       if (e.code === 'KeyP') {
+        setPerfVisible(v => !v);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [playing, playAll, pauseAll]);
+
 
   function updateTrack(id, props) {
     setAssignments((prev) => {
@@ -529,66 +585,10 @@ export default function App() {
     ]
   );
 
-  const memoizedCanvas = useMemo(
-    () => (
-      <Canvas
-        camera={{ position: [10, 5, 20], fov: 35 }}
-        dpr={[1, 2]}
-        shadows
-        gl={{
-          antialias: true,
-           preserveDrawingBuffer: true,
-        }}
-        onCreated={({ gl }) => {
-          gl.shadowMap.enabled = true;
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          // gl.physicallyCorrectLights = true;
-        }}
-        onPointerMissed={() => {
-          sceneState.current = null;
-        }}
-      >
-        {/*
-          3) Pass in all scene props at once.
-             SceneContents is wrapped in React.memo, but now _even_ the
-             Canvas root won't re‐render unless canvasProps changes.
-        */}
-        <SceneContents {...canvasProps} />
-        <Perf
-        // deepAnalyze={true}
-        />
-      </Canvas>
-    ),
-    // Only re‐memo when canvasProps changes
-    [canvasProps]
-  );
 
   return (
     <div style={{ height: '100vh' }}>
       <div className='rev-params'>
-        {/* <div style={{ margin: '1em 0', zIndex: '20' }}>
-          <button onClick={playAll} style={{ marginRight: '0.5em' }}>
-            ▶️ Play All
-          </button>
-          <button onClick={pauseAll} style={{ marginRight: '0.5em' }}>
-            ⏸ Pause
-          </button>
-          <button onClick={stopAll}>⏹ Stop All</button>
-
-          <button onClick={clearSession}>Clear Session</button>
-        </div>
-
-        <div style={{ margin: '1em 0' }}>
-          <label>Reverb Bus Level:</label>
-          <input
-            type='range'
-            min={0}
-            max={2}
-            step={0.01}
-            value={busLevel}
-            onChange={(e) => setBusLevel(parseFloat(e.target.value))}
-          />
-        </div> */}
         {/*         
         <div className='rev-sliders'>
         <div style={{ margin: '1em 0' }} className='param'>
@@ -637,7 +637,7 @@ export default function App() {
         </div>
         </div> 
         */}
-        <PlayController
+         {uiVisible && (   <PlayController
           playAll={playAll}
           pauseAll={pauseAll}
           stopAll={stopAll}
@@ -647,49 +647,10 @@ export default function App() {
           duration={duration}
           currentTime={currentTime}
           playing={playing}
-        />
+        />)}
       </div>
-      {/* Left: Parts palette */}
-      {/* <div
-        style={{ width: 200, borderRight: '1px solid #333' }}
-        className='panel-left'
-      > */}
-      {/* <input
-  type="range"
-  min={0}
-  max={Math.max(...trackList.map(t => t.buffer?.duration || 0))}
-  step={0.01}
-  value={scrubPos}
-  onChange={(e) => {
-  const seek = parseFloat(e.target.value);
-  setPlayOffset(audioCtx.currentTime - seek);  // correct!
-  setScrubPos(seek);
-  if (playing) {
-    setPlaying(false);
-    setTimeout(() => setPlaying(true), 50);
-  } else {
-    setPauseTime(seek); // 🆕 add this!
-  }
-}}
 
-/> */}
-      {/* {Object.keys(COMPONENTS).map((part) => (
-          <button
-            key={part}
-            // disabled={meshes.includes(part)}
-            onClick={() => addMesh(part)}
-            style={{ display: 'block', margin: '4px 0' }}
-          >
-            {meshes.includes(part) ? 'Spawned' : 'Spawn'} {part}
-          </button>
-        ))}
-      </div> */}
-      <div
-        className={`spawner-container ${spawnerOpen ? 'open' : ''}`}
-        // onPointerLeave={setTimeout(() => {
-        //   setSpawnerOpen(false);
-        // }, 3000)}
-      >
+      {uiVisible && (    <div className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
         <button
           className='spawner-toggle'
           onClick={() => setSpawnerOpen((v) => !v)}
@@ -703,12 +664,45 @@ export default function App() {
           meshes={meshes}
           addMesh={addMesh}
         />
-      </div>
+      </div>)}
 
       {/* Center: 3D canvas */}
-      <div className='canvas-main'>{memoizedCanvas}</div>
 
-      <div className='console-container'>
+      {/* <div className='canvas-main'>{memoizedCanvas}</div> */}
+
+      <div className='canvas-main'>
+        <KeyboardControls
+          map={[
+            { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
+            { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
+            { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
+            { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
+            { name: 'jump', keys: ['Space'] },
+          ]}
+        >
+          <Canvas
+            camera={{ position: [10, 5, 20], fov: 35 }}
+            dpr={[1, 2]}
+            shadows
+            gl={{ antialias: true, preserveDrawingBuffer: true }}
+            onCreated={({ gl }) => {
+              gl.shadowMap.enabled = true;
+              gl.shadowMap.type = THREE.PCFSoftShadowMap;
+            }}
+            onPointerMissed={() => {
+              sceneState.current = null;
+            }}
+          >
+            <CameraControls />
+            <SceneContents {...canvasProps} />
+{perfVisible && (
+            <Perf />
+)}
+          </Canvas>
+        </KeyboardControls>
+      </div>
+        
+         {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
@@ -732,7 +726,8 @@ export default function App() {
           isReorderable={true}
           onReorder={onReorderTracks}
         />
-      </div>
+      </div>)} 
+        {uiVisible && (  <HintTab/>)}
     </div>
   );
 }

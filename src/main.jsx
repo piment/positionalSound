@@ -10,13 +10,13 @@ import { AudioBufferCacheProvider } from './AudioBufferCacheProvider.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Intro>
-      <AudioContextProvider>
-        <Provider store={store}>
+    <AudioContextProvider>
+      <Provider store={store}>
+        <Intro>
           <App />
-        </Provider>
-        <AudioBufferCacheProvider></AudioBufferCacheProvider>
-      </AudioContextProvider>
-    </Intro>
+        </Intro>
+      </Provider>
+      <AudioBufferCacheProvider></AudioBufferCacheProvider>
+    </AudioContextProvider>
   </React.StrictMode>
 );

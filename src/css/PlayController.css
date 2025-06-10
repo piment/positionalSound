@@ -1,47 +1,79 @@
 /* PlayController.css */
+.play-controller-container{
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+}
 
-.play-controller-container {
+
+.player-main {
   width: 100%;
   max-width: 600px;
   margin: 1rem auto;
   padding: 0.5rem 1rem;
-  background: #222;
-  border: 1px solid #444;
+  /* background: #222; */
+  /* border: 1px solid #444; */
   border-radius: 8px;
   color: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.6);
   font-family: sans-serif;
+  /* align-self: center; */
+  /* justify-content: center; */
+  /* justify-self: center; */
 }
 
 /* ─── Button Row ───────────────────────────────── */
 .button-row {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-around;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
+.play-btns{
+  width: 40%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
 
 .ctrl-btn {
-  background: #444;
+
+    /* display: inline-block;              ensure transform only affects this element */
+  background: rgba(0,0,0,0);
   border: none;
   color: #fff;
   font-size: 1.2rem;
-  padding: 0.5rem 0.75rem;
+  display: flex;
+  /* width: 2.2rem;                       reserve enough room */
+  height: 2.2rem;                      /* reserve enough room */
+  /* line-height: 2.2rem;                 center the icon vertically */
+ align-items: center;
+ align-content: center;
   border-radius: 4px;
+  /* margin: auto; */
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 0.2s, background 0.2s;
+  transform-origin: center center;  
 }
 
 .ctrl-btn:hover {
+ 
+  transform: scale(1.2);
   background: #666;
+  z-index: 1; 
 }
 
 .clear-btn {
-  background: #a33;
+  font-size: 1rem;
+  background: rgba(170, 51, 51, 0.541);
+}
+.clear-btn-wrap{
+  width: 30%;
 }
 
 .clear-btn:hover {
+  font-size: 1rem;
   background: #c55;
 }
 
@@ -51,6 +83,9 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  position: fixed;
+  left: 5dvw;
+  top: 5dvh
 }
 
 .reverb-label {
@@ -65,6 +100,7 @@
 
 /* ─── Progress Bar ────────────────────────────────── */
 .progress-bar-container {
+  margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -86,7 +122,7 @@
 
 .progress-fill {
   height: 100%;
-  background: #2ecc71;
+  background: #c7c7c7;
   transition: width 0.1s linear;
   border-radius: 4px 0 0 4px;
 }
