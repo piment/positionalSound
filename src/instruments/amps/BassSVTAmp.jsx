@@ -1,7 +1,7 @@
 import React, { forwardRef, Suspense, useMemo, useRef } from 'react'
 import { useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-export const  BassSVTAmp= forwardRef((props, ref) => {
+export const  BassSVTAmp = forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/amps/bass_svt.glb')
     const lightRef = useRef();
     const [svtCol,svtNorm,svtRough,svtMetal] = useTexture([

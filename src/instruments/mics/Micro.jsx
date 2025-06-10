@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 
 export const Micro = forwardRef((props, ref) => {
-  const { nodes, materials } = useGLTF('/mics/mic_stand.glb');
+  const { nodes, materials } = useGLTF('/mics_keys/mic_stand.glb');
   const { scene } = useThree();
 
 

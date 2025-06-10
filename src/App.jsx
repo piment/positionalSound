@@ -30,6 +30,7 @@ import { Overheads } from './instruments/drumkit/Overheads';
 import { BassSVTAmp } from './instruments/amps/BassSVTAmp';
 import { GuitarAmp } from './instruments/amps/GuitarAmp';
 import { Micro } from './instruments/mics/Micro';
+import { Keyboard } from './instruments/keyboard_other/Keyboard';
 import {
   Bloom,
   DepthOfField,
@@ -75,6 +76,7 @@ const COMPONENTS = {
   Overheads: Overheads,
   Guitar: GuitarAmp,
   Bass: BassSVTAmp,
+  Keyboard: Keyboard,
   Vocals: Micro,
 };
 const AUTO_ASSIGN_KEYWORDS = {
@@ -363,9 +365,9 @@ export default function App() {
     // setPauseTime(null); // reset pause time
   }
   function pauseAll() {
-    console.log(audioCtx.currentTime, playOffset);
+    // console.log(audioCtx.currentTime, playOffset);
     setPauseTime(audioCtx.currentTime - playOffset);
-    console.log(audioCtx.currentTime - playOffset);
+    // console.log(audioCtx.currentTime - playOffset);
     setPlaying(false);
        setUiVisible(true)
    

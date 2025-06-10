@@ -206,9 +206,19 @@ export function ObjSound({
     setCymbalMeshes(arr);
   }, []);
 
+  const [keysMeshes, setKeysMeshes] = useState([]);
+  useEffect(() => {
+    if (!outerRef.current) return;
+    const arr = [];
+    outerRef.current.traverse((obj) => {
+      if (obj.isMesh && obj.material.name === 'whiteKeysMat') arr.push(obj);
+    });
+    setKeysMeshes(arr);
+  }, []);
+
   // every frame, use playLevel (a number!) to drive emissive
   useFrame((_, delta) => {
-    if (!padMeshes.length && !cymbalMeshes.length && lights.length === 0)
+    if (!padMeshes.length && !cymbalMeshes.length &&!keysMeshes.length && lights.length === 0)
       return;
 
     // Optionally boost low/mid levels
@@ -235,13 +245,15 @@ export function ObjSound({
       // set to zero when smoothRef is zero → totally dark
       const hex = visibleMap[meshTrackId]?.color;
       if (hex) {
+
         m.material.emissive.set(hex);
         m.material.color.set(hex);
-        m.material.blendEquation = THREE.SubtractiveBlending;
+        // m.material.blendEquation = THREE.SubtractiveBlending;
       }
       m.material.emissiveIntensity = intensity;
+      // console.log(intensity)
       // keep color proportional to level (or leave it white)
-      m.material.emissive.setScalar(smoothRef.current * 2);
+      m.material.emissive.setScalar(smoothRef.current * 20);
     });
     // console.log(playLevel)
     lights.forEach((light) => {
@@ -261,6 +273,21 @@ export function ObjSound({
         50,
         smoothRef.current / 2
       );
+
+      // don’t touch m.material.emissive!  The map already modulates it.
+    });
+       keysMeshes.forEach((m) => {
+              const hex = visibleMap[meshTrackId]?.color;
+      if (hex) {
+        // console.log(hex)
+        m.material.emissive.set(hex);
+        m.material.color.set(hex);
+        // m.material.blendEquation = THREE.SubtractiveBlending;
+      }
+      m.material.emissiveIntensity = intensity;
+      // console.log(intensity)
+      // keep color proportional to level (or leave it white)
+      m.material.emissive.setScalar(smoothRef.current * 20);
 
       // don’t touch m.material.emissive!  The map already modulates it.
     });
