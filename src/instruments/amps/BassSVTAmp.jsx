@@ -1,4 +1,4 @@
-import React, { forwardRef, useMemo, useRef } from 'react'
+import React, { forwardRef, Suspense, useMemo, useRef } from 'react'
 import { useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 export const  BassSVTAmp= forwardRef((props, ref) => {
@@ -13,9 +13,11 @@ export const  BassSVTAmp= forwardRef((props, ref) => {
 
     svtCol.flipY = svtNorm.flipY = svtRough.flipY = svtMetal.flipY = false
 
-    const svtMat =new THREE.MeshStandardMaterial({map : svtCol, normalMap: svtNorm, roughnessMap: svtRough, metalnessMap: svtMetal,})
+    const svtMat =new THREE.MeshStandardMaterial({map : svtCol, normalMap: svtNorm, roughnessMap: svtRough, metalnessMap: svtMetal, envMapIntensity: .04})
    
   return (
+    // <Suspense fallback={null}>
+
     <group    {...props}
       dispose={null}
       rotation={[0, -Math.PI *.72, 0]}
@@ -25,13 +27,13 @@ export const  BassSVTAmp= forwardRef((props, ref) => {
         receiveShadow
         geometry={nodes.CombUp001.geometry}
         material={svtMat}
-      />
+        />
       <mesh
         castShadow
         receiveShadow
         geometry={nodes.CombDown001.geometry}
         material={svtMat}
-      />
+        />
             <group position={[-.74,.6,0.24483]}>
         <pointLight
           ref={lightRef}
@@ -49,9 +51,10 @@ export const  BassSVTAmp= forwardRef((props, ref) => {
           // shadow-camera-near={0.5} // move the near clipping plane
           // shadow-camera-far={60}
           // shadow-blurSamples={12}
-        />
+          />
       </group>
     </group>
+          // </Suspense>
   )
 })
 

@@ -91,7 +91,7 @@ export function Controls() {
       )}
       <OrbitControls
         ref={controlsRef}
-        // makeDefault
+        makeDefault
         minPolarAngle={0}
         enableDamping
         dampingFactor={0.1}

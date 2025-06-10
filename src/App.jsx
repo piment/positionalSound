@@ -62,6 +62,7 @@ import PlayController from './PlayController';
 import { CustomOrbitControls } from './CustomOrbitControls';
 import { KeyboardControls } from '@react-three/drei';
 import { CameraControls } from './CameraControls';
+import HintTab from './HintTab';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -106,16 +107,17 @@ export default function App() {
 
   const masterTapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
   const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
-  // wire them once—no destination hookup!
+
+
   useMemo(() => {
     masterTapGain.gain.value = 1;
     masterTapGain.connect(masterAnalyser);
-    // ──> (do *not* connect masterAnalyser to destination)
+    // ──> !!!!!!!!!!! (do *not* connect masterAnalyser to destination)
   }, [masterTapGain, masterAnalyser]);
 
   const dispatch = useDispatch();
   const settings = useSelector((state) => state.trackSettings);
-  const mode = useSelector((state) => state.viewMode);
+
 
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [spawnerOpen, setSpawnerOpen] = useState(false);
@@ -123,10 +125,9 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [playOffset, setPlayOffset] = useState(0);
   const [pauseTime, setPauseTime] = useState(0);
+   const [uiVisible, setUiVisible] = useState(true);
+  const [perfVisible, setPerfVisible] = useState(false)
 
-  const [tracks, setTracks] = useState([]);
-  const [sources, setSources] = useState([]);
-  const sourcesRef = useRef([]);
   const [trackList, setTrackList] = useState([]);
   const [assignments, setAssignments] = useState({ null: [] });
   const [scrubPos, setScrubPos] = useState(0);
@@ -137,7 +138,7 @@ export default function App() {
     const v = localStorage.getItem(STORAGE_KEYS.meshes);
     return v ? JSON.parse(v) : [];
   });
-  const [selectedTrackId, setSelectedTrackId] = useState(null);
+
 
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
   const [rightDelayTime, setRightDelayTime] = useState(0.04181);
@@ -358,6 +359,7 @@ export default function App() {
     const resumeOffset = pauseTime || scrubPos || 0;
     setPlayOffset(audioCtx.currentTime - resumeOffset);
     setPlaying(true);
+       setUiVisible(false)
     // setPauseTime(null); // reset pause time
   }
   function pauseAll() {
@@ -365,12 +367,15 @@ export default function App() {
     setPauseTime(audioCtx.currentTime - playOffset);
     console.log(audioCtx.currentTime - playOffset);
     setPlaying(false);
+       setUiVisible(true)
+   
   }
   function stopAll() {
     setPauseTime(0);
     setScrubPos(0); // ← record current play position
     setPlaying(false);
     setPlayOffset(0);
+      setUiVisible(true)
   }
 
   useEffect(() => {
@@ -378,6 +383,26 @@ export default function App() {
       setScrubPos(audioCtx.currentTime - playOffset);
     }
   }, [playing, audioCtx, playOffset]);
+
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();              // avoid scrolling
+        if (playing) pauseAll();
+        else         playAll();
+      }
+      if (e.code === 'KeyU') {
+        setUiVisible(v => !v);
+      }
+       if (e.code === 'KeyP') {
+        setPerfVisible(v => !v);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [playing, playAll, pauseAll]);
+
 
   function updateTrack(id, props) {
     setAssignments((prev) => {
@@ -560,52 +585,6 @@ export default function App() {
     ]
   );
 
-  // const memoizedCanvas = useMemo(
-  //   () => (
-  //     <KeyboardControls
-  //       map={[
-  //         { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
-  //         { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
-  //         { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
-  //         { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
-  //         { name: 'jump', keys: ['Space'] },
-  //       ]}
-  //     >
-  //       <Canvas
-  //         camera={{ position: [10, 5, 20], fov: 35 }}
-  //         dpr={[1, 2]}
-  //         shadows
-  //         gl={{
-  //           antialias: true,
-  //           preserveDrawingBuffer: true,
-  //         }}
-  //         onCreated={({ gl }) => {
-  //           gl.shadowMap.enabled = true;
-  //           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-
-  //           // gl.physicallyCorrectLights = true;
-  //         }}
-  //         onPointerMissed={() => {
-  //           sceneState.current = null;
-  //         }}
-  //       >
-  //         {/*
-  //         3) Pass in all scene props at once.
-  //            SceneContents is wrapped in React.memo, but now _even_ the
-  //            Canvas root won't re‐render unless canvasProps changes.
-  //       */}
-
-  //         <SceneContents {...canvasProps} />
-
-  //         <Perf
-  //         // deepAnalyze={true}
-  //         />
-  //       </Canvas>{' '}
-  //     </KeyboardControls>
-  //   ),
-  //   // Only re‐memo when canvasProps changes
-  //   [canvasProps]
-  // );
 
   return (
     <div style={{ height: '100vh' }}>
@@ -658,7 +637,7 @@ export default function App() {
         </div>
         </div> 
         */}
-        <PlayController
+         {uiVisible && (   <PlayController
           playAll={playAll}
           pauseAll={pauseAll}
           stopAll={stopAll}
@@ -668,10 +647,10 @@ export default function App() {
           duration={duration}
           currentTime={currentTime}
           playing={playing}
-        />
+        />)}
       </div>
 
-      <div className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
+      {uiVisible && (    <div className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
         <button
           className='spawner-toggle'
           onClick={() => setSpawnerOpen((v) => !v)}
@@ -685,7 +664,7 @@ export default function App() {
           meshes={meshes}
           addMesh={addMesh}
         />
-      </div>
+      </div>)}
 
       {/* Center: 3D canvas */}
 
@@ -716,15 +695,14 @@ export default function App() {
           >
             <CameraControls />
             <SceneContents {...canvasProps} />
-
-            <Perf
-            // deepAnalyze={true}
-            />
+{perfVisible && (
+            <Perf />
+)}
           </Canvas>
         </KeyboardControls>
       </div>
-
-      <div className='console-container'>
+        
+         {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
@@ -748,7 +726,8 @@ export default function App() {
           isReorderable={true}
           onReorder={onReorderTracks}
         />
-      </div>
+      </div>)} 
+        {uiVisible && (  <HintTab/>)}
     </div>
   );
 }
