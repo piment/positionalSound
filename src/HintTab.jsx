@@ -36,6 +36,8 @@ export default function HintTab() {
              <li id='toggle-perf'>
           <span className="hint-text">  Performance monitor</span>  <kbd> P</kbd> 
           </li>
+          <li><span className="hint-text">Remove a mesh</span> Dbl click </li>
+           <li><span className="hint-text">Rotate a mesh</span> Right click </li>
         </ul>
       </div>
     </div>

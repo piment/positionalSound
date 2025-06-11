@@ -206,9 +206,24 @@ export function ObjSound({
     setCymbalMeshes(arr);
   }, []);
 
+  const [keysMeshes, setKeysMeshes] = useState([]);
+  useEffect(() => {
+    if (!outerRef.current) return;
+    const arr = [];
+    outerRef.current.traverse((obj) => {
+  if (
+      obj.isMesh &&
+  (obj.material.name === 'whiteKeysMat' || obj.name === 'keyboardCircle')
+    ) {
+      arr.push(obj);
+    }
+  });
+    setKeysMeshes(arr);
+  }, []);
+
   // every frame, use playLevel (a number!) to drive emissive
   useFrame((_, delta) => {
-    if (!padMeshes.length && !cymbalMeshes.length && lights.length === 0)
+    if (!padMeshes.length && !cymbalMeshes.length &&!keysMeshes.length && lights.length === 0)
       return;
 
     // Optionally boost low/mid levels
@@ -235,13 +250,15 @@ export function ObjSound({
       // set to zero when smoothRef is zero → totally dark
       const hex = visibleMap[meshTrackId]?.color;
       if (hex) {
+
         m.material.emissive.set(hex);
         m.material.color.set(hex);
-        m.material.blendEquation = THREE.SubtractiveBlending;
+        // m.material.blendEquation = THREE.SubtractiveBlending;
       }
       m.material.emissiveIntensity = intensity;
+      // console.log(intensity)
       // keep color proportional to level (or leave it white)
-      m.material.emissive.setScalar(smoothRef.current * 2);
+      m.material.emissive.setScalar(smoothRef.current * 20);
     });
     // console.log(playLevel)
     lights.forEach((light) => {
@@ -264,10 +281,38 @@ export function ObjSound({
 
       // don’t touch m.material.emissive!  The map already modulates it.
     });
+const growIntensity = smoothRef.current
+    // after your existing damp → sm
+// pick a scale range for your circle, e.g. 1→3
+const minScale = 1
+const maxScale = 20
+const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity*2)
+
+       keysMeshes.forEach((m) => {  
+         const hex = visibleMap[meshTrackId]?.color;
+         if (m.name === 'keyboardCircle'){
+          if(hex){m.material.color.set(hex);}
+     m.scale.set(circleScale, circleScale, growIntensity)
+     m.material.transparent = true
+     m.material.opacity = growIntensity*100 
+// console.log(growIntensity)
+
+  }
+  else{ if (hex) {
+        // console.log(hex)
+        m.material.emissive.set(hex);
+        m.material.color.set(hex);
+        // m.material.blendEquation = THREE.SubtractiveBlending;
+      }
+      m.material.emissiveIntensity = intensity*2;
+      // console.log(intensity)
+      // keep color proportional to level (or leave it white)
+      m.material.emissive.setScalar(smoothRef.current * 2 );
+
+      }
+    });
   });
 
-  // console.log('ORRRRR', outerRef.current.children[0].position)
-  //outerRef.current.children[0]
   return (
     <group
       ref={outerRef}
