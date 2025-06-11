@@ -1,25 +1,4 @@
-/* .track-console {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  padding-left: 1em;
-  right: 0;
-  height: 35vh;
-  background-color: #181818;
-  border-top: 1px solid #444;
-  display: flex;
-  align-items: center;
-
-  overflow-x: auto;
-  z-index: 100;
-    transition: height 0.3s ease;
-
-}
-.track-console.open {
-  height: 30vh;
-} */
-
-.track-strip{
+.track-strip {
   height: 100%;
   display: flex;
   align-items: center;
@@ -28,55 +7,50 @@
 .track-strip-inner {
   display: flex;
   flex-direction: column;
-  /* align-items: center; */
+
   justify-content: space-around;
-  margin:  2px;
-  /* padding: .5em 0; */
-  min-width:fit-content;
+  margin: 2px;
+
+  min-width: fit-content;
   height: 90%;
   color: #eee;
   border-radius: 6px;
-
 }
 
-.slider-buttons{
+.slider-buttons {
   display: flex;
-  flex-direction:  row;
-height: inherit;
-width: 80%;
-/* margin: auto; */
-/* background-color: red; */
-justify-content: space-around;
+  flex-direction: row;
+  height: inherit;
+  width: 80%;
 
+  justify-content: space-around;
 }
 
-
-.slider-buttons > .buttons{
+.slider-buttons > .buttons {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-around;
   height: 80%;
-  
 }
 
-.slider-buttons > .buttons > button , .slider-buttons > .buttons > .button-wrapper > button{
-    display: flex;
+.slider-buttons > .buttons > button,
+.slider-buttons > .buttons > .button-wrapper > button {
+  display: flex;
   align-items: center;
   justify-content: space-around;
   width: 2rem;
-  /* height: 12px; */
+
   padding: 0.2em;
-    box-shadow: rgba(0, 0, 0, 0.521) 0 1px 2px 1px,
- rgba(116, 116, 116, 0.671) 0 2px 3px 2px;
-  /* display: none; */
+  box-shadow: rgba(0, 0, 0, 0.521) 0 1px 2px 1px,
+    rgba(116, 116, 116, 0.671) 0 2px 3px 2px;
 }
 
-.slider-buttons > .buttons > button:focus{
+.slider-buttons > .buttons > button:focus {
   outline: none;
 }
 
-.mesh-icon{
+.mesh-icon {
   width: 1.5em;
   height: 1.5em;
   padding: 0;
@@ -85,18 +59,15 @@ justify-content: space-around;
 }
 
 .track-name {
-  /* writing-mode: vertical-rl; */
   text-orientation: mixed;
   font-size: 0.7rem;
   margin-bottom: 6px;
-  /* height: 80px; */
-  overflow: hidden;
 
+  overflow: hidden;
 
   text-align: center;
   width: 13ch;
 }
-
 
 .track-color {
   width: 100%;
@@ -104,90 +75,72 @@ justify-content: space-around;
   border: none;
   margin-top: 8px;
   background: none;
-  
 }
 
 .track-visible {
   margin-top: 6px;
 }
 
-
-.track-console > .import{
+.track-console > .import {
   display: flex;
   flex-direction: column;
   /* background-color: aqua; */
   height: 80%;
- margin-left: 2em;
- border: rgba(245, 245, 245, 0.315) solid 2px ;
- border-radius: 12px;
+  margin-left: 2em;
+  border: rgba(245, 245, 245, 0.315) solid 2px;
+  border-radius: 12px;
 }
 
 .drag-handle {
-  /* position: fixed; */
-  /* background-color: aqua; */
   cursor: grab;
   margin-top: 0;
-  top: 0
-  /* height: 6px; */
-  /* margin-right: 8px; */
-}
-/* ------------------------------------------------------------------------
-   Container for each “button + floating panel” pair
-   ------------------------------------------------------------------------ */
-.button-wrapper {
-  position: relative;
-  display: inline-block; /* so that children can be absolutely positioned */
+  top: 0;
 }
 
-/* ------------------------------------------------------------------------
-   FX slider panel: appears to the right of its button, centered vertically
-   ------------------------------------------------------------------------ */
+.button-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
 .fx-panel {
   position: absolute;
-  left: 100%;                   /* immediately to the right of button */
-  top: 50%;                     /* vertical center */
+  left: 100%;
+  top: 50%;
   transform-origin: left center;
   transform: translateY(-50%) scaleY(0);
-  /* start collapsed (scaleY=0) and vertically centered */
+
   transition: transform 0.15s ease-out, opacity 0.15s ease-out;
   opacity: 0;
   background: #222;
   padding: 0.4rem;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   z-index: 10;
 }
 
-/* When “.open” is present, un-collapse */
 .fx-panel.open {
   transform: translateY(-50%) scaleY(1);
   opacity: 1;
 }
 
-/* The vertical thumb in the FX panel */
 .fx-panel .MuiSlider-root {
-  height: 6rem; /* make it taller if desired */
+  height: 6rem;
 }
 
-/* ------------------------------------------------------------------------
-   Pan (L-R) slider panel: appears above its button, horizontally centered
-   ------------------------------------------------------------------------ */
 .pan-panel {
   position: absolute;
-  bottom: 100%;                 /* immediately above the button */
-  left: 50%;                    /* start at horizontal center of button */
-  transform-origin: bottom center;
+  bottom: 100%;
+  left: 50%;
   transform: translateX(-50%) scaleY(0);
   transition: transform 0.15s ease-out, opacity 0.15s ease-out;
   opacity: 0;
   background: #222;
   padding: 0.4rem;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   z-index: 10;
 }
 
-/* Show when open */
 .pan-panel.open {
   transform: translateX(-50%) scaleY(1);
   opacity: 1;
@@ -196,19 +149,40 @@ justify-content: space-around;
   align-items: center;
 }
 
-/* The horizontal thumb in the pan panel */
 .pan-panel .MuiSlider-root {
-  width: 6rem; /* adjust width as you like */
+  width: 6rem;
 }
 
+.assign-panel {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: translateX(-50%) scaleY(0);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  opacity: 0;
+  background: #222;
+  padding: 0.4rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
 
+.assign-panel.open {
+  transform: translateX(-50%) scaleY(1);
+  opacity: 1;
+  height: 2em;
+  display: flex;
+  align-items: center;
+}
 
-#fx , .pan{
+#fx,
+.pan {
   font-size: 12px;
 }
 
-.pan.disabled{
+.pan.disabled {
   pointer-events: none;
-  opacity: .8;
+  opacity: 0.8;
   color: rgb(80, 80, 80);
 }

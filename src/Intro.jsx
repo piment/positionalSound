@@ -56,11 +56,11 @@ export default function Intro() {
           ) : (
             <div className="landing-buttons">
               <Link to="visualizer">
-                <button onClick={() => setClicked(true)}>🎛️ Visualizer</button>
+                <button onClick={() => setClicked(true)}>Try it now!</button>
               </Link>
-              <Link to="demo">
+              {/* <Link to="demo">
                 <button onClick={() => setClicked(true)}>🚀 Demo</button>
-              </Link>
+              </Link> */}
             </div>
           )}
         </div>

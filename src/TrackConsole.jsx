@@ -147,7 +147,7 @@ export function SortableTrackRow({
               </div>
             )}
             </div>
-
+<div className="button-wrapper">
             <button onClick={() => setAssignVisible(track.id)}>
               <img
                 src={MeshIcon}
@@ -158,9 +158,9 @@ export function SortableTrackRow({
             </button>
             {assignVisible === track.id && (
               <div
-                className='assign-panel'
+               className={`assign-panel${assignVisible  ? ' open' : ''}`}
                 onPointerLeave={() => setAssignVisible(null)}
-                style={{ position: 'absolute', zIndex: 10 }}
+                // style={{ position: 'absolute', zIndex: 10 }}
               >
                 <select
                   value={getAssignment(track.id) || ''}
@@ -180,7 +180,7 @@ export function SortableTrackRow({
                 </select>
               </div>
             )}
-
+</div>
                       <div className="button-wrapper">
             <button
             className={`pan ${assignedMeshId === null ? '' : 'disabled'}`}

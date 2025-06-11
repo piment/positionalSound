@@ -3,14 +3,16 @@ import { useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 export const Keyboard= forwardRef((props, ref) => {
   const { nodes, materials } = useGLTF('/mics_keys/keyboard_stand.glb')
-
-  const keyboardCol = useTexture('/mics_keys/textures/keyboard_graphics.png')
+const circleRef = useRef()
+  const [keyboardCol, keyboardCircleAlpha] = useTexture(['/mics_keys/textures/keyboard_graphics.png', '/mics_keys/textures/keysoft-min.png'])
   keyboardCol.flipY = false
 const whiteKeysMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#c1c1c1',name: 'whiteKeysMat' ,emissive: "#fff", emissiveIntensity: 0 }))
 const blackKeysMat = useMemo(() => new THREE.MeshPhongMaterial({shininess: 1}),[])
 const keyboardMat = useMemo(() => new THREE.MeshStandardMaterial({color: "#151515"}),[])
+
+const circleMat = new THREE.MeshBasicMaterial({ transparent: true, alphaMap: keyboardCircleAlpha})
   return (
-    <group {...props} dispose={null} position={[-4,0,1]}>
+    <group {...props} dispose={null} position={[-4,0,1]} rotation={[0,Math.PI*0.5,0]}>
       <mesh
 //  Stand
         castShadow
@@ -61,6 +63,10 @@ const keyboardMat = useMemo(() => new THREE.MeshStandardMaterial({color: "#15151
         geometry={nodes.Plane002_4.geometry}
         material={keyboardMat}
       />
+      <mesh ref={circleRef} name="keyboardCircle" material={circleMat} rotation={[-Math.PI*0.5,0,0]} position={[0,0.002,0]} >
+        <circleGeometry args={[2,64]}/>
+      
+      </mesh>
     </group>
   )
 })

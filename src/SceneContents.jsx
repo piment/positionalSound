@@ -25,6 +25,7 @@ export const SceneContents = memo(function SceneContents({
   setPlayOffset,
   pauseTime,
   setPauseTime,
+   setUiVisible,
   mainTrackId,
   removeMesh,
   sceneState,
@@ -66,6 +67,7 @@ export const SceneContents = memo(function SceneContents({
               setPauseTime(0);
               setPlayOffset(0);
               setPlaying(false);
+               setUiVisible(true)
             }}
             mainTrackId={mainTrackId}
             removeMesh={() => removeMesh(id)}
@@ -113,6 +115,7 @@ export const SceneContents = memo(function SceneContents({
               setPauseTime(0);
               setPlayOffset(0);
               setPlaying(false);
+              setUiVisible(true)
             }}
             // no meshRef or panner → dry playback
             onNodeReady={(id, node) => {
