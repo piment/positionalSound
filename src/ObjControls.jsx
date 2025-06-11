@@ -285,8 +285,8 @@ const growIntensity = smoothRef.current
     // after your existing damp → sm
 // pick a scale range for your circle, e.g. 1→3
 const minScale = 1
-const maxScale = 20
-const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity*2)
+const maxScale = 10
+const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity)
 
        keysMeshes.forEach((m) => {  
          const hex = visibleMap[meshTrackId]?.color;
