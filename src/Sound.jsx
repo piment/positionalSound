@@ -136,7 +136,7 @@ export default function Sound({
       threeAudioRef.current = threeAudio;
 
       threeAudio.setRefDistance(dist);
-      threeAudio.setRolloffFactor(0.05);
+      threeAudio.setRolloffFactor(0.1);
       threeAudio.panner.panningModel = 'equalpower';
       threeAudio.panner.distanceModel = 'inverse';
       threeAudio.panner.coneInnerAngle = 360;

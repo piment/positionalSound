@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import * as THREE from 'three';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Perf } from 'r3f-perf';
 import { nanoid } from 'nanoid';
 import './App.css';
@@ -94,6 +94,47 @@ const AUTO_ASSIGN_KEYWORDS = {
   Overheads: ['overhead', 'oh'],
 };
 
+// at the top of DemoScene.jsx
+const DEMO_COLORS = {
+  t1:  '#888888',    // Back Vocals (unassigned)
+  t2:  '#00ff00', // Bass
+  t3:  '#f6002e', // GTR Barren
+  t4:  '#ffae00', // GTR Erwan
+  t5:  '#ffff00', // HiTom
+  t6:  '#00ffff', // Keys
+  t7:  '#0000ff', // Kick
+  t8:  '#ff00ff', // Lead Vox
+  t9:  '#ffffff', // Overheads
+  t10: '#fff6e5', // Snare
+  t11: '#808080', // Tom Floor
+}
+const DEMO_VOLUME = {
+  t1: 0.48,   // Back Vocals
+  t2: .98,     // Bass
+  t3: 0.9,   // GTR Barren
+  t4: 0.97,   // GTR Erwan
+  t5: .92,     // HiTom   .92
+  t6: 0.8,   // Keys
+  t7: 1,     // Kick
+  t8: 0.75,  // Lead Vox
+  t9: 1,     // Overheads
+  t10: 1,    // Snare
+  t11: 0.85, // Tom Floor
+};
+
+const DEMO_SEND = {
+  t1: 0.45,
+  t2: 0.55,
+  t3: 0.45,
+  t4: 0.65,
+  t5: 0.25,
+  t6: 0.55,
+  t7: 0.21,
+  t8: 0.56,
+  t9: 0.7,
+  t10: 0.25,
+  t11: 0.2,
+};
 
 const DEMO_MESHES = [
   { id: 'snare1',    type: 'Snare',    name: 'Snare 1' },
@@ -105,10 +146,11 @@ const DEMO_MESHES = [
   { id: 'crash1',    type: 'Crash',    name: 'Crash 1' },
   { id: 'ride1',     type: 'Ride',     name: 'Ride 1' },
   { id: 'oh1',       type: 'Overheads',name: 'Overheads' },
-  { id: 'bass1',     type: 'Bass',     name: 'Bass SVT Amp' },
-  { id: 'gtr1',      type: 'Guitar',   name: 'Guitar Amp' },
-  { id: 'keys1',     type: 'Keyboard', name: 'Keyboard Stand' },
-  { id: 'voc1',      type: 'Vocals',   name: 'Mic Vocals' },
+  { id: 'bass1',     type: 'Bass',     name: 'Bass SVT Amp' , position:[ 0, 0,  10]  , rotation: [0,-Math.PI*0.5,0]},
+  { id: 'gtr1',      type: 'Guitar',   name: 'Guitar Amp' , position:[ 8, 0,  2], rotation: [0,- Math.PI*0.5,0]},
+   { id: 'gtr2',      type: 'Guitar',   name: 'Guitar Amp 2', position:[ -8, 0,  2]  , rotation: [0,Math.PI*0.5,0]},
+  { id: 'keys1',     type: 'Keyboard', name: 'Keyboard 1' ,  position:[ -4, 0,  5]  , rotation: [0,Math.PI*0.75,0]},
+  { id: 'voc1',      type: 'Vocals',   name: 'Mic Vocals' , position:[ 0, 0,  2] },
 ]
 
 // 2) Your 11 demo tracks
@@ -123,7 +165,7 @@ const DEMO_TRACKS = [
   { id: 't8',  url: '/demo_audio/Lead_Vox.mp3',    name: 'Lead Vox'    },
   { id: 't9',  url: '/demo_audio/Overheads.mp3',   name: 'Overheads'   },
   { id: 't10', url: '/demo_audio/Snare.mp3',       name: 'Snare'       },
-  { id: 't11', url: '/demo_audio/Tom Floor.mp3',   name: 'Tom Floor'   },
+  { id: 't11', url: '/demo_audio/Tom_Floor.mp3',   name: 'Tom Floor'   },
 ]
 
 
@@ -158,41 +200,69 @@ export default function DemoScene() {
    const [uiVisible, setUiVisible] = useState(true);
   const [perfVisible, setPerfVisible] = useState(false)
 
-  // const [trackList, setTrackList] = useState([]);
-    const [trackList, setTrackList] = useState(DEMO_TRACKS.map(t => ({
-    ...t,
-    buffer: null,      // we’ll load these on Play
-    volume: 1,
-    sendLevel: 0,
-  })))
 
-  // const [assignments, setAssignments] = useState({ null: [] });
-    const [assignments, setAssignments] = useState({
-    snare1:    [{ id:'t10', url:'/demo_audio/Snare.mp3', name:'Snare', buffer:null, volume:1, sendLevel:0 }],
-    kick1:     [{ id:'t7',  url:'/demo_audio/Kick.mp3', name:'Kick', buffer:null, volume:1, sendLevel:0 }],
-    hihat1:    [{ id:'t3',  url:'/demo_audio/GTR_Barren.mp3', name:'GTR Barren', buffer:null, volume:1, sendLevel:0 }], // example
-    hitom1:    [{ id:'t5',  url:'', name:'HiTom', buffer:null, volume:1, sendLevel:0 }],
-    midtom1:   [{ id:'t6',  url:'', name:'Keys', buffer:null, volume:1, sendLevel:0 }],
-    floortom1: [{ id:'t11', url:'', name:'Tom Floor', buffer:null, volume:1, sendLevel:0}],
-    crash1:    [{ id:'t4',  url:'/demo_audio/GTR_Erwan.mp3', name:'GTR Erwan', buffer:null, volume:1, sendLevel:0}],
-    oh1:     [{ id:'t9',  url:'', name:'Overheads', buffer:null, volume:1, sendLevel:0}],
-    // oh1:       [],  // no dry overhead
-    bass1:     [{ id:'t2',  url:'', name:'Bass', buffer:null, volume:1, sendLevel:0}],
-    gtr1:      [{ id:'t3',  url:'', name:'GTR Barren', buffer:null, volume:1, sendLevel:0}],
-    keys1:     [{ id:'t6',  url:'', name:'Keys', buffer:null, volume:1, sendLevel:0}],
-    voc1:      [{ id:'t8',  url:'', name:'Lead Vox', buffer:null, volume:1, sendLevel:0}],
-    null:      [{ id:'t1',  url:'', name:'Back Vocals', buffer:null, volume:1, sendLevel:0 }],
-  })
+const [trackList, setTrackList] = useState(
+  DEMO_TRACKS.map((t) => ({
+    id:        t.id,
+    url:       t.url,
+    name:      t.name,
+    buffer:    null,  // we'll load these with loadBuffer()
+    volume:    1,
+    sendLevel: 0,
+  }))
+)
+
+const assignments = useMemo(() => {
+  // helper to find by id
+  const byId = (id) => {
+    const t = trackList.find((t) => t.id === id);
+    return t
+      ? [{ id: t.id, url: t.url, name: t.name, buffer: t.buffer, volume: 1, sendLevel: 0 }]
+      : [];
+  };
+
+  return {
+    // drum kit
+    snare1:    byId('t10'),  // Snare
+    kick1:     byId('t7'),   // Kick
+    hihat1:    [],           // no loop
+    hitom1:    byId('t5'),
+    midtom1:   [],           // none
+    floortom1: byId('t11'),
+    crash1:    [],           // none
+    ride1:     [],           // none
+    oh1:       byId('t9'),   // Overheads
+
+    // amps & instruments
+    bass1:     byId('t2'),
+    gtr1: byId('t3'),    // GTR Barren
+    gtr2: byId('t4'),  // GTR Erwan
+   
+    keys1:     byId('t6'),
+    voc1:      byId('t8'),   // Lead Vox
+
+    // leave Back Vocals unassigned
+    null:      byId('t1'),
+  };
+}, [trackList]);
+
   const [scrubPos, setScrubPos] = useState(0);
   const [mainTrackId, setMainTrackId] = useState(null);
   const activeNodesRef = useRef({});
 
-  // const [meshes, setMeshes] = useState(() => {
-  //   const v = localStorage.getItem(STORAGE_KEYS.meshes);
-  //   return v ? JSON.parse(v) : [];
-  // });
 
-
+useEffect(() => {
+    DEMO_TRACKS.forEach(({ id }) => {
+      // add it to the store
+      dispatch(addTrack(id))
+      // give it its demo colour
+      dispatch(setColor({ trackId: id, color: DEMO_COLORS[id] }))
+      // set its starting volume to 1
+      dispatch(setVolume({ trackId: id,  volume: DEMO_VOLUME[id]  || 1 }))
+      // you could also pre-set sendLevel if you like:
+      dispatch(setSendLevel({ trackId: id, sendLevel: DEMO_SEND[id] || 0  }))
+    })
+  }, [dispatch])
 
   
   const [meshes] = useState(DEMO_MESHES)
@@ -278,7 +348,17 @@ export default function DemoScene() {
     reverbGain.gain.setValueAtTime(busLevel, audioCtx.currentTime);
   }, [busLevel, reverbGain, audioCtx]);
 
-
+useEffect(() => {
+  trackList.forEach((t, i) => {
+    loadBuffer(t.url).then(buf => {
+      setTrackList(list => {
+        const copy = [...list];
+        copy[i] = { ...copy[i], buffer: buf };
+        return copy;
+      });
+    });
+  });
+}, []);
 
   function addMesh(type) {
     // setMeshes((prev) => {
@@ -459,15 +539,15 @@ export default function DemoScene() {
 
 
   function updateTrack(id, props) {
-    setAssignments((prev) => {
-      const updated = {};
-      for (const [bucket, tracks] of Object.entries(prev)) {
-        updated[bucket] = tracks.map((t) =>
-          t.id === id ? { ...t, ...props } : t
-        );
-      }
-      return updated;
-    });
+    // setAssignments((prev) => {
+    //   const updated = {};
+    //   for (const [bucket, tracks] of Object.entries(prev)) {
+    //     updated[bucket] = tracks.map((t) =>
+    //       t.id === id ? { ...t, ...props } : t
+    //     );
+    //   }
+    //   return updated;
+    // });
 
     // 🔁 Sync Redux with local change
     if (props.volume !== undefined) {
@@ -492,20 +572,41 @@ export default function DemoScene() {
     const main = trackList.find((t) => t.id === mainTrackId);
     return main?.buffer?.duration || 0;
   }, [mainTrackId, trackList]);
-
+  const playingRef = useRef(playing)
+  const playOffsetRef = useRef(playOffset)
+  const durationRef   = useRef(duration)
   const [currentTime, setCurrentTime] = useState(0);
+  // useEffect(() => {
+  //   let raf;
+  //   function updateTime() {
+  //     if (playing) {
+  //       const elapsed = audioCtx.currentTime - playOffset;
+  //       setCurrentTime(Math.min(elapsed, duration));
+  //     }
+  //     raf = requestAnimationFrame(updateTime);
+  //   }
+  //   raf = requestAnimationFrame(updateTime);
+  //   return () => cancelAnimationFrame(raf);
+  // }, [playing, playOffset, audioCtx, duration]);
+  useEffect(() => {
+    playingRef.current    = playing
+    playOffsetRef.current = playOffset
+    durationRef.current   = duration
+  }, [playing, playOffset, duration])
   useEffect(() => {
     let raf;
-    function updateTime() {
-      if (playing) {
-        const elapsed = audioCtx.currentTime - playOffset;
-        setCurrentTime(Math.min(elapsed, duration));
+
+    const loop = () => {
+      if (playingRef.current) {
+        const elapsed = audioCtx.currentTime - playOffsetRef.current
+        setCurrentTime(Math.min(elapsed, durationRef.current))
       }
-      raf = requestAnimationFrame(updateTime);
+      raf = requestAnimationFrame(loop)
     }
-    raf = requestAnimationFrame(updateTime);
-    return () => cancelAnimationFrame(raf);
-  }, [playing, playOffset, audioCtx, duration]);
+
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   const handleVolumeChange = useCallback((trackId, newVol) => {
     dispatch(setVolume({ trackId, volume: newVol }));
@@ -586,7 +687,7 @@ export default function DemoScene() {
       return newList;
     });
   }, []);
-
+// console.log(trackList)
   const canvasProps = useMemo(
     () => ({
       meshes,

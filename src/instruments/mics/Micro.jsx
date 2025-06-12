@@ -28,8 +28,10 @@ export const Micro = forwardRef((props, ref) => {
   }, [scene]);
 
   return (
-    <group {...props} dispose={null}>
-      <group position={[0, 4, 0]}>
+    <group {...props} dispose={null}
+    position={props.position? props.position : [0,0,0]}
+    >
+      <group position={ [0, 4, 0]}>
         <spotLight
           ref={lightRef}
           castShadow

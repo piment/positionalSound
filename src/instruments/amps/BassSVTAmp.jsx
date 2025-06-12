@@ -20,8 +20,8 @@ export const  BassSVTAmp = forwardRef((props, ref) => {
 
     <group    {...props}
       dispose={null}
-      rotation={[0, -Math.PI *.72, 0]}
-      position={[-2, 0, 6]}>
+      rotation={props.rotation? props.rotation : [0, -Math.PI *.5, 0]}
+      position={props.position ? props.position : [0, 0, 6]}>
       <mesh
         castShadow
         receiveShadow
@@ -43,7 +43,7 @@ export const  BassSVTAmp = forwardRef((props, ref) => {
           // scale={.15}
           // distance={120.5}
           castShadow
-          decay={.8}
+          decay={1.2}
           // shadow-bias={-0.001}
           // shadow-mapSize-width={1024}
           // shadow-mapSize-height={1024}

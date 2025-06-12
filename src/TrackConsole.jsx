@@ -104,6 +104,7 @@ export function SortableTrackRow({
             value={trackSettings.volume || 0}
             onChange={(e, value) => {
               // value is already a number
+              console.log(value)
               dispatch(setVolume({ trackId: track.id, volume: value }));
             }}
             className='track-slider'
