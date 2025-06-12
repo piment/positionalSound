@@ -34,6 +34,7 @@ export const SceneContents = memo(function SceneContents({
   trackList,
   components,
     onNodeReady,
+    demoMode
 }) {
   return (
     <>
@@ -55,6 +56,7 @@ export const SceneContents = memo(function SceneContents({
             dist={dist}
             subs={syncedSubs}
             on={playing}
+         
             listener={listener}
             convolver={convolver}
             onAnalyserReady={handleAnalyserReady}
@@ -73,9 +75,10 @@ export const SceneContents = memo(function SceneContents({
             removeMesh={() => removeMesh(id)}
             onNodeReady={(trackId, node) => {
           onNodeReady(trackId, node);
+          demoMode={demoMode}
             }}
           >
-            <Part />
+            <Part  position={meshObj.position} rotation={meshObj.rotation}/>
           </ObjSound>
         );
       })}

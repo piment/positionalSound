@@ -15,13 +15,13 @@ const ampMat = useMemo(() => new THREE.MeshStandardMaterial({map: ampCol, normal
 
   return (
 
-    <group {...props} dispose={null} rotation={[0,-Math.PI*.7,0]}      position={[4, 0, 6]}>
+    <group  dispose={null} rotation={props.rotation? props.rotation : [0,-Math.PI*.7,0]}      position={props.position? props.position : [4, 0, 6]} >
           <group position={[-.15,.3,0.583]}>
         <pointLight
           ref={lightRef}
           color={props.color} 
           intensity={0}
-          userData={{ intensityMultiplier: 2 }} 
+          userData={{ intensityMultiplier: 4 }} 
  
           castShadow
           decay={1}

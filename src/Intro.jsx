@@ -60,7 +60,7 @@ export default function Intro() {
               </Link>
               {/* <Link to="demo">
                 <button onClick={() => setClicked(true)}>🚀 Demo</button>
-              </Link> */}
+              </Link>  */}
             </div>
           )}
         </div>

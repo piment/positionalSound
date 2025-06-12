@@ -235,33 +235,25 @@ export default function App() {
       return [...prev, { id: nanoid(), type, name }];
     });
   }
-  async function handleImport(items) {
-    const newTracks = await Promise.all(
-      items.map(async (f) => {
-        const buffer = await loadBuffer(f.url);
-        return {
-          id: nanoid(),
-          file: f.file,
-          url: f.url,
-          name: f.name,
-          buffer, // ✅ store preloaded buffer
-          volume: 1,
-          sendLevel: 0,
-        };
-      })
-    );
+async function handleImport(items) {
+ const newTracks = await Promise.all(
+    items.map(async (f) => {
+      const buffer = await loadBuffer(f.url)
+      return { id: nanoid(), url: f.url, name: f.name, buffer, volume: 1, sendLevel: 0 }
+    })
+  )
+  // 1) add to trackList
+  setTrackList((prev) => [...prev, ...newTracks])
+  newTracks.forEach((t) => dispatch(addTrack(t.id)))
+  setTrackList((prev) => {
+    const existing = new Set(prev.map((t) => t.id))
+    const toAdd   = newTracks.filter((t) => !existing.has(t.id))
+    if (toAdd.length === 0) return prev
+    return [...prev, ...toAdd]
+  })
 
-    setTrackList((prev) => [...prev, ...newTracks]);
+}
 
-    setAssignments((a) => ({
-      ...a,
-      null: [...(a.null || []), ...newTracks],
-    }));
-
-    newTracks.forEach((t) => {
-      dispatch(addTrack(t.id));
-    });
-  }
   function toggleAssign(trackObj, targetMeshId) {
     setAssignments((prev) => {
       const cleaned = Object.fromEntries(
@@ -534,6 +526,12 @@ export default function App() {
       return newList;
     });
   }, []);
+
+
+useEffect(() => {
+console.log('MESHES',meshes , '||||||', 'TRACKLIST',trackList, '||||||', 'ASSIGNMENTS', assignments)
+
+}, [assignments, meshes, trackList])
 
   const canvasProps = useMemo(
     () => ({

@@ -122,6 +122,7 @@ export function ObjSound({
   onMainEnded,
   mainTrackId,
   removeMesh,
+  demoMode
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
@@ -285,8 +286,8 @@ const growIntensity = smoothRef.current
     // after your existing damp → sm
 // pick a scale range for your circle, e.g. 1→3
 const minScale = 1
-const maxScale = 20
-const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity*2)
+const maxScale = 10
+const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity)
 
        keysMeshes.forEach((m) => {  
          const hex = visibleMap[meshTrackId]?.color;
@@ -330,9 +331,12 @@ const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity*2)
           sceneState.mode = (snap.mode + 1) % modes.length;
         }
       }}
-      onDoubleClick={(e) => {
-        e.stopPropagation(), handleDoubleClick();
-      }}
+onDoubleClick={(e) => {
+  e.stopPropagation();
+  if (!demoMode) {
+    handleDoubleClick();
+  }
+}}
     >
       {children}
 
@@ -359,7 +363,7 @@ const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity*2)
               width: 'max-content',
             }}
           >
-            {showDelete && (
+            {showDelete && !demoMode &&(
               <div className='delete-tab'>
                 <button
                   onClick={() => setShowDelete(false)}
