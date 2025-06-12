@@ -576,18 +576,7 @@ useEffect(() => {
   const playOffsetRef = useRef(playOffset)
   const durationRef   = useRef(duration)
   const [currentTime, setCurrentTime] = useState(0);
-  // useEffect(() => {
-  //   let raf;
-  //   function updateTime() {
-  //     if (playing) {
-  //       const elapsed = audioCtx.currentTime - playOffset;
-  //       setCurrentTime(Math.min(elapsed, duration));
-  //     }
-  //     raf = requestAnimationFrame(updateTime);
-  //   }
-  //   raf = requestAnimationFrame(updateTime);
-  //   return () => cancelAnimationFrame(raf);
-  // }, [playing, playOffset, audioCtx, duration]);
+
   useEffect(() => {
     playingRef.current    = playing
     playOffsetRef.current = playOffset
@@ -743,58 +732,21 @@ useEffect(() => {
   );
 
 
+const allLoaded = trackList.every(t => t.buffer !== null);
   return (
-    <div style={{ height: '100vh' }}>
-      <div className='rev-params'>
-        {/*         
-        <div className='rev-sliders'>
-        <div style={{ margin: '1em 0' }} className='param'>
-          <label>Left Delay (ms): {leftDelayTime}</label>
-          <input
-            type='range'
-            min={0}
-            max={0.2}
-            step={0.00001}
-            value={leftDelayTime}
-            onChange={(e) => setLeftDelayTime(parseFloat(e.target.value))}
-          />
-        </div>
-        <div style={{ margin: '1em 0' }} className='param'>
-          <label>Right Delay (ms): {rightDelayTime}</label>
-          <input
-            type='range'
-            min={0}
-            max={0.2}
-            step={0.00001}
-            value={rightDelayTime}
-            onChange={(e) => setRightDelayTime(parseFloat(e.target.value))}
-          />
-        </div>
-        <div style={{ margin: '1em 0' }} className='param'>
-          <label>Reverb Low-Cut (Hz): {hpfFreq}</label>
-          <input
-            type='range'
-            min={20}
-            max={2000}
-            step={1}
-            value={hpfFreq}
-            onChange={(e) => setHpfFreq(parseFloat(e.target.value))}
-          />
-        </div>
-        <div style={{ margin: '1em 0' }} className='param'>
-          <label>Reverb High-Cut (Hz): {lpfFreq}</label>
-          <input
-            type='range'
-            min={500}
-            max={20000}
-            step={100}
-            value={lpfFreq}
-            onChange={(e) => setLpfFreq(parseFloat(e.target.value))}
-          />
-        </div>
-        </div> 
-        */}
-         {uiVisible && (   <PlayController
+    <div style={{ height: '100vh' }}> {!allLoaded && (
+      <div className="loader">
+       Loading tracks… { trackList.filter(t => t.buffer).length } / { trackList.length }
+
+      </div>
+    )}
+    { allLoaded && (      
+  <>   <div className='rev-params'>
+       
+
+
+
+  {uiVisible && (   <PlayController
           playAll={playAll}
           pauseAll={pauseAll}
           stopAll={stopAll}
@@ -807,25 +759,6 @@ useEffect(() => {
         />)}
       </div>
 
-      {uiVisible && (    <div className={`spawner-container ${spawnerOpen ? 'open' : ''}`}>
-        <button
-          className='spawner-toggle'
-          onClick={() => setSpawnerOpen((v) => !v)}
-        >
-          {spawnerOpen ? '×' : '☰'}
-        </button>
-
-        <MeshSpawner
-          className={`mesh-spawner ${spawnerOpen ? 'open' : ''}`}
-          components={COMPONENTS}
-          meshes={meshes}
-          addMesh={addMesh}
-        />
-      </div>)}
-
-      {/* Center: 3D canvas */}
-
-      {/* <div className='canvas-main'>{memoizedCanvas}</div> */}
 
       <div className='canvas-main'>
         <KeyboardControls
@@ -859,7 +792,7 @@ useEffect(() => {
         </KeyboardControls>
       </div>
         
-         {uiVisible && ( <div className='console-container'>
+         {/* {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
@@ -883,8 +816,8 @@ useEffect(() => {
           isReorderable={true}
           onReorder={onReorderTracks}
         />
-      </div>)} 
-        {uiVisible && (  <HintTab/>)}
+      </div>)}  */}
+        {uiVisible && (  <HintTab/>)}</>)}
     </div>
   );
 }
