@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useDevice } from './hooks/useDevice';
 
 export default function Sound({
   buffer,
@@ -28,7 +29,7 @@ export default function Sound({
 }) {
   const { camera, scene } = useThree();
   const audioCtx = listener.context;
-
+  const {isMobile} = useDevice()
   // ────────────────────────────────────────────────────────────────────────────────
   // Refs for nodes we create
   // ────────────────────────────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ export default function Sound({
   // Create exactly one AnalyserNode
   const analyserNode = useMemo(() => {
     const a = audioCtx.createAnalyser();
-    a.fftSize = 4096;
+    a.fftSize = isMobile? 1024 : 4096;
     a.smoothingTimeConstant = 0.8;
     return a;
   }, [audioCtx]);

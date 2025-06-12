@@ -34,6 +34,7 @@ export const SceneContents = memo(function SceneContents({
   trackList,
   components,
     onNodeReady,
+    demoMode
 }) {
   return (
     <>
@@ -74,6 +75,7 @@ export const SceneContents = memo(function SceneContents({
             removeMesh={() => removeMesh(id)}
             onNodeReady={(trackId, node) => {
           onNodeReady(trackId, node);
+          demoMode={demoMode}
             }}
           >
             <Part  position={meshObj.position} rotation={meshObj.rotation}/>

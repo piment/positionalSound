@@ -96,29 +96,29 @@ const AUTO_ASSIGN_KEYWORDS = {
 
 // at the top of DemoScene.jsx
 const DEMO_COLORS = {
-  t1:  '#888888',    // Back Vocals (unassigned)
-  t2:  '#00ff00', // Bass
-  t3:  '#f6002e', // GTR Barren
-  t4:  '#ffae00', // GTR Erwan
-  t5:  '#ffff00', // HiTom
-  t6:  '#00ffff', // Keys
-  t7:  '#0000ff', // Kick
-  t8:  '#ff00ff', // Lead Vox
-  t9:  '#ffffff', // Overheads
+  t1: '#888888', // Back Vocals (unassigned)
+  t2: '#00ff00', // Bass
+  t3: '#f6002e', // GTR Barren
+  t4: '#ffae00', // GTR Erwan
+  t5: '#ffffcc', // HiTom
+  t6: '#00ffff', // Keys
+  t7: '#ccccff', // Kick
+  t8: '#ff00ff', // Lead Vox
+  t9: '#ffffff', // Overheads
   t10: '#fff6e5', // Snare
   t11: '#808080', // Tom Floor
-}
+};
 const DEMO_VOLUME = {
-  t1: 0.48,   // Back Vocals
-  t2: .98,     // Bass
-  t3: 0.9,   // GTR Barren
-  t4: 0.97,   // GTR Erwan
-  t5: .92,     // HiTom   .92
-  t6: 0.8,   // Keys
-  t7: 1,     // Kick
-  t8: 0.75,  // Lead Vox
-  t9: 1,     // Overheads
-  t10: 1,    // Snare
+  t1: 0.48, // Back Vocals
+  t2: 0.98, // Bass
+  t3: 1.2, // GTR Barren
+  t4: 0.97, // GTR Erwan
+  t5: 0.92, // HiTom   .92
+  t6: 0.8, // Keys
+  t7: 1, // Kick
+  t8: 0.75, // Lead Vox
+  t9: 1, // Overheads
+  t10: 1, // Snare
   t11: 0.85, // Tom Floor
 };
 
@@ -132,54 +132,75 @@ const DEMO_SEND = {
   t7: 0.21,
   t8: 0.56,
   t9: 0.7,
-  t10: 0.25,
+  t10: 0.15,
   t11: 0.2,
 };
 
 const DEMO_MESHES = [
-  { id: 'snare1',    type: 'Snare',    name: 'Snare 1' },
-  { id: 'kick1',     type: 'Kick',     name: 'Kick 1' },
-  { id: 'hihat1',    type: 'Hihat',    name: 'HiHat 1' },
-  { id: 'hitom1',    type: 'HiTom',    name: 'HiTom 1' },
-  { id: 'midtom1',   type: 'MidTom',   name: 'MidTom 1' },
+  { id: 'snare1', type: 'Snare', name: 'Snare 1' },
+  { id: 'kick1', type: 'Kick', name: 'Kick 1' },
+  { id: 'hihat1', type: 'Hihat', name: 'HiHat 1' },
+  { id: 'hitom1', type: 'HiTom', name: 'HiTom 1' },
+  { id: 'midtom1', type: 'MidTom', name: 'MidTom 1' },
   { id: 'floortom1', type: 'FloorTom', name: 'FloorTom 1' },
-  { id: 'crash1',    type: 'Crash',    name: 'Crash 1' },
-  { id: 'ride1',     type: 'Ride',     name: 'Ride 1' },
-  { id: 'oh1',       type: 'Overheads',name: 'Overheads' },
-  { id: 'bass1',     type: 'Bass',     name: 'Bass SVT Amp' , position:[ 0, 0,  10]  , rotation: [0,-Math.PI*0.5,0]},
-  { id: 'gtr1',      type: 'Guitar',   name: 'Guitar Amp' , position:[ 8, 0,  2], rotation: [0,- Math.PI*0.5,0]},
-   { id: 'gtr2',      type: 'Guitar',   name: 'Guitar Amp 2', position:[ -8, 0,  2]  , rotation: [0,Math.PI*0.5,0]},
-  { id: 'keys1',     type: 'Keyboard', name: 'Keyboard 1' ,  position:[ -4, 0,  5]  , rotation: [0,Math.PI*0.75,0]},
-  { id: 'voc1',      type: 'Vocals',   name: 'Mic Vocals' , position:[ 0, 0,  2] },
-]
+  { id: 'crash1', type: 'Crash', name: 'Crash 1' },
+  { id: 'ride1', type: 'Ride', name: 'Ride 1' },
+  { id: 'oh1', type: 'Overheads', name: 'Overheads' },
+  {
+    id: 'bass1',
+    type: 'Bass',
+    name: 'Bass SVT Amp',
+    position: [0, 0, 10],
+    rotation: [0, -Math.PI * 0.5, 0],
+  },
+  {
+    id: 'gtr1',
+    type: 'Guitar',
+    name: 'Guitar Amp',
+    position: [8, 0, 2],
+    rotation: [0, -Math.PI * 0.5, 0],
+  },
+  {
+    id: 'gtr2',
+    type: 'Guitar',
+    name: 'Guitar Amp 2',
+    position: [-8, 0, 2],
+    rotation: [0, Math.PI * 0.5, 0],
+  },
+  {
+    id: 'keys1',
+    type: 'Keyboard',
+    name: 'Keyboard 1',
+    position: [-4, 0, 5],
+    rotation: [0, Math.PI * 0.75, 0],
+  },
+  { id: 'voc1', type: 'Vocals', name: 'Mic Vocals', position: [0, 0, 2] },
+];
 
 // 2) Your 11 demo tracks
 const DEMO_TRACKS = [
-  { id: 't1',  url: '/demo_audio/Back_Vocals.mp3', name: 'Back Vocals' },
-  { id: 't2',  url: '/demo_audio/Bass.mp3',        name: 'Bass'        },
-  { id: 't3',  url: '/demo_audio/GTR_Barren.mp3',  name: 'GTR Barren'  },
-  { id: 't4',  url: '/demo_audio/GTR_Erwan.mp3',   name: 'GTR Erwan'   },
-  { id: 't5',  url: '/demo_audio/HiTom.mp3',       name: 'HiTom'       },
-  { id: 't6',  url: '/demo_audio/Keys.mp3',        name: 'Keys'        },
-  { id: 't7',  url: '/demo_audio/Kick.mp3',        name: 'Kick'        },
-  { id: 't8',  url: '/demo_audio/Lead_Vox.mp3',    name: 'Lead Vox'    },
-  { id: 't9',  url: '/demo_audio/Overheads.mp3',   name: 'Overheads'   },
-  { id: 't10', url: '/demo_audio/Snare.mp3',       name: 'Snare'       },
-  { id: 't11', url: '/demo_audio/Tom_Floor.mp3',   name: 'Tom Floor'   },
-]
-
-
+  { id: 't1', url: '/demo_audio/Back_Vocals.m4a', name: 'Back Vocals' },
+  { id: 't2', url: '/demo_audio/Bass.m4a', name: 'Bass' },
+  { id: 't3', url: '/demo_audio/GTR_Barren.m4a', name: 'GTR Barren' },
+  { id: 't4', url: '/demo_audio/GTR_Erwan.m4a', name: 'GTR Erwan' },
+  { id: 't5', url: '/demo_audio/HiTom.m4a', name: 'HiTom' },
+  { id: 't6', url: '/demo_audio/Keys.m4a', name: 'Keys' },
+  { id: 't7', url: '/demo_audio/Kick.m4a', name: 'Kick' },
+  { id: 't8', url: '/demo_audio/Lead_Vox.m4a', name: 'Lead Vox' },
+  { id: 't9', url: '/demo_audio/Overheads.m4a', name: 'Overheads' },
+  { id: 't10', url: '/demo_audio/Snare.m4a', name: 'Snare' },
+  { id: 't11', url: '/demo_audio/Tom_Floor.m4a', name: 'Tom Floor' },
+];
 
 export default function DemoScene() {
   const listener = useAudioListener();
   const audioCtx = useAudioContext();
-
+  const demoMode = true
   const { loadBuffer, clearBuffer, clearAllBuffers, cache } =
     useBufferCache(audioCtx);
 
   const masterTapGain = useMemo(() => audioCtx.createGain(), [audioCtx]);
   const masterAnalyser = useMemo(() => audioCtx.createAnalyser(), [audioCtx]);
-
 
   useMemo(() => {
     masterTapGain.gain.value = 1;
@@ -190,82 +211,99 @@ export default function DemoScene() {
   const dispatch = useDispatch();
   const settings = useSelector((state) => state.trackSettings);
 
-
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [spawnerOpen, setSpawnerOpen] = useState(false);
 
   const [playing, setPlaying] = useState(false);
   const [playOffset, setPlayOffset] = useState(0);
   const [pauseTime, setPauseTime] = useState(0);
-   const [uiVisible, setUiVisible] = useState(true);
-  const [perfVisible, setPerfVisible] = useState(false)
+  const [uiVisible, setUiVisible] = useState(true);
+  const [perfVisible, setPerfVisible] = useState(false);
 
+  const [trackList, setTrackList] = useState(
+    DEMO_TRACKS.map((t) => ({
+      id: t.id,
+      url: t.url,
+      name: t.name,
+      buffer: null, // we'll load these with loadBuffer()
+      volume: 1,
+      sendLevel: 0,
+    }))
+  );
 
-const [trackList, setTrackList] = useState(
-  DEMO_TRACKS.map((t) => ({
-    id:        t.id,
-    url:       t.url,
-    name:      t.name,
-    buffer:    null,  // we'll load these with loadBuffer()
-    volume:    1,
-    sendLevel: 0,
-  }))
-)
+  const assignments = useMemo(() => {
+    // helper to find by id
+    const byId = (id) => {
+      const t = trackList.find((t) => t.id === id);
+      return t
+        ? [
+            {
+              id: t.id,
+              url: t.url,
+              name: t.name,
+              buffer: t.buffer,
+              volume: 1,
+              sendLevel: 0,
+            },
+          ]
+        : [];
+    };
 
-const assignments = useMemo(() => {
-  // helper to find by id
-  const byId = (id) => {
-    const t = trackList.find((t) => t.id === id);
-    return t
-      ? [{ id: t.id, url: t.url, name: t.name, buffer: t.buffer, volume: 1, sendLevel: 0 }]
-      : [];
-  };
+    return {
+      // drum kit
+      snare1: byId('t10'), // Snare
+      kick1: byId('t7'), // Kick
+      hihat1: [], // no loop
+      hitom1: byId('t5'),
+      midtom1: [], // none
+      floortom1: byId('t11'),
+      crash1: [], // none
+      ride1: [], // none
+      oh1: byId('t9'), // Overheads
 
-  return {
-    // drum kit
-    snare1:    byId('t10'),  // Snare
-    kick1:     byId('t7'),   // Kick
-    hihat1:    [],           // no loop
-    hitom1:    byId('t5'),
-    midtom1:   [],           // none
-    floortom1: byId('t11'),
-    crash1:    [],           // none
-    ride1:     [],           // none
-    oh1:       byId('t9'),   // Overheads
+      // amps & instruments
+      bass1: byId('t2'),
+      gtr1: byId('t3'), // GTR Barren
+      gtr2: byId('t4'), // GTR Erwan
 
-    // amps & instruments
-    bass1:     byId('t2'),
-    gtr1: byId('t3'),    // GTR Barren
-    gtr2: byId('t4'),  // GTR Erwan
-   
-    keys1:     byId('t6'),
-    voc1:      byId('t8'),   // Lead Vox
+      keys1: byId('t6'),
+      voc1: byId('t8'), // Lead Vox
 
-    // leave Back Vocals unassigned
-    null:      byId('t1'),
-  };
-}, [trackList]);
+      // leave Back Vocals unassigned
+      null: byId('t1'),
+    };
+  }, [trackList]);
 
   const [scrubPos, setScrubPos] = useState(0);
   const [mainTrackId, setMainTrackId] = useState(null);
   const activeNodesRef = useRef({});
 
+  const lastTap = useRef(0);
 
-useEffect(() => {
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+     setUiVisible(!uiVisible)
+    }
+    lastTap.current = now;
+  };
+
+
+
+  useEffect(() => {
     DEMO_TRACKS.forEach(({ id }) => {
       // add it to the store
-      dispatch(addTrack(id))
+      dispatch(addTrack(id));
       // give it its demo colour
-      dispatch(setColor({ trackId: id, color: DEMO_COLORS[id] }))
+      dispatch(setColor({ trackId: id, color: DEMO_COLORS[id] }));
       // set its starting volume to 1
-      dispatch(setVolume({ trackId: id,  volume: DEMO_VOLUME[id]  || 1 }))
+      dispatch(setVolume({ trackId: id, volume: DEMO_VOLUME[id] || 1 }));
       // you could also pre-set sendLevel if you like:
-      dispatch(setSendLevel({ trackId: id, sendLevel: DEMO_SEND[id] || 0  }))
-    })
-  }, [dispatch])
+      dispatch(setSendLevel({ trackId: id, sendLevel: DEMO_SEND[id] || 0 }));
+    });
+  }, [dispatch]);
 
-  
-  const [meshes] = useState(DEMO_MESHES)
+  const [meshes] = useState(DEMO_MESHES);
   const [leftDelayTime, setLeftDelayTime] = useState(0.04118);
   const [rightDelayTime, setRightDelayTime] = useState(0.04181);
   const [hpfFreq, setHpfFreq] = useState(200);
@@ -343,22 +381,22 @@ useEffect(() => {
     reverbLowPass.frequency.setValueAtTime(lpfFreq, audioCtx.currentTime);
   }, [lpfFreq, reverbLowPass, audioCtx]);
   // 4) UI state for global reverb bus level
-  const [busLevel, setBusLevel] = useState(0.2);
+  const [busLevel, setBusLevel] = useState(1.55);
   useEffect(() => {
     reverbGain.gain.setValueAtTime(busLevel, audioCtx.currentTime);
   }, [busLevel, reverbGain, audioCtx]);
 
-useEffect(() => {
-  trackList.forEach((t, i) => {
-    loadBuffer(t.url).then(buf => {
-      setTrackList(list => {
-        const copy = [...list];
-        copy[i] = { ...copy[i], buffer: buf };
-        return copy;
+  useEffect(() => {
+    trackList.forEach((t, i) => {
+      loadBuffer(t.url).then((buf) => {
+        setTrackList((list) => {
+          const copy = [...list];
+          copy[i] = { ...copy[i], buffer: buf };
+          return copy;
+        });
       });
     });
-  });
-}, []);
+  }, []);
 
   function addMesh(type) {
     // setMeshes((prev) => {
@@ -493,7 +531,7 @@ useEffect(() => {
     const resumeOffset = pauseTime || scrubPos || 0;
     setPlayOffset(audioCtx.currentTime - resumeOffset);
     setPlaying(true);
-       setUiVisible(false)
+    setUiVisible(false);
     // setPauseTime(null); // reset pause time
   }
   function pauseAll() {
@@ -501,15 +539,14 @@ useEffect(() => {
     setPauseTime(audioCtx.currentTime - playOffset);
     // console.log(audioCtx.currentTime - playOffset);
     setPlaying(false);
-       setUiVisible(true)
-   
+    setUiVisible(true);
   }
   function stopAll() {
     setPauseTime(0);
     setScrubPos(0); // ← record current play position
     setPlaying(false);
     setPlayOffset(0);
-      setUiVisible(true)
+    setUiVisible(true);
   }
 
   useEffect(() => {
@@ -518,25 +555,23 @@ useEffect(() => {
     }
   }, [playing, audioCtx, playOffset]);
 
-
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.code === 'Space') {
-        e.preventDefault();              // avoid scrolling
+        e.preventDefault(); // avoid scrolling
         if (playing) pauseAll();
-        else         playAll();
+        else playAll();
       }
       if (e.code === 'KeyU') {
-        setUiVisible(v => !v);
+        setUiVisible((v) => !v);
       }
-       if (e.code === 'KeyP') {
-        setPerfVisible(v => !v);
+      if (e.code === 'KeyP') {
+        setPerfVisible((v) => !v);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [playing, playAll, pauseAll]);
-
 
   function updateTrack(id, props) {
     // setAssignments((prev) => {
@@ -572,30 +607,30 @@ useEffect(() => {
     const main = trackList.find((t) => t.id === mainTrackId);
     return main?.buffer?.duration || 0;
   }, [mainTrackId, trackList]);
-  const playingRef = useRef(playing)
-  const playOffsetRef = useRef(playOffset)
-  const durationRef   = useRef(duration)
+  const playingRef = useRef(playing);
+  const playOffsetRef = useRef(playOffset);
+  const durationRef = useRef(duration);
   const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
-    playingRef.current    = playing
-    playOffsetRef.current = playOffset
-    durationRef.current   = duration
-  }, [playing, playOffset, duration])
+    playingRef.current = playing;
+    playOffsetRef.current = playOffset;
+    durationRef.current = duration;
+  }, [playing, playOffset, duration]);
   useEffect(() => {
     let raf;
 
     const loop = () => {
       if (playingRef.current) {
-        const elapsed = audioCtx.currentTime - playOffsetRef.current
-        setCurrentTime(Math.min(elapsed, durationRef.current))
+        const elapsed = audioCtx.currentTime - playOffsetRef.current;
+        setCurrentTime(Math.min(elapsed, durationRef.current));
       }
-      raf = requestAnimationFrame(loop)
-    }
+      raf = requestAnimationFrame(loop);
+    };
 
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const handleVolumeChange = useCallback((trackId, newVol) => {
     dispatch(setVolume({ trackId, volume: newVol }));
@@ -676,7 +711,7 @@ useEffect(() => {
       return newList;
     });
   }, []);
-// console.log(trackList)
+  // console.log(trackList)
   const canvasProps = useMemo(
     () => ({
       meshes,
@@ -703,6 +738,7 @@ useEffect(() => {
       trackList,
       components: COMPONENTS,
       onNodeReady,
+      demoMode
     }),
     [
       meshes,
@@ -728,71 +764,70 @@ useEffect(() => {
       updateTrack,
       trackList,
       onNodeReady,
+      demoMode
     ]
   );
 
-
-const allLoaded = trackList.every(t => t.buffer !== null);
+  const allLoaded = trackList.every((t) => t.buffer !== null);
   return (
-    <div style={{ height: '100vh' }}> {!allLoaded && (
-      <div className="loader">
-       Loading tracks… { trackList.filter(t => t.buffer).length } / { trackList.length }
-
-      </div>
-    )}
-    { allLoaded && (      
-  <>   <div className='rev-params'>
-       
-
-
-
-  {uiVisible && (   <PlayController
-          playAll={playAll}
-          pauseAll={pauseAll}
-          stopAll={stopAll}
-          clearSession={clearSession}
-          busLevel={busLevel}
-          setBusLevel={setBusLevel}
-          duration={duration}
-          currentTime={currentTime}
-          playing={playing}
-        />)}
-      </div>
-
-
-      <div className='canvas-main'>
-        <KeyboardControls
-          map={[
-            { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
-            { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
-            { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
-            { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
-            { name: 'jump', keys: ['Space'] },
-          ]}
-        >
-          <Canvas
-            camera={{ position: [10, 5, 20], fov: 35 }}
-            dpr={[1, 2]}
-            shadows
-            gl={{ antialias: true, preserveDrawingBuffer: true }}
-            onCreated={({ gl }) => {
-              gl.shadowMap.enabled = true;
-              gl.shadowMap.type = THREE.PCFSoftShadowMap;
-            }}
-            onPointerMissed={() => {
-              sceneState.current = null;
-            }}
-          >
-            <CameraControls />
-            <SceneContents {...canvasProps} />
-{perfVisible && (
-            <Perf />
-)}
-          </Canvas>
-        </KeyboardControls>
-      </div>
-        
-         {/* {uiVisible && ( <div className='console-container'>
+    <div style={{ height: '100vh' }}>
+      {' '}
+      {!allLoaded && (
+        <div className='loader'>
+          Loading tracks… {trackList.filter((t) => t.buffer).length} /{' '}
+          {trackList.length}
+        </div>
+      )}
+      {allLoaded && (
+        <>
+          {' '}
+          <div className='rev-params'>
+            {uiVisible && (
+              <PlayController
+                playAll={playAll}
+                pauseAll={pauseAll}
+                stopAll={stopAll}
+                clearSession={clearSession}
+                busLevel={busLevel}
+                setBusLevel={setBusLevel}
+                duration={duration}
+                currentTime={currentTime}
+                playing={playing}
+                demoMode={demoMode}
+              />
+            )}
+          </div>
+          <div className='canvas-main'>
+            <KeyboardControls
+              map={[
+                { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
+                { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
+                { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
+                { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
+                { name: 'jump', keys: ['Space'] },
+              ]}
+            >
+              <Canvas
+                camera={{ position: [10, 5, 20], fov: 35 }}
+                dpr={[1, 2]}
+                shadows
+                gl={{ antialias: true, preserveDrawingBuffer: true }}
+                onCreated={({ gl }) => {
+                  gl.shadowMap.enabled = true;
+                  gl.shadowMap.type = THREE.PCFSoftShadowMap;
+                }}
+                onPointerMissed={() => {
+                  sceneState.current = null;
+                }}
+                onTouchStart={handleDoubleTap}
+              >
+                <CameraControls />
+                <SceneContents {...canvasProps} />
+                {perfVisible && <Perf />}
+              </Canvas>
+            </KeyboardControls>
+          </div>
+          {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
@@ -816,8 +851,10 @@ const allLoaded = trackList.every(t => t.buffer !== null);
           isReorderable={true}
           onReorder={onReorderTracks}
         />
-      </div>)}  */}
-        {uiVisible && (  <HintTab/>)}</>)}
+      </div>)} 
+          {uiVisible && <HintTab />}
+        </>
+      )}
     </div>
   );
 }

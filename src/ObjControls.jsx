@@ -122,6 +122,7 @@ export function ObjSound({
   onMainEnded,
   mainTrackId,
   removeMesh,
+  demoMode
 }) {
   const [paused, setPaused] = useState(false);
   const snap = useSnapshot(sceneState);
@@ -330,9 +331,12 @@ const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity)
           sceneState.mode = (snap.mode + 1) % modes.length;
         }
       }}
-      onDoubleClick={(e) => {
-        e.stopPropagation(), handleDoubleClick();
-      }}
+onDoubleClick={(e) => {
+  e.stopPropagation();
+  if (!demoMode) {
+    handleDoubleClick();
+  }
+}}
     >
       {children}
 
@@ -359,7 +363,7 @@ const circleScale = THREE.MathUtils.lerp(minScale, maxScale, growIntensity)
               width: 'max-content',
             }}
           >
-            {showDelete && (
+            {showDelete && !demoMode &&(
               <div className='delete-tab'>
                 <button
                   onClick={() => setShowDelete(false)}

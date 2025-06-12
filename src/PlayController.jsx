@@ -1,7 +1,9 @@
 // PlayController.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import './css/PlayController.css';
-import { RxPause, RxPlay, RxStop } from "react-icons/rx";
+import { RxPause, RxPlay, RxStop } from 'react-icons/rx';
+import { useDevice } from './hooks/useDevice';
+
 export default function PlayController({
   playAll,
   pauseAll,
@@ -9,12 +11,13 @@ export default function PlayController({
   clearSession,
   busLevel,
   setBusLevel,
-  duration,       // total duration of “main” track, in seconds
-  currentTime,    // current playback time of that track, in seconds
-  playing,        // boolean flag: is playback underway?
+  duration, // total duration of “main” track, in seconds
+  currentTime, // current playback time of that track, in seconds
+  playing, // boolean flag: is playback underway?
+  demoMode,
 }) {
   const [progress, setProgress] = useState(0); // 0 → 1
-
+  const {isMobile } = useDevice()
   // Update progress whenever currentTime or duration changes
   useEffect(() => {
     if (!duration || duration === 0) {
@@ -25,65 +28,58 @@ export default function PlayController({
     setProgress(pct);
   }, [currentTime, duration]);
 
-  return (  
-    
-   <div className="play-controller-container"> 
-  
-    <div className="reverb-row">
-        <label htmlFor="bus-slider" className="reverb-label">
-          Reverb Bus Level
+  return (
+    <div className='play-controller-container'>
+      <div className={`reverb-row ${isMobile ?  'mobile' : ''}`}>
+        <label htmlFor='bus-slider' className='reverb-label'>
+          Room Influence
         </label>
         <input
-          id="bus-slider"
-          type="range"
+          id='bus-slider'
+          type='range'
           min={0}
           max={2}
           step={0.01}
           value={busLevel}
           onChange={(e) => setBusLevel(parseFloat(e.target.value))}
-          className="reverb-slider"
+          className='reverb-slider'
         />
       </div>
-     
-  
 
-      <div className="player-main">
-
-      <div className="button-row">
-        <div className='play-btns'>
-
-        <button onClick={playAll} className="ctrl-btn">
-       <RxPlay />
-        </button>
-        <button onClick={pauseAll} className="ctrl-btn">
-         <RxPause />
-        </button>
-        <button onClick={stopAll} className="ctrl-btn">
-         <RxStop />
-        </button>
+      <div className='player-main'>
+        <div className={`button-row ${isMobile ?  'mobile' : ''}`}>
+          <div className='play-btns'>
+            <button onClick={playAll} className='ctrl-btn'>
+              <RxPlay />
+            </button>
+            <button onClick={pauseAll} className='ctrl-btn'>
+              <RxPause />
+            </button>
+            <button onClick={stopAll} className='ctrl-btn'>
+              <RxStop />
+            </button>
+          </div>
+          {!demoMode && (
+            <div className='clear-btn-wrap'>
+              <button onClick={clearSession} className='ctrl-btn clear-btn'>
+                ✖️ Clear Session
+              </button>
+            </div>
+          )}
         </div>
-        <div className='clear-btn-wrap'>
 
-        <button onClick={clearSession} className="ctrl-btn clear-btn">
-          ✖️ Clear Session
-        </button>
-        </div>
-      </div>
-
- 
-
-      <div className="progress-bar-container">
-        <div className="time-label">{formatTime(currentTime)}</div>
-        <div className="progress-track">
-          <div
-            className="progress-fill"
-            style={{ width: `${(progress || 0) * 100}%` }}
+        <div className='progress-bar-container'>
+          <div className='time-label'>{formatTime(currentTime)}</div>
+          <div className='progress-track'>
+            <div
+              className='progress-fill'
+              style={{ width: `${(progress || 0) * 100}%` }}
             />
+          </div>
+          <div className='time-label'>{formatTime(duration)}</div>
         </div>
-        <div className="time-label">{formatTime(duration)}</div>
       </div>
     </div>
-            </div> 
   );
 }
 
