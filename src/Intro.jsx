@@ -27,7 +27,7 @@ const TEXTURES = [
 ];
 
 export default function Intro() {
-  const [clicked, setClicked] = useState(false);
+  const [clicked, setClicked] = useState(true);
   const [preloaded, setPreloaded] = useState(false);
   const { loaded, total } = useProgress();
 
@@ -43,7 +43,9 @@ export default function Intro() {
   }, [loaded, total]);
 
   // still loading or user hasn’t clicked → show splash
-  if (!preloaded ) {
+  if (!preloaded 
+    // || !clicked
+  ) {
     return (
       <div className='fullscreen bg'>
         <div className='main-titles'>
