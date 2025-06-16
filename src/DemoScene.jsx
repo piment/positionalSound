@@ -675,7 +675,16 @@ export default function DemoScene() {
       </div>
     );
   }
-  const allLoaded = trackList.every((t) => t.buffer !== null);
+  const loadedCount = trackList.filter((t) => t.buffer !== null).length
+  const totalCount  = trackList.length
+  const percent     = Math.round((loadedCount / totalCount) * 100)
+
+  const allLoaded = percent === 100
+
+  console.log(
+    trackList.map((t) => ({ id: t.id, loaded: !!t.buffer })),
+    `→ ${loadedCount}/${totalCount} = ${percent}%`
+  );
   return (
     <div ref={containerRef} style={{ height: '100vh', position: 'relative' }}>
     {portrait && isMobile && playing && (
@@ -693,32 +702,19 @@ export default function DemoScene() {
       </div>
     )}
       {' '}
-      {!allLoaded && (
-        <div className='loader'>
-          Loading tracks… {trackList.filter((t) => t.buffer).length} /{' '}
-          {trackList.length}
+   {!allLoaded && (
+    <div className="loader-overlay">
+      <div className="loader-content">
+        <div className="spinner" />
+        <div className="loader-text">
+          Loading… {percent}%
         </div>
-      )}
+      </div>
+    </div>
+  )}
+       
       {allLoaded && (
-        <>
-          {' '}
-          <div className='rev-params'>
-            {uiVisible && (
-              <PlayController
-              playAll={handlePlayClick}
-                pauseAll={pauseAll}
-                stopAll={stopAll}
-                clearSession={clearSession}
-                busLevel={busLevel}
-                setBusLevel={setBusLevel}
-                duration={duration}
-                currentTime={currentTime}
-                playing={playing}
-                demoMode={demoMode}
-              />
-            )}
-          </div>
-          <div className='canvas-main'>
+        <><div className='canvas-main'>
             <KeyboardControls
               map={[
                 { name: 'forward', keys: ['ArrowUp', 'w', 'W'] },
@@ -748,6 +744,24 @@ export default function DemoScene() {
               </Canvas>
             </KeyboardControls>
           </div>
+          {' '}
+          <div className='rev-params'>
+            {uiVisible && (
+              <PlayController
+              playAll={handlePlayClick}
+                pauseAll={pauseAll}
+                stopAll={stopAll}
+                clearSession={clearSession}
+                busLevel={busLevel}
+                setBusLevel={setBusLevel}
+                duration={duration}
+                currentTime={currentTime}
+                playing={playing}
+                demoMode={demoMode}
+              />
+            )}
+          </div>
+     
           {/* {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'

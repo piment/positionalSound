@@ -38,7 +38,7 @@ export default function Intro() {
     MODELS.forEach(useGLTF.preload);
     useTexture.preload(TEXTURES);
   }, []);
-
+console.log(isMobile)
   // When loading is done, mark preloaded
   useEffect(() => {
     if (total > 0 && loaded >= total) {
@@ -49,7 +49,7 @@ export default function Intro() {
   // While loading, show spinner
   if (!preloaded) {
     return (
-      <div className='fullscreen bg'>
+      <div className={`fullscreen bg ${isMobile ? 'mobile' : 'desktop'}`}>
         <div className='main-titles'>
           <h1>MusicRoom</h1>
           <h3>Virtual 3D music space by BarrenXY</h3>
@@ -68,12 +68,12 @@ export default function Intro() {
 
   // Otherwise (we're at "/"), show the splash with both choices
   return (
-    <div className='fullscreen bg'>
+    <div className={`fullscreen bg ${isMobile ? 'mobile' : 'desktop'}`}>
      <div className={`main-titles ${isMobile ? 'mobile' : ''}`}>
         <h1>MusicRoom</h1>
-        <h3>Virtual 3D music space by BarrenXY</h3>
+        <h3>Virtual 3D music space <span className='by'>by</span> BarrenXY</h3>
       </div>
-      <div className='message-box'>
+  
         <div className={`landing-buttons ${isMobile ? 'mobile' : ''}`}>
         {!isMobile ? <Link to='visualizer'>
             <button className='visualizer-av'>Try the Visualizer</button>
@@ -82,7 +82,7 @@ export default function Intro() {
             <button className='demo-btn'>Barren Gamble - Your Expectations</button>
           </Link>
         </div>
-      </div>
+
     </div>
   );
 }
