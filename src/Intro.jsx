@@ -77,9 +77,9 @@ export default function Intro() {
         <div className={`landing-buttons ${isMobile ? 'mobile' : ''}`}>
         {!isMobile ? <Link to='visualizer'>
             <button className='visualizer-av'>Try the Visualizer</button>
-          </Link> : <button className='visualizer-unav'>Visualizer available on desktop only</button> }
+          </Link> : <button className='visualizer-unav'>Playground available on desktop only</button> }
           <Link to='demo'>
-            <button className='demo-btn'>🚀 Launch Demo</button>
+            <button className='demo-btn'>Barren Gamble - Your Expectations</button>
           </Link>
         </div>
       </div>
