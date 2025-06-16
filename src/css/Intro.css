@@ -15,7 +15,24 @@
 .bg {
   background: linear-gradient(to top, #0a0a0a, #181a1a, #1d1d1f);
 }
-
+.fullscreen.bg::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('src/assets/MusicroomRender-min.png') center/cover no-repeat;
+  opacity: 0.74;      /* adjust this to taste */
+  z-index: -1;       /* sit “behind” your text */
+}
+.fullscreen.bg.mobile::before {
+  content: "";
+  position: absolute;
+  top: 0;  right: 0; bottom: 0;
+  background: url('src/assets/MusicroomRender-min.png') center/cover no-repeat;
+  background-position: right center;
+  /* background-size: 0.9; */
+  opacity: 0.74;      /* adjust this to taste */
+  z-index: -1;       /* sit “behind” your text */
+}
 .notready {
   color: #606060;
 }
@@ -41,6 +58,7 @@ h1{
   /* shrink-wrap to the size of the h1 text */
   display: inline-block;
   position: relative;
+  top: -10%
 
   /* center in your fullscreen flex if you still need that: */
   /* margin: 0 auto; */
@@ -59,7 +77,15 @@ h1{
   right: 0;
   font-size: 1.25vw;
   color: #ccc;
-  margin: 0.2em;  /* this only adds padding inside the corner */
+  letter-spacing:  .4em;
+
+  text-transform: uppercase;
+  margin: 0.2em; 
+}
+.main-titles h3 .by{
+ 
+    text-transform: none;
+
 }
 .main-titles.mobile {
   display: inline-flex;
@@ -82,10 +108,26 @@ h1{
   right: 0;
 } */
 
-.message-box{
+
+
+
+.landing-buttons { 
   z-index: 150;
+  width: 80vw;
+  /* background-color: aqua; */
+  
+   display: flex;
+   justify-content: space-around;
+   align-items: center;
+   height: 10vh;
 }
 
+.landing-buttons:not(.mobile)  button{
+  height: 8vh;
+  width: 20vw;
+  font-size: 2ch;
+
+}
 
 .visualizer-unav{
   background-color: #8d8d8d;
@@ -100,4 +142,41 @@ h1{
   height: 25vh;
   align-items: center;
 
+}
+
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* make sure your elements start hidden */
+.main-titles h1,
+.main-titles h3,
+.landing-buttons {
+  opacity: 0;
+}
+
+/* animate the title */
+.main-titles h1 {
+  animation: fadeInUp 0.6s ease-out forwards;
+  animation-delay: 0.2s;
+}
+
+/* then the subtitle */
+.main-titles h3 {
+  animation: fadeInUp 0.6s ease-out forwards;
+  animation-delay: 0.6s;
+}
+
+/* finally the buttons */
+.landing-buttons {
+  animation: fadeInUp 0.6s ease-out forwards;
+  animation-delay: 1s;
 }
