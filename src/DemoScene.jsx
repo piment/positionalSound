@@ -64,6 +64,7 @@ import { CustomOrbitControls } from './CustomOrbitControls';
 import { KeyboardControls } from '@react-three/drei';
 import { CameraControls } from './CameraControls';
 import HintTab from './HintTab';
+import { useDevice } from './hooks/useDevice';
 const COMPONENTS = {
   Snare: Snare,
   Kick: Kick,
@@ -216,9 +217,10 @@ export default function DemoScene() {
 
   const dispatch = useDispatch();
   const settings = useSelector((state) => state.trackSettings);
+  const containerRef= useRef(null)
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-  const [consoleOpen, setConsoleOpen] = useState(false);
-  const [spawnerOpen, setSpawnerOpen] = useState(false);
+
 
   const [playing, setPlaying] = useState(false);
   const [playOffset, setPlayOffset] = useState(0);
@@ -284,16 +286,28 @@ export default function DemoScene() {
   const [mainTrackId, setMainTrackId] = useState(null);
   const activeNodesRef = useRef({});
 
-  const lastTap = useRef(0);
+  const lastTapTime = useRef(0)
+  const tapCount     = useRef(0)
 
-  const handleDoubleTap = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-     setUiVisible(!uiVisible)
+  const handleTripleTap = () => {
+    const now = Date.now()
+
+    // if the last tap was less than 500 ms ago, we’re in the same tap sequence
+    if (now - lastTapTime.current < 500) {
+      tapCount.current += 1
+    } else {
+      // too slow → start a new sequence
+      tapCount.current = 1
     }
-    lastTap.current = now;
-  };
 
+    lastTapTime.current = now
+
+    // once we’ve seen 3 taps in a row, toggle UI
+    if (tapCount.current === 3) {
+      setUiVisible(v => !v)
+      tapCount.current = 0
+    }
+  }
 
 
   useEffect(() => {
@@ -404,125 +418,6 @@ export default function DemoScene() {
     });
   }, []);
 
-  function addMesh(type) {
-    // setMeshes((prev) => {
-    //   const count = prev.filter((m) => m.type === type).length;
-    //   const name = `${type} ${count + 1}`;
-    //   return [...prev, { id: nanoid(), type, name }];
-    // });
-  }
-  async function handleImport(items) {
-    const newTracks = await Promise.all(
-      items.map(async (f) => {
-        const buffer = await loadBuffer(f.url);
-        return {
-          id: nanoid(),
-          file: f.file,
-          url: f.url,
-          name: f.name,
-          buffer, // ✅ store preloaded buffer
-          volume: 1,
-          sendLevel: 0,
-        };
-      })
-    );
-
-    setTrackList((prev) => [...prev, ...newTracks]);
-
-    setAssignments((a) => ({
-      ...a,
-      null: [...(a.null || []), ...newTracks],
-    }));
-
-    newTracks.forEach((t) => {
-      dispatch(addTrack(t.id));
-    });
-  }
-  function toggleAssign(trackObj, targetMeshId) {
-    setAssignments((prev) => {
-      const cleaned = Object.fromEntries(
-        Object.entries(prev).map(([meshId, arr]) => [
-          meshId,
-          arr.filter((t) => t.id !== trackObj.id),
-        ])
-      );
-      return {
-        ...cleaned,
-        [targetMeshId]: [...(cleaned[targetMeshId] || []), trackObj],
-      };
-    });
-  }
-
-  // assuming COMPONENTS is in scope, e.g.
-  // const COMPONENTS = { Snare, Kick, … }
-
-  async function handleAutoAssign(items) {
-    // 1) preload buffers & build newTracks
-    const newTracks = await Promise.all(
-      items.map(async (f) => {
-        const buffer = await loadBuffer(f.url);
-        return {
-          id: nanoid(),
-          file: f.file,
-          url: f.url,
-          name: f.name,
-          buffer,
-          volume: 1,
-          sendLevel: 0,
-        };
-      })
-    );
-
-    // 2) add to trackList & dispatch Redux
-    setTrackList((prev) => [...prev, ...newTracks]);
-    newTracks.forEach((t) => dispatch(addTrack(t.id)));
-
-    // 3) bucket your meshes by type
-    const meshBuckets = meshes.reduce((b, m) => {
-      (b[m.type] ||= []).push(m.id);
-      return b;
-    }, {});
-
-    // 4) round-robin counters
-    const assignedPerType = {};
-
-    // 5) update assignments state
-    setAssignments((prev) => {
-      const next = { ...prev };
-
-      newTracks.forEach((t) => {
-        const nameLower = t.name.toLowerCase();
-
-        // try keyword lookup
-        let match = Object.entries(AUTO_ASSIGN_KEYWORDS).find(([type, keys]) =>
-          keys.some((kw) => nameLower.includes(kw))
-        )?.[0];
-
-        // fallback to literal COMPONENTS key
-        if (!match) {
-          match = Object.keys(COMPONENTS).find((key) =>
-            nameLower.includes(key.toLowerCase())
-          );
-        }
-
-        // if we found a type and there are meshes available
-        if (match && meshBuckets[match]?.length) {
-          const candidates = meshBuckets[match];
-          const i = assignedPerType[match] || 0;
-          const meshId = candidates[i % candidates.length];
-          assignedPerType[match] = i + 1;
-
-          next[meshId] = [...(next[meshId] || []), t];
-        } else {
-          // no match → leave it unassigned
-          next.null = [...(next.null || []), t];
-        }
-      });
-
-      return next;
-    });
-  }
-
   useEffect(() => {
     const longest = trackList.reduce((longest, track) => {
       return track.buffer?.duration > (longest?.buffer?.duration || 0)
@@ -533,6 +428,7 @@ export default function DemoScene() {
   }, [trackList]);
 
   async function playAll() {
+
     await audioCtx.resume();
     const resumeOffset = pauseTime || scrubPos || 0;
     setPlayOffset(audioCtx.currentTime - resumeOffset);
@@ -540,10 +436,28 @@ export default function DemoScene() {
     setUiVisible(false);
     // setPauseTime(null); // reset pause time
   }
+
+  const handlePlayClick = () => {
+    // 1) fullscreen right away
+    if (isMobile && containerRef.current?.requestFullscreen) {
+      containerRef.current.requestFullscreen().catch((err) => {
+        console.warn('Fullscreen failed:', err);
+      });
+      // 2) orientation lock will only work once in fullscreen,
+      //    but calling it here is fine—in some browsers it’ll queue up
+      if (screen.orientation?.lock) {
+        screen.orientation.lock('landscape').catch((err) => {
+          console.warn('Orientation lock failed:', err);
+        });
+      }
+    }
+    // 3) immediately start audio
+    playAll();
+  };
+
   function pauseAll() {
-    // console.log(audioCtx.currentTime, playOffset);
+
     setPauseTime(audioCtx.currentTime - playOffset);
-    // console.log(audioCtx.currentTime - playOffset);
     setPlaying(false);
     setUiVisible(true);
   }
@@ -580,15 +494,7 @@ export default function DemoScene() {
   }, [playing, playAll, pauseAll]);
 
   function updateTrack(id, props) {
-    // setAssignments((prev) => {
-    //   const updated = {};
-    //   for (const [bucket, tracks] of Object.entries(prev)) {
-    //     updated[bucket] = tracks.map((t) =>
-    //       t.id === id ? { ...t, ...props } : t
-    //     );
-    //   }
-    //   return updated;
-    // });
+
 
     // 🔁 Sync Redux with local change
     if (props.volume !== undefined) {
@@ -659,32 +565,7 @@ export default function DemoScene() {
       }));
   }, [settings]);
 
-  function removeTrackById(trackId) {
-    if (activeNodesRef.current[trackId]) {
-      try {
-        activeNodesRef.current[trackId].stop();
-      } catch (e) {
-        console.warn('Failed to stop source node:', e);
-      }
-      delete activeNodesRef.current[trackId];
-    }
-    const track = trackList.find((t) => t.id === trackId);
-    if (track?.url) clearBuffer(track.url);
-    // 1. Remove from trackList
-    setTrackList((prev) => prev.filter((t) => t.id !== trackId));
 
-    // 2. Remove from assignments (all buckets)
-    setAssignments((prev) => {
-      const next = {};
-      for (const [bucket, arr] of Object.entries(prev)) {
-        next[bucket] = arr.filter((t) => t.id !== trackId);
-      }
-      return next;
-    });
-
-    // 3. Remove from Redux store
-    dispatch(removeTrack(trackId));
-  }
   function removeMesh(meshId) {
     const removed = meshes.find((m) => m.id === meshId);
     if (!removed) return;
@@ -706,16 +587,14 @@ export default function DemoScene() {
     activeNodesRef.current[trackId] = node;
   }, []);
 
-  const onReorderTracks = useCallback(({ active, over }) => {
-    if (!over) return;
-    setTrackList((prev) => {
-      const oldIndex = prev.findIndex((t) => t.id === active.id);
-      const newIndex = prev.findIndex((t) => t.id === over.id);
-      const newList = Array.from(prev);
-      newList.splice(oldIndex, 1);
-      newList.splice(newIndex, 0, prev[oldIndex]);
-      return newList;
-    });
+  const [portrait, setPortrait] = useState(
+    window.matchMedia('(orientation: portrait)').matches
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(orientation: portrait)');
+    const onChange = e => setPortrait(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
   }, []);
   // console.log(trackList)
   const canvasProps = useMemo(
@@ -773,10 +652,46 @@ export default function DemoScene() {
       demoMode
     ]
   );
-
+  if (isMobile && portrait) {
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'black',
+          color: 'white',
+          zIndex: 9999,
+          padding: '1rem',
+          textAlign: 'center',
+        }}
+      >
+        <h2>
+          Please rotate your device<br/>
+          to landscape to continue
+        </h2>
+      </div>
+    );
+  }
   const allLoaded = trackList.every((t) => t.buffer !== null);
   return (
-    <div style={{ height: '100vh' }}>
+    <div ref={containerRef} style={{ height: '100vh', position: 'relative' }}>
+    {portrait && isMobile && playing && (
+      <div
+        style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000,
+          textAlign: 'center',
+          padding: '1rem',
+        }}
+      >
+        <h2>Please rotate your device<br/>to landscape for the best experience</h2>
+      </div>
+    )}
       {' '}
       {!allLoaded && (
         <div className='loader'>
@@ -790,7 +705,7 @@ export default function DemoScene() {
           <div className='rev-params'>
             {uiVisible && (
               <PlayController
-                playAll={playAll}
+              playAll={handlePlayClick}
                 pauseAll={pauseAll}
                 stopAll={stopAll}
                 clearSession={clearSession}
@@ -825,7 +740,7 @@ export default function DemoScene() {
                 onPointerMissed={() => {
                   sceneState.current = null;
                 }}
-                onTouchStart={handleDoubleTap}
+                onTouchStart={handleTripleTap}
               >
                 <CameraControls />
                 <SceneContents {...canvasProps} />

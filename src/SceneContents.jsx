@@ -74,9 +74,9 @@ export const SceneContents = memo(function SceneContents({
             mainTrackId={mainTrackId}
             removeMesh={() => removeMesh(id)}
             onNodeReady={(trackId, node) => {
-          onNodeReady(trackId, node);
-          demoMode={demoMode}
-            }}
+          onNodeReady(trackId, node)
+        }}
+        demoMode={demoMode}
           >
             <Part  position={meshObj.position} rotation={meshObj.rotation}/>
           </ObjSound>

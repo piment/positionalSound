@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useGLTF, useTexture, useProgress } from '@react-three/drei';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import './css/Intro.css';
+import { useDevice } from './hooks/useDevice';
 
 const MODELS = [
   '/amps/bass_svt.glb',
@@ -29,6 +30,7 @@ const TEXTURES = [
 export default function Intro() {
   const [preloaded, setPreloaded] = useState(false);
   const { loaded, total } = useProgress();
+  const {isMobile}= useDevice()
   const location = useLocation();
 
   // Preload all assets once
@@ -67,17 +69,17 @@ export default function Intro() {
   // Otherwise (we're at "/"), show the splash with both choices
   return (
     <div className='fullscreen bg'>
-      <div className='main-titles'>
+     <div className={`main-titles ${isMobile ? 'mobile' : ''}`}>
         <h1>MusicRoom</h1>
         <h3>Virtual 3D music space by BarrenXY</h3>
       </div>
       <div className='message-box'>
-        <div className='landing-buttons'>
-          <Link to='visualizer'>
-            <button>Try the Visualizer</button>
-          </Link>
+        <div className={`landing-buttons ${isMobile ? 'mobile' : ''}`}>
+        {!isMobile ? <Link to='visualizer'>
+            <button className='visualizer-av'>Try the Visualizer</button>
+          </Link> : <button className='visualizer-unav'>Playground available on desktop only</button> }
           <Link to='demo'>
-            <button>🚀 Launch Demo</button>
+            <button className='demo-btn'>Barren Gamble - Your Expectations</button>
           </Link>
         </div>
       </div>

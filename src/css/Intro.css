@@ -48,7 +48,7 @@ h1{
 
 .main-titles h1 {
   font-family: 'Chopper';
-  font-size: 14rem;
+  font-size: 14vw;
   letter-spacing: .1em;
   margin: 0;               /* reset default margins */
 }
@@ -57,13 +57,47 @@ h1{
   position: absolute;
   bottom: 0;
   right: 0;
-  
-  /* style it as you like: */
-  font-size: 1.25rem;
+  font-size: 1.25vw;
   color: #ccc;
-  margin: 0.2em;           /* optional padding from the corner */
+  margin: 0.2em;  /* this only adds padding inside the corner */
 }
+.main-titles.mobile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;   /* right-align all children */
+}
+
+/* in mobile mode <h3> participates in the flow */
+.main-titles.mobile h3 {
+  position: static;        /* drop the absolute anchoring */
+  margin: -2% 0 0;      /* space above it */
+  font-size: 1ch;       /* or whatever mobile size you like */
+}
+/* mobile override */
+/* .main-titles.mobile h3 {
+  font-size: 1ch;
+  bottom: auto;
+  
+  top: 5em;    
+  right: 0;
+} */
 
 .message-box{
   z-index: 150;
+}
+
+
+.visualizer-unav{
+  background-color: #8d8d8d;
+  color: #606060;
+}
+
+.landing-buttons.mobile{
+  margin-top: 5vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 25vh;
+  align-items: center;
+
 }
