@@ -833,7 +833,7 @@ export default function DemoScene() {
               </Canvas>
             </KeyboardControls>
           </div>
-          {uiVisible && ( <div className='console-container'>
+          {/* {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
@@ -857,7 +857,7 @@ export default function DemoScene() {
           isReorderable={true}
           onReorder={onReorderTracks}
         />
-      </div>)} 
+      </div>)}  */}
           {uiVisible && <HintTab />}
         </>
       )}
