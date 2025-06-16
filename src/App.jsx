@@ -528,10 +528,10 @@ async function handleImport(items) {
   }, []);
 
 
-useEffect(() => {
-console.log('MESHES',meshes , '||||||', 'TRACKLIST',trackList, '||||||', 'ASSIGNMENTS', assignments)
+// useEffect(() => {
+// console.log('MESHES',meshes , '||||||', 'TRACKLIST',trackList, '||||||', 'ASSIGNMENTS', assignments)
 
-}, [assignments, meshes, trackList])
+// }, [assignments, meshes, trackList])
 
   const canvasProps = useMemo(
     () => ({

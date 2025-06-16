@@ -240,12 +240,12 @@ export function ObjSound({
     smoothRef.current = THREE.MathUtils.damp(
       smoothRef.current,
       trackLevel,
-      30, // attack/release speed
+      150, // attack/release speed
       delta
     );
 
     // Map 0→1 into 0→maxIntensity
-    const intensity = THREE.MathUtils.lerp(2.52, 5, smoothRef.current);
+    const intensity = THREE.MathUtils.lerp(1.52, 5, smoothRef.current);
     // console.log(intensity)
     padMeshes.forEach((m) => {
       // set to zero when smoothRef is zero → totally dark
@@ -259,7 +259,7 @@ export function ObjSound({
       m.material.emissiveIntensity = intensity;
       // console.log(intensity)
       // keep color proportional to level (or leave it white)
-      m.material.emissive.setScalar(smoothRef.current * 20);
+      m.material.emissive.setScalar(smoothRef.current * 10);
     });
     // console.log(playLevel)
     lights.forEach((light) => {
@@ -276,8 +276,8 @@ export function ObjSound({
       // scale 0 → 3 feels about right; tweak to taste
       m.material.emissiveIntensity = THREE.MathUtils.lerp(
         0,
-        50,
-        smoothRef.current / 2
+        150,
+        smoothRef.current 
       );
 
       // don’t touch m.material.emissive!  The map already modulates it.

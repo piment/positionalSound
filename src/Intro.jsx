@@ -1,7 +1,7 @@
 // Intro.jsx
 import React, { useState, useEffect } from 'react';
 import { useGLTF, useTexture, useProgress } from '@react-three/drei';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import './css/Intro.css';
 
 const MODELS = [
@@ -27,23 +27,25 @@ const TEXTURES = [
 ];
 
 export default function Intro() {
-  const [clicked, setClicked] = useState(false);
   const [preloaded, setPreloaded] = useState(false);
   const { loaded, total } = useProgress();
+  const location = useLocation();
 
-  // kick off all preloads once
+  // Preload all assets once
   useEffect(() => {
     MODELS.forEach(useGLTF.preload);
     useTexture.preload(TEXTURES);
   }, []);
 
-  // mark ready when everything is fetched
+  // When loading is done, mark preloaded
   useEffect(() => {
-    if (total > 0 && loaded >= total) setPreloaded(true);
+    if (total > 0 && loaded >= total) {
+      setPreloaded(true);
+    }
   }, [loaded, total]);
 
-  // still loading or user hasn’t clicked → show splash
-  if (!preloaded ) {
+  // While loading, show spinner
+  if (!preloaded) {
     return (
       <div className='fullscreen bg'>
         <div className='main-titles'>
@@ -51,28 +53,34 @@ export default function Intro() {
           <h3>Virtual 3D music space by BarrenXY</h3>
         </div>
         <div className='message-box'>
-          {!preloaded ? (
-            <>
-              Loading… ({loaded}/{total})
-            </>
-          ) : (
-            <div className='landing-buttons'>
-              <Link to='visualizer'>
-                <button 
-                // onClick={() => setClicked(true)}
-                >
-                  Try it now!</button>
-              </Link>
-              {/* <Link to="demo">
-                <button onClick={() => setClicked(true)}>🚀 Demo</button>
-              </Link>  */}
-            </div>
-          )}
+          Loading… ({loaded}/{total})
         </div>
       </div>
     );
   }
 
-  // once they’ve clicked and we’re ready, render the chosen route
-  return <Outlet />;
+  // If we've preloaded and the path is NOT exactly "/", render the chosen route
+  if (location.pathname !== '/') {
+    return <Outlet />;
+  }
+
+  // Otherwise (we're at "/"), show the splash with both choices
+  return (
+    <div className='fullscreen bg'>
+      <div className='main-titles'>
+        <h1>MusicRoom</h1>
+        <h3>Virtual 3D music space by BarrenXY</h3>
+      </div>
+      <div className='message-box'>
+        <div className='landing-buttons'>
+          <Link to='visualizer'>
+            <button>Try the Visualizer</button>
+          </Link>
+          <Link to='demo'>
+            <button>🚀 Launch Demo</button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }

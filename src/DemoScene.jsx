@@ -119,7 +119,10 @@ const DEMO_VOLUME = {
   t8: 0.75, // Lead Vox
   t9: 1, // Overheads
   t10: 1, // Snare
-  t11: 0.85, // Tom Floor
+  t11: 0.85, // Tom Floor,
+  t12: 0.6,
+  t13: 0.5,
+  t14: 0.5
 };
 
 const DEMO_SEND = {
@@ -190,6 +193,9 @@ const DEMO_TRACKS = [
   { id: 't9', url: '/demo_audio/Overheads.m4a', name: 'Overheads' },
   { id: 't10', url: '/demo_audio/Snare.m4a', name: 'Snare' },
   { id: 't11', url: '/demo_audio/Tom_Floor.m4a', name: 'Tom Floor' },
+  { id: 't12', url: '/demo_audio/Crash.m4a', name: 'Crash' },
+  { id: 't13', url: '/demo_audio/Ride.m4a', name: 'Ride' },
+  { id: 't14', url: '/demo_audio/Hihat.m4a', name: 'Hihat' },
 ];
 
 export default function DemoScene() {
@@ -253,12 +259,12 @@ export default function DemoScene() {
       // drum kit
       snare1: byId('t10'), // Snare
       kick1: byId('t7'), // Kick
-      hihat1: [], // no loop
+      hihat1: byId('t14'), // no loop
       hitom1: byId('t5'),
       midtom1: [], // none
       floortom1: byId('t11'),
-      crash1: [], // none
-      ride1: [], // none
+      crash1: byId('t12'), // none
+      ride1: byId('t13'), // none
       oh1: byId('t9'), // Overheads
 
       // amps & instruments
@@ -827,7 +833,7 @@ export default function DemoScene() {
               </Canvas>
             </KeyboardControls>
           </div>
-          {uiVisible && ( <div className='console-container'>
+          {/* {uiVisible && ( <div className='console-container'>
         <button
           className='toggle-button'
           onClick={() => setConsoleOpen((prev) => !prev)}
@@ -851,7 +857,7 @@ export default function DemoScene() {
           isReorderable={true}
           onReorder={onReorderTracks}
         />
-      </div>)} 
+      </div>)}  */}
           {uiVisible && <HintTab />}
         </>
       )}
