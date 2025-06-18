@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useGLTF, useTexture, useProgress } from '@react-three/drei';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import './css/Intro.css';
+import bgImg from './assets/MusicroomRender-min.png';
 import { useDevice } from './hooks/useDevice';
 
 const MODELS = [
@@ -65,10 +66,17 @@ console.log(isMobile)
   if (location.pathname !== '/') {
     return <Outlet />;
   }
-
+  const bgStyle = {
+    backgroundImage: `
+      linear-gradient(to top, rgba(10,10,10,0.8), rgba(29,29,31,0.8)),
+      url(${bgImg})
+    `,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  };
   // Otherwise (we're at "/"), show the splash with both choices
   return (
-    <div className={`fullscreen bg ${isMobile ? 'mobile' : 'desktop'}`}>
+<div className={`fullscreen ${isMobile ? 'mobile' : 'desktop'}`} style={bgStyle}>
      <div className={`main-titles ${isMobile ? 'mobile' : ''}`}>
         <h1>MusicRoom</h1>
         <h3>Virtual 3D music space <span className='by'>by</span> BarrenXY</h3>
